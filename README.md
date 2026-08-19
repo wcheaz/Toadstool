@@ -9,3 +9,4 @@ Team Toadstool's final project for the LEAP period!
 - Upasana Patel
 - Triem Le
 - Abhinav Mayreddy
+- Majoie Ngandi
