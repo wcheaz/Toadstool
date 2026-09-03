@@ -1,6 +1,7 @@
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS trading; -- OLTP: normalized operational tables
+CREATE SCHEMA IF NOT EXISTS analytics; -- OLAP skeleton for reporting; populated from Week 4 onward
 
 -- Registered clients; the root identity all trading activity hangs off of
 CREATE TABLE IF NOT EXISTS trading.clients (
@@ -44,6 +45,26 @@ CREATE TABLE IF NOT EXISTS trading.orders (
     FOREIGN KEY (account_id, client_id) REFERENCES trading.accounts(account_id, client_id)
 );
 
+-- Internal users (David/Priya personas) for the admin/reporting dashboard, distinct from clients (W5-4)
+CREATE TABLE IF NOT EXISTS trading.admin_users (
+    admin_user_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique admin user identifier
+    email varchar(320) NOT NULL UNIQUE, -- Admin user's email address
+    display_name varchar(120) NOT NULL, -- Admin user's display name
+    role varchar(20) NOT NULL CHECK (role IN ('ADMIN', 'ANALYST')), -- Internal role
+    status varchar(20) NOT NULL CHECK (status IN ('ACTIVE', 'SUSPENDED')), -- Current admin user status
+    created_at timestamptz NOT NULL DEFAULT now(), -- Record creation timestamp
+    updated_at timestamptz NOT NULL DEFAULT now() -- Record last update timestamp
+);
+
+-- Append-only history of order status transitions, so an order's lifecycle can be reconstructed (BR-15)
+CREATE TABLE IF NOT EXISTS trading.order_events (
+    order_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique event identifier
+    order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
+    from_status varchar(20), -- Previous order status
+    to_status varchar(20) NOT NULL, -- New order status
+    occurred_at timestamptz NOT NULL DEFAULT now() -- Event occurrence timestamp
+);
+
 -- Append-only audit trail of every order/pricing/cash change, attributable to client and time (BR-14/BR-15)
 CREATE TABLE IF NOT EXISTS trading.audit_events (
     audit_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique audit event identifier
@@ -59,6 +80,8 @@ CREATE INDEX IF NOT EXISTS ix_accounts_client
     ON trading.accounts (client_id); -- speeds up looking up a client's accounts
 CREATE INDEX IF NOT EXISTS ix_orders_client_submitted
     ON trading.orders (client_id, submitted_at DESC); -- fetch a client's order history in recency order
+CREATE INDEX IF NOT EXISTS ix_order_events_order
+    ON trading.order_events (order_id, occurred_at); -- replay an order's event history in order
 CREATE INDEX IF NOT EXISTS ix_audit_events_entity
     ON trading.audit_events (entity_type, entity_id, occurred_at); -- audit trail lookup for a specific entity
 
