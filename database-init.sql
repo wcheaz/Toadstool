@@ -1,8 +1,8 @@
 
 BEGIN;
  
-CREATE SCHEMA IF NOT EXISTS trading;
-CREATE SCHEMA IF NOT EXISTS analytics;
+CREATE SCHEMA IF NOT EXISTS trading; -- OLTP: normalized operational tables
+CREATE SCHEMA IF NOT EXISTS analytics; -- OLAP: denormalized star schema for reporting
  
 CREATE TABLE IF NOT EXISTS trading.clients (
     client_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique identifier for the client
@@ -295,31 +295,31 @@ CREATE TABLE IF NOT EXISTS analytics.fact_fills (
 );
  
 CREATE INDEX IF NOT EXISTS ix_sessions_client
-    ON trading.sessions (client_id);
+    ON trading.sessions (client_id); -- speeds up looking up a client's sessions
 CREATE INDEX IF NOT EXISTS ix_accounts_client
-    ON trading.accounts (client_id);
+    ON trading.accounts (client_id); -- speeds up looking up a client's accounts
 CREATE INDEX IF NOT EXISTS ix_quotes_instrument_observed
-    ON trading.market_quotes (instrument_id, observed_at DESC);
+    ON trading.market_quotes (instrument_id, observed_at DESC); -- fetch latest quotes per instrument
 CREATE INDEX IF NOT EXISTS ix_orders_client_submitted
-    ON trading.orders (client_id, submitted_at DESC);
+    ON trading.orders (client_id, submitted_at DESC); -- fetch a client's order history in recency order
 CREATE INDEX IF NOT EXISTS ix_order_events_order_sequence
-    ON trading.order_events (order_id, sequence_no);
+    ON trading.order_events (order_id, sequence_no); -- replay an order's event history in order
 CREATE INDEX IF NOT EXISTS ix_fills_order_executed
-    ON trading.fills (order_id, executed_at);
+    ON trading.fills (order_id, executed_at); -- list an order's fills in execution order
 CREATE INDEX IF NOT EXISTS ix_position_ledger_account_occurred
-    ON trading.position_ledger (account_id, occurred_at);
+    ON trading.position_ledger (account_id, occurred_at); -- reconstruct an account's position history over time
 CREATE INDEX IF NOT EXISTS ix_cash_ledger_account_occurred
-    ON trading.cash_ledger (account_id, occurred_at);
+    ON trading.cash_ledger (account_id, occurred_at); -- reconstruct an account's cash movement history over time
 CREATE INDEX IF NOT EXISTS ix_audit_events_entity
-    ON trading.audit_events (entity_type, entity_id, occurred_at);
+    ON trading.audit_events (entity_type, entity_id, occurred_at); -- audit trail lookup for a specific entity
 CREATE INDEX IF NOT EXISTS ix_outbox_unpublished
     ON trading.outbox_events (created_at)
-    WHERE published_at IS NULL;
+    WHERE published_at IS NULL; -- partial index for the publisher's polling query on pending events
 CREATE INDEX IF NOT EXISTS ix_dim_client_lookup
-    ON analytics.dim_client (client_id, effective_from, effective_to);
+    ON analytics.dim_client (client_id, effective_from, effective_to); -- resolve the SCD Type 2 record valid at a point in time
 CREATE INDEX IF NOT EXISTS ix_fact_orders_date
-    ON analytics.fact_orders (date_key, client_key, instrument_key);
+    ON analytics.fact_orders (date_key, client_key, instrument_key); -- support BI aggregation/drill-down by date, client, instrument
 CREATE INDEX IF NOT EXISTS ix_fact_fills_date
-    ON analytics.fact_fills (date_key, client_key, instrument_key);
+    ON analytics.fact_fills (date_key, client_key, instrument_key); -- support BI aggregation/drill-down by date, client, instrument
  
 COMMIT;
