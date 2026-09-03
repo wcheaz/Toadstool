@@ -1,48 +1,49 @@
-# Recommended Database Schema
- 
-Use PostgreSQL. IDs are `uuid`, timestamps are UTC `timestamptz`, and money/quantities are `numeric(28,10)`.
- 
-## Transactional Tables
- 
-| Table | Columns |
-|---|---|
-| `clients` | `client_id` PK, `identity_subject` UNIQUE, `email` UNIQUE, `display_name`, `country_code`, `segment_code`, `status`, `created_at`, `updated_at` |
-| `sessions` | `session_id` PK, `client_id` FK, `token_hash` UNIQUE, `created_at`, `expires_at`, `last_seen_at`, `revoked_at`, `revoke_reason` |
-| `currencies` | `currency_code` PK, `name`, `decimal_places`, `status` |
-| `accounts` | `account_id` PK, `client_id` FK, `account_number` UNIQUE, `base_currency_code` FK, `status`, `opened_at`, `closed_at` |
-| `instruments` | `instrument_id` PK, `asset_class`, `symbol`, `venue_code`, `name`, `base_currency_code` FK, `quote_currency_code` FK, `quantity_scale`, `price_scale`, `status`, `created_at`, `updated_at`; UNIQUE (`asset_class`, `symbol`, `venue_code`) |
-| `market_quotes` | `quote_id` PK, `instrument_id` FK, `bid_price`, `ask_price`, `provider_code`, `provider_quote_ref`, `observed_at`, `received_at`, `expires_at` |
-| `orders` | `order_id` PK, `client_id` FK, `account_id` FK, `instrument_id` FK, `side`, `order_type`, `quantity`, `indicative_quote_id` FK, `idempotency_key`, `submitted_at`, `accepted_at`, `current_status`, `status_updated_at`, `rejection_code`, `version`; UNIQUE (`client_id`, `idempotency_key`) |
-| `order_validations` | `validation_id` PK, `order_id` FK, `rule_code`, `rule_version`, `outcome`, `reason`, `facts` JSONB, `evaluated_at` |
-| `order_events` | `order_event_id` PK, `order_id` FK, `sequence_no`, `from_status`, `to_status`, `reason_code`, `occurred_at`, `actor_type`, `correlation_id`; UNIQUE (`order_id`, `sequence_no`) |
-| `pricing_decisions` | `pricing_decision_id` PK, `order_id` FK, `attempt_no`, `quote_id` FK, `bid_snapshot`, `ask_snapshot`, `selected_price`, `decision`, `reason_code`, `decided_at`; UNIQUE (`order_id`, `attempt_no`) |
-| `fills` | `fill_id` PK, `order_id` FK, `pricing_decision_id` FK, `external_execution_ref` UNIQUE, `quantity`, `price`, `currency_code` FK, `gross_amount`, `fee_amount`, `executed_at`, `recorded_at` |
-| `positions` | `account_id` PK/FK, `instrument_id` PK/FK, `quantity`, `version`, `updated_at` |
-| `position_ledger` | `position_movement_id` PK, `account_id` FK, `instrument_id` FK, `fill_id` FK UNIQUE, `quantity_delta`, `quantity_after`, `occurred_at`, `recorded_at` |
-| `cash_balances` | `account_id` PK/FK, `currency_code` PK/FK, `amount`, `version`, `updated_at` |
-| `cash_ledger` | `cash_movement_id` PK, `account_id` FK, `currency_code` FK, `fill_id` FK, `movement_type`, `amount_delta`, `balance_after`, `occurred_at`, `recorded_at`, `reason` |
-| `audit_events` | `audit_event_id` PK, `actor_type`, `actor_id`, `client_id` FK, `action`, `entity_type`, `entity_id`, `occurred_at`, `correlation_id`, `details` JSONB |
-| `outbox_events` | `event_id` PK, `aggregate_type`, `aggregate_id`, `event_type`, `payload` JSONB, `occurred_at`, `created_at`, `published_at`, `attempt_count`, `last_error` |
- 
-## Reporting Tables
- 
-Keep these in a separate `analytics` schema or database, populated from `outbox_events`.
- 
-| Table | Columns |
-|---|---|
-| `dim_date` | `date_key` PK, `calendar_date` UNIQUE, `month_no`, `quarter_no`, `year_no` |
-| `dim_client` | `client_key` PK, `client_id`, `segment_code`, `country_code`, `effective_from`, `effective_to`, `is_current` |
-| `dim_instrument` | `instrument_key` PK, `instrument_id`, `symbol`, `name`, `asset_class`, `venue_code`, `quote_currency_code` |
-| `fact_orders` | `order_id` PK, `date_key` FK, `client_key` FK, `instrument_key` FK, `submitted_at`, `side`, `quantity`, `final_status`, `acceptance_ms`, `completion_ms` |
-| `fact_fills` | `fill_id` PK, `order_id`, `date_key` FK, `client_key` FK, `instrument_key` FK, `executed_at`, `quantity`, `price`, `gross_amount`, `fee_amount`, `currency_code` |
- 
+# Database Plan — Week 1
+
+Use PostgreSQL. IDs are `uuid`, timestamps are UTC `timestamptz`, quantities are `numeric(28,10)`.
+
+This is deliberately the smallest schema that satisfies Week 1's two DB stories (`W1-2`, `W1-3`
+in `project-plan.md`) — not the platform's final data model. The full future shape is sketched
+below and should grow one week at a time, in step with the plan, rather than being built upfront.
+
+The schema itself lives in [`db/migrations/V1__init.sql`](db/migrations/V1__init.sql), a
+Flyway-style migration, per the repo layout `project-plan.md` calls for.
+
+## Week 1 tables
+
+| Table | Columns | Story |
+|---|---|---|
+| `clients` | `client_id` PK, `email` UNIQUE, `display_name`, `status`, `created_at`, `updated_at` | FK target for orders/audit |
+| `accounts` | `account_id` PK, `client_id` FK, `status`, `opened_at` | FK target for orders |
+| `instruments` | `instrument_id` PK, `symbol` UNIQUE, `name`, `status` | FK target for orders |
+| `orders` | `order_id` PK, `client_id` FK, `account_id` FK, `instrument_id` FK, `side`, `quantity`, `idempotency_key`, `status`, `submitted_at`; UNIQUE (`client_id`, `idempotency_key`) | W1-3 (BR-06/BR-09) |
+| `audit_events` | `audit_event_id` PK, `client_id` FK, `entity_type`, `entity_id`, `action`, `occurred_at`, `details` JSONB; `UPDATE`/`DELETE` revoked from `PUBLIC` | W1-2 (BR-14) |
+
 ## Reasoning
- 
-- Keep the clear core from response one: clients, accounts, instruments, quotes, orders, fills, positions, cash, and audit history.
-- Keep orders separate from fills: an order is an instruction; a fill is an execution. One order may eventually have multiple fills.
-- Use `order_events` instead of a simple status-history table, and retain validation and pricing evidence so every trade can be reconstructed.
-- Keep current `positions` and `cash_balances` for fast reads, backed by append-only ledgers for reconciliation and recovery.
-- Keep idempotency keys, version columns, and the outbox so retries and asynchronous processing cannot duplicate trades or lose events.
-- Use a managed identity provider; do not store password hashes here unless authentication is intentionally built in-house.
-- Keep reporting isolated from live trading tables, but start with this small read model rather than a full data warehouse.
-- Defer watchlists and price alerts until the required trade lifecycle is complete. Avoid a generic `transactions` table because explicit cash and position ledgers are easier to validate and audit.
+
+- `clients`, `accounts`, and `instruments` exist only as minimal FK targets — `orders` needs
+  something to reference. No sessions, currencies, segments, or asset-class distinctions yet.
+- `orders` carries only what W1-3 needs to demonstrate: a unique idempotency key per client, and
+  a basic status. No order type, pricing snapshot, rejection code, or optimistic-lock version
+  until pricing/validation work (weeks 2–4) actually needs them.
+- `audit_events` is append-only from day one (`REVOKE UPDATE, DELETE`), satisfying W1-2 directly.
+- Everything else from the original design is deferred, not discarded — see below.
+
+## Deferred, and when to bring it back
+
+Reintroduce each of these when its owning week starts, per `project-plan.md`'s traceability table:
+
+- **Week 2** (BR-05 rule checks before acceptance): `order_validations`, `order_events`.
+- **Weeks 3–4** (BR-08/09 pricing, atomic settlement, holdings/cash): `currencies`,
+  `market_quotes`, `pricing_decisions`, `fills`, `positions`, `position_ledger`,
+  `cash_balances`, `cash_ledger`.
+- **Week 4** (BR-16 reporting isolated from live trading): a separate `analytics` schema
+  (`dim_date`, `dim_client`, `dim_instrument`, `fact_orders`, `fact_fills`), populated from an
+  outbox once Kafka is wired up — not before.
+- **Week 5** (BR-01/03 auth/sessions): decide then whether `sessions` lives here or entirely in
+  the NestJS auth service's own store.
+
+The previous full-platform draft (all of the above, already designed) is kept as
+[`db/.bak/database-init.full.sql.bak`](db/.bak/database-init.full.sql.bak) /
+[`db/.bak/database-plan.full.md.bak`](db/.bak/database-plan.full.md.bak) for reference when each
+week arrives, so none of that thinking is lost — it's just not live schema until its story needs it.
