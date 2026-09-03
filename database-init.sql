@@ -4,6 +4,7 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS trading; -- OLTP: normalized operational tables
 CREATE SCHEMA IF NOT EXISTS analytics; -- OLAP: denormalized star schema for reporting
  
+-- Registered clients and their account status; the root identity all trading activity hangs off of
 CREATE TABLE IF NOT EXISTS trading.clients (
     client_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique identifier for the client
     identity_subject varchar(255) NOT NULL UNIQUE, -- External identity provider subject
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS trading.clients (
     updated_at timestamptz NOT NULL DEFAULT now() -- Record last update timestamp
 );
  
+-- Authenticated client sessions, used to validate and expire/revoke access tokens
 CREATE TABLE IF NOT EXISTS trading.sessions (
     session_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique session identifier
     client_id uuid NOT NULL REFERENCES trading.clients(client_id), -- Reference to client
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS trading.sessions (
     CHECK (expires_at > created_at)
 );
  
+-- Reference data for supported currencies, including decimal precision for amounts
 CREATE TABLE IF NOT EXISTS trading.currencies (
     currency_code char(3) PRIMARY KEY, -- ISO 4217 currency code
     name varchar(80) NOT NULL, -- Full currency name
@@ -35,6 +38,7 @@ CREATE TABLE IF NOT EXISTS trading.currencies (
     status varchar(20) NOT NULL CHECK (status IN ('ACTIVE', 'INACTIVE')) -- Currency trading status
 );
  
+-- Trading accounts owned by clients, scoped to a base currency
 CREATE TABLE IF NOT EXISTS trading.accounts (
     account_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique account identifier
     client_id uuid NOT NULL REFERENCES trading.clients(client_id), -- Reference to account owner
@@ -47,6 +51,7 @@ CREATE TABLE IF NOT EXISTS trading.accounts (
     CHECK (closed_at IS NULL OR closed_at >= opened_at)
 );
  
+-- Tradable instruments (equities, FX, crypto) and their pricing/quantity precision
 CREATE TABLE IF NOT EXISTS trading.instruments (
     instrument_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique instrument identifier
     asset_class varchar(16) NOT NULL CHECK (asset_class IN ('EQUITY', 'FX', 'CRYPTO')), -- Type of financial instrument
@@ -63,6 +68,7 @@ CREATE TABLE IF NOT EXISTS trading.instruments (
     UNIQUE (asset_class, symbol, venue_code)
 );
  
+-- Market bid/ask quotes received from providers, used as the basis for order pricing
 CREATE TABLE IF NOT EXISTS trading.market_quotes (
     quote_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique quote identifier
     instrument_id uuid NOT NULL REFERENCES trading.instruments(instrument_id), -- Reference to instrument
@@ -77,6 +83,7 @@ CREATE TABLE IF NOT EXISTS trading.market_quotes (
     CHECK (expires_at > observed_at)
 );
  
+-- Client orders and their current lifecycle status; the central record of trading intent
 CREATE TABLE IF NOT EXISTS trading.orders (
     order_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique order identifier
     client_id uuid NOT NULL REFERENCES trading.clients(client_id), -- Reference to client placing order
@@ -105,6 +112,7 @@ CREATE TABLE IF NOT EXISTS trading.orders (
     )
 );
  
+-- Results of business rule checks run against an order, kept for compliance/debugging
 CREATE TABLE IF NOT EXISTS trading.order_validations (
     validation_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique validation identifier
     order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order being validated
@@ -117,6 +125,7 @@ CREATE TABLE IF NOT EXISTS trading.order_validations (
     UNIQUE (order_id, rule_code, rule_version)
 );
  
+-- Append-only history of order status transitions, used to reconstruct an order's lifecycle
 CREATE TABLE IF NOT EXISTS trading.order_events (
     order_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique event identifier
     order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
@@ -130,6 +139,7 @@ CREATE TABLE IF NOT EXISTS trading.order_events (
     UNIQUE (order_id, sequence_no)
 );
  
+-- Records of each pricing attempt for an order, including the quote used and fill/reject outcome
 CREATE TABLE IF NOT EXISTS trading.pricing_decisions (
     pricing_decision_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique decision identifier
     order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
@@ -148,6 +158,7 @@ CREATE TABLE IF NOT EXISTS trading.pricing_decisions (
     )
 );
  
+-- Executed trades resulting from a pricing decision; the source of truth for settlement
 CREATE TABLE IF NOT EXISTS trading.fills (
     fill_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique fill identifier
     order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
@@ -163,6 +174,7 @@ CREATE TABLE IF NOT EXISTS trading.fills (
     UNIQUE (pricing_decision_id)
 );
  
+-- Current instrument holdings per account, maintained as a running total from fills
 CREATE TABLE IF NOT EXISTS trading.positions (
     account_id uuid NOT NULL REFERENCES trading.accounts(account_id), -- Reference to account
     instrument_id uuid NOT NULL REFERENCES trading.instruments(instrument_id), -- Reference to instrument
@@ -172,6 +184,7 @@ CREATE TABLE IF NOT EXISTS trading.positions (
     PRIMARY KEY (account_id, instrument_id)
 );
  
+-- Append-only audit trail of every position change, so current positions can be reconstructed/verified
 CREATE TABLE IF NOT EXISTS trading.position_ledger (
     position_movement_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique movement identifier
     account_id uuid NOT NULL REFERENCES trading.accounts(account_id), -- Reference to account
@@ -183,6 +196,7 @@ CREATE TABLE IF NOT EXISTS trading.position_ledger (
     recorded_at timestamptz NOT NULL DEFAULT now() -- Recording timestamp
 );
  
+-- Current cash balance per account and currency, maintained as a running total from cash movements
 CREATE TABLE IF NOT EXISTS trading.cash_balances (
     account_id uuid NOT NULL REFERENCES trading.accounts(account_id), -- Reference to account
     currency_code char(3) NOT NULL REFERENCES trading.currencies(currency_code), -- Currency of balance
@@ -192,6 +206,7 @@ CREATE TABLE IF NOT EXISTS trading.cash_balances (
     PRIMARY KEY (account_id, currency_code)
 );
  
+-- Append-only audit trail of every cash movement (trades, fees, deposits, withdrawals, adjustments)
 CREATE TABLE IF NOT EXISTS trading.cash_ledger (
     cash_movement_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique movement identifier
     account_id uuid NOT NULL REFERENCES trading.accounts(account_id), -- Reference to account
@@ -212,6 +227,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cash_ledger_fill_type
     ON trading.cash_ledger (fill_id, movement_type)
     WHERE fill_id IS NOT NULL;
  
+-- General-purpose audit log of actions taken by clients, operators, or the system for compliance/traceability
 CREATE TABLE IF NOT EXISTS trading.audit_events (
     audit_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique audit event identifier
     actor_type varchar(20) NOT NULL CHECK (actor_type IN ('CLIENT', 'SYSTEM', 'OPERATOR')), -- Type of actor performing action
@@ -225,6 +241,7 @@ CREATE TABLE IF NOT EXISTS trading.audit_events (
     details jsonb NOT NULL DEFAULT '{}'::jsonb -- Additional event details
 );
  
+-- Transactional outbox for reliably publishing domain events to downstream consumers
 CREATE TABLE IF NOT EXISTS trading.outbox_events (
     event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique event identifier
     aggregate_type varchar(40) NOT NULL, -- Type of aggregate root
@@ -238,6 +255,7 @@ CREATE TABLE IF NOT EXISTS trading.outbox_events (
     last_error text -- Last publication error message
 );
  
+-- Date dimension for the analytics star schema, enabling calendar-based rollups (month/quarter/year)
 CREATE TABLE IF NOT EXISTS analytics.dim_date (
     date_key integer PRIMARY KEY, -- Date surrogate key
     calendar_date date NOT NULL UNIQUE, -- Calendar date
@@ -246,6 +264,7 @@ CREATE TABLE IF NOT EXISTS analytics.dim_date (
     year_no smallint NOT NULL -- Year number
 );
  
+-- Client dimension with SCD Type 2 history, so reports can reflect a client's attributes as of a given date
 CREATE TABLE IF NOT EXISTS analytics.dim_client (
     client_key bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Client surrogate key
     client_id uuid NOT NULL, -- Reference to actual client
@@ -257,6 +276,7 @@ CREATE TABLE IF NOT EXISTS analytics.dim_client (
     CHECK (effective_to IS NULL OR effective_to > effective_from)
 );
  
+-- Instrument dimension for the analytics star schema, denormalized for fast reporting joins
 CREATE TABLE IF NOT EXISTS analytics.dim_instrument (
     instrument_key bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Instrument surrogate key
     instrument_id uuid NOT NULL UNIQUE, -- Reference to actual instrument
@@ -267,6 +287,7 @@ CREATE TABLE IF NOT EXISTS analytics.dim_instrument (
     quote_currency_code char(3) NOT NULL -- Quote currency
 );
  
+-- Fact table of order outcomes and timing metrics, for BI reporting on order volume/latency
 CREATE TABLE IF NOT EXISTS analytics.fact_orders (
     order_id uuid PRIMARY KEY, -- Reference to order
     date_key integer NOT NULL REFERENCES analytics.dim_date(date_key), -- Date dimension key
@@ -280,6 +301,7 @@ CREATE TABLE IF NOT EXISTS analytics.fact_orders (
     completion_ms integer CHECK (completion_ms >= 0) -- Milliseconds to completion
 );
  
+-- Fact table of executed trades, for BI reporting on trading volume/revenue
 CREATE TABLE IF NOT EXISTS analytics.fact_fills (
     fill_id uuid PRIMARY KEY, -- Reference to fill
     order_id uuid NOT NULL, -- Reference to order
