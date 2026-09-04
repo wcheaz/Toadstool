@@ -1,5 +1,10 @@
 BEGIN;
 
+-- Drop and recreate on every run so the schema is still easy to reset while it's changing daily;
+-- revisit once Flyway (W1-4) takes over versioned migrations instead of a single re-run script.
+DROP SCHEMA IF EXISTS trading CASCADE;
+DROP SCHEMA IF EXISTS analytics CASCADE;
+
 CREATE SCHEMA IF NOT EXISTS trading; -- OLTP: normalized operational tables
 CREATE SCHEMA IF NOT EXISTS analytics; -- OLAP skeleton for reporting; populated from Week 4 onward
 

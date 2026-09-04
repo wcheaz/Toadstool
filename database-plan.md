@@ -7,7 +7,10 @@ in `project-plan.md`) — not the platform's final data model. The full future s
 below and should grow one week at a time, in step with the plan, rather than being built upfront.
 
 The schema itself lives in [`db/migrations/V1__init.sql`](db/migrations/V1__init.sql), a
-Flyway-style migration, per the repo layout `project-plan.md` calls for.
+Flyway-style migration, per the repo layout `project-plan.md` calls for. For now the script drops
+and recreates both schemas on every run (`DROP SCHEMA ... CASCADE`), so anyone can re-run it to
+pick up changes without hand-managing diffs — this goes away once Flyway (W1-4) takes over
+versioned migrations that apply once each, in order.
 
 ## Week 1 tables
 
