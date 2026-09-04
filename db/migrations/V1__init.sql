@@ -57,15 +57,6 @@ CREATE TABLE IF NOT EXISTS trading.admin_users (
     updated_at timestamptz NOT NULL DEFAULT now() -- Record last update timestamp
 );
 
--- Append-only history of order status transitions, so an order's lifecycle can be reconstructed (BR-15)
-CREATE TABLE IF NOT EXISTS trading.order_events (
-    order_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique event identifier
-    order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
-    from_status varchar(20), -- Previous order status
-    to_status varchar(20) NOT NULL, -- New order status
-    occurred_at timestamptz NOT NULL DEFAULT now() -- Event occurrence timestamp
-);
-
 -- Executed trades; the price a client bought/sold at, for later up/down comparison against a quote
 CREATE TABLE IF NOT EXISTS trading.fills (
     fill_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique fill identifier
@@ -75,7 +66,8 @@ CREATE TABLE IF NOT EXISTS trading.fills (
     executed_at timestamptz NOT NULL DEFAULT now() -- Execution timestamp
 );
 
--- Append-only audit trail of every order/pricing/cash change, attributable to client and time (BR-14/BR-15)
+-- Append-only audit trail of every order/pricing/cash change, attributable to client and time;
+-- also records order status transitions (entity_type='ORDER', details={from_status,to_status}) (BR-14/BR-15)
 CREATE TABLE IF NOT EXISTS trading.audit_events (
     audit_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique audit event identifier
     client_id uuid REFERENCES trading.clients(client_id), -- Associated client if applicable
@@ -90,8 +82,6 @@ CREATE INDEX IF NOT EXISTS ix_accounts_client
     ON trading.accounts (client_id); -- speeds up looking up a client's accounts
 CREATE INDEX IF NOT EXISTS ix_orders_client_submitted
     ON trading.orders (client_id, submitted_at DESC); -- fetch a client's order history in recency order
-CREATE INDEX IF NOT EXISTS ix_order_events_order
-    ON trading.order_events (order_id, occurred_at); -- replay an order's event history in order
 CREATE INDEX IF NOT EXISTS ix_fills_order
     ON trading.fills (order_id, executed_at); -- list an order's fills in execution order
 CREATE INDEX IF NOT EXISTS ix_audit_events_entity

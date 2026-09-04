@@ -19,7 +19,6 @@ Flyway-style migration, per the repo layout `project-plan.md` calls for.
 | `orders` | `order_id` PK, `client_id` FK, `account_id` FK, `instrument_id` FK, `side`, `quantity`, `idempotency_key`, `status`, `submitted_at`; UNIQUE (`client_id`, `idempotency_key`) | W1-3 (BR-06/BR-09) |
 | `audit_events` | `audit_event_id` PK, `client_id` FK, `entity_type`, `entity_id`, `action`, `occurred_at`, `details` JSONB; `UPDATE`/`DELETE` revoked from `PUBLIC` | W1-2 (BR-14) |
 | `admin_users` | `admin_user_id` PK, `email` UNIQUE, `display_name`, `role` (`ADMIN`/`ANALYST`), `status`, `created_at`, `updated_at` | W5-4 (admin/client role split, enabled early) |
-| `order_events` | `order_event_id` PK, `order_id` FK, `from_status`, `to_status`, `occurred_at` | BR-15 (lifecycle reconstruction, enabled early) |
 | `fills` | `fill_id` PK, `order_id` FK, `price`, `quantity`, `executed_at` | Records the price a client traded at, for later up/down comparison |
 
 ## Reasoning
@@ -30,12 +29,14 @@ Flyway-style migration, per the repo layout `project-plan.md` calls for.
   a basic status. No order type, pricing snapshot, rejection code, or optimistic-lock version
   until pricing/validation work (weeks 2–4) actually needs them.
 - `audit_events` is append-only from day one (`REVOKE UPDATE, DELETE`), satisfying W1-2 directly.
+  It also records order status transitions (`entity_type='ORDER'`, `details` holds
+  `from_status`/`to_status`) rather than a separate `order_events` table — the two were
+  redundant (both "record an action against an entity, attributably"), and folding status
+  transitions into `audit_events` still satisfies BR-15's lifecycle-reconstruction need while
+  keeping the append-only guarantee in one place.
 - `admin_users` is added early as a bare identity table, separate from `clients`, so the
   admin/reporting API seam (W3-6) and the eventual role check (W5-4) have a real table to attach
   to. It isn't wired into `audit_events` yet — that attribution lands with the RBAC work.
-- `order_events` is small and FKs only to `orders`, but directly serves BR-15's "full lifecycle
-  reconstruction", whose primary week is listed as Week 1/6 — worth having from day one rather
-  than waiting for Week 2's validation work.
 - `fills` records only what a client actually paid (`price`, `quantity`, `executed_at`) — no
   pricing-decision snapshot, currency, gross/fee amounts, or external execution reference yet.
   This is enough to compare a client's cost basis against a current quote once `market_quotes`
@@ -53,7 +54,9 @@ Flyway-style migration, per the repo layout `project-plan.md` calls for.
 
 Reintroduce each of these when its owning week starts, per `project-plan.md`'s traceability table:
 
-- **Week 2** (BR-05 rule checks before acceptance): `order_validations` (`order_events` now exists, see above).
+- **Week 2** (BR-05 rule checks before acceptance): `order_validations`, `order_events` (a
+  dedicated status-transition table may still be worth reintroducing here if `audit_events`
+  proves too generic for replaying an order's state machine specifically).
 - **Weeks 3–4** (BR-08/09 pricing, atomic settlement, holdings/cash): `currencies`,
   `market_quotes`, `pricing_decisions`, `positions`, `position_ledger`,
   `cash_balances`, `cash_ledger` (`fills` now exists in trimmed form, see above).
