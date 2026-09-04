@@ -15,11 +15,12 @@ Flyway-style migration, per the repo layout `project-plan.md` calls for.
 |---|---|---|
 | `clients` | `client_id` PK, `email` UNIQUE, `display_name`, `status`, `created_at`, `updated_at` | FK target for orders/audit |
 | `accounts` | `account_id` PK, `client_id` FK, `status`, `opened_at` | FK target for orders |
-| `instruments` | `instrument_id` PK, `symbol` UNIQUE, `name`, `status` | FK target for orders |
+| `instruments` | `instrument_id` PK, `symbol` UNIQUE, `name`, `asset_class` (`EQUITY`/`FX`/`CRYPTO`), `status` | FK target for orders |
 | `orders` | `order_id` PK, `client_id` FK, `account_id` FK, `instrument_id` FK, `side`, `quantity`, `idempotency_key`, `status`, `submitted_at`; UNIQUE (`client_id`, `idempotency_key`) | W1-3 (BR-06/BR-09) |
 | `audit_events` | `audit_event_id` PK, `client_id` FK, `entity_type`, `entity_id`, `action`, `occurred_at`, `details` JSONB; `UPDATE`/`DELETE` revoked from `PUBLIC` | W1-2 (BR-14) |
 | `admin_users` | `admin_user_id` PK, `email` UNIQUE, `display_name`, `role` (`ADMIN`/`ANALYST`), `status`, `created_at`, `updated_at` | W5-4 (admin/client role split, enabled early) |
 | `order_events` | `order_event_id` PK, `order_id` FK, `from_status`, `to_status`, `occurred_at` | BR-15 (lifecycle reconstruction, enabled early) |
+| `fills` | `fill_id` PK, `order_id` FK, `price`, `quantity`, `executed_at` | Records the price a client traded at, for later up/down comparison |
 
 ## Reasoning
 
@@ -35,6 +36,12 @@ Flyway-style migration, per the repo layout `project-plan.md` calls for.
 - `order_events` is small and FKs only to `orders`, but directly serves BR-15's "full lifecycle
   reconstruction", whose primary week is listed as Week 1/6 — worth having from day one rather
   than waiting for Week 2's validation work.
+- `fills` records only what a client actually paid (`price`, `quantity`, `executed_at`) — no
+  pricing-decision snapshot, currency, gross/fee amounts, or external execution reference yet.
+  This is enough to compare a client's cost basis against a current quote once `market_quotes`
+  exists, without pulling in the full pricing engine ahead of Weeks 3–4.
+- `instruments.asset_class` (`EQUITY`/`FX`/`CRYPTO`) is added now since it's a static, load-bearing
+  fact about an instrument — it doesn't depend on any pricing/quantity-scale work still deferred.
 - `analytics` exists only as an empty schema for now (`CREATE SCHEMA`), not yet any tables.
   `dim_date` was considered but dropped: Postgres can derive month/quarter/year from a
   `timestamptz` with `date_trunc()`/`EXTRACT()` at query time, and a date dimension only earns
@@ -48,8 +55,8 @@ Reintroduce each of these when its owning week starts, per `project-plan.md`'s t
 
 - **Week 2** (BR-05 rule checks before acceptance): `order_validations` (`order_events` now exists, see above).
 - **Weeks 3–4** (BR-08/09 pricing, atomic settlement, holdings/cash): `currencies`,
-  `market_quotes`, `pricing_decisions`, `fills`, `positions`, `position_ledger`,
-  `cash_balances`, `cash_ledger`.
+  `market_quotes`, `pricing_decisions`, `positions`, `position_ledger`,
+  `cash_balances`, `cash_ledger` (`fills` now exists in trimmed form, see above).
 - **Week 4** (BR-16 reporting isolated from live trading): the `analytics` schema's tables
   (`dim_date`, `dim_client`, `dim_instrument`, `fact_orders`, `fact_fills`), populated from an
   outbox once Kafka is wired up — not before.
