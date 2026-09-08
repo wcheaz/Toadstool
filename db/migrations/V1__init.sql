@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS trading.admin_users (
     updated_at timestamptz NOT NULL DEFAULT now() -- Record last update timestamp
 );
 
--- Executed trades; the price a client bought/sold at, for later up/down comparison against a quote
+-- Executed trades; the price a client bought/sold at, for later up/down comparison against a quote.
+-- Insert-only: a row is written once, when execution completes; the request itself is a trade_events row.
 CREATE TABLE IF NOT EXISTS trading.fills (
     fill_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique fill identifier
     order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
@@ -71,16 +72,49 @@ CREATE TABLE IF NOT EXISTS trading.fills (
     executed_at timestamptz NOT NULL DEFAULT now() -- Execution timestamp
 );
 
--- Append-only audit trail of every order/pricing/cash change, attributable to client and time;
--- also records order status transitions (entity_type='ORDER', details={from_status,to_status}) (BR-14/BR-15)
-CREATE TABLE IF NOT EXISTS trading.audit_events (
-    audit_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique audit event identifier
+-- Append-only trail of order/fill activity, attributable to client and time (BR-14/BR-15);
+-- covers order status transitions and both halves of a fill's lifecycle
+-- (action='FILL_REQUESTED' when pricing starts, action='FILL_EXECUTED' once trading.fills is written)
+CREATE TABLE IF NOT EXISTS trading.trade_events (
+    trade_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique event identifier
     client_id uuid REFERENCES trading.clients(client_id), -- Associated client if applicable
-    entity_type varchar(40) NOT NULL, -- Type of entity affected (e.g. ORDER)
-    entity_id uuid NOT NULL, -- Identifier of affected entity
-    action varchar(80) NOT NULL, -- Action performed
+    entity_type varchar(40) NOT NULL CHECK (entity_type IN ('ORDER', 'FILL')), -- Type of entity affected
+    entity_id uuid NOT NULL, -- Identifier of affected entity (order_id or fill_id)
+    action varchar(80) NOT NULL, -- Action performed, e.g. SUBMITTED, ACCEPTED, REJECTED, FILL_REQUESTED, FILL_EXECUTED
     occurred_at timestamptz NOT NULL DEFAULT now(), -- Event occurrence timestamp
     details jsonb NOT NULL DEFAULT '{}'::jsonb -- Additional event details
+);
+
+-- Append-only trail of every login attempt (success or failure), for security review
+CREATE TABLE IF NOT EXISTS trading.login_events (
+    login_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique login event identifier
+    client_id uuid REFERENCES trading.clients(client_id), -- Matched client, if the attempted email resolved to one
+    email_attempted varchar(320) NOT NULL, -- Email address used in the attempt
+    outcome varchar(10) NOT NULL CHECK (outcome IN ('SUCCESS', 'FAILURE')), -- Attempt outcome
+    occurred_at timestamptz NOT NULL DEFAULT now(), -- Event occurrence timestamp
+    details jsonb NOT NULL DEFAULT '{}'::jsonb -- Additional event details, e.g. failure reason
+);
+
+-- Daily trading activity per instrument, summed across every client; read by the admin dashboard
+-- instead of live trading tables (BR-16)
+CREATE TABLE IF NOT EXISTS analytics.fact_daily_instrument_activity (
+    activity_date date NOT NULL, -- Day the activity occurred
+    instrument_id uuid NOT NULL REFERENCES trading.instruments(instrument_id), -- Reference to instrument
+    order_count integer NOT NULL DEFAULT 0 CHECK (order_count >= 0), -- Orders submitted that day, across all clients
+    filled_quantity numeric(28,10) NOT NULL DEFAULT 0 CHECK (filled_quantity >= 0), -- Total quantity filled that day
+    gross_amount numeric(28,10) NOT NULL DEFAULT 0 CHECK (gross_amount >= 0), -- Total price * quantity filled that day
+    updated_at timestamptz NOT NULL DEFAULT now(), -- Last rollup update timestamp
+    PRIMARY KEY (activity_date, instrument_id)
+);
+
+-- Daily platform-wide trading activity, summed across every client and instrument; read by the
+-- admin dashboard for business insights (BR-16/BR-17)
+CREATE TABLE IF NOT EXISTS analytics.fact_daily_platform_activity (
+    activity_date date PRIMARY KEY, -- Day the activity occurred
+    order_count integer NOT NULL DEFAULT 0 CHECK (order_count >= 0), -- Orders submitted that day, across all clients
+    filled_quantity numeric(28,10) NOT NULL DEFAULT 0 CHECK (filled_quantity >= 0), -- Total quantity filled that day
+    gross_amount numeric(28,10) NOT NULL DEFAULT 0 CHECK (gross_amount >= 0), -- Total price * quantity filled that day
+    updated_at timestamptz NOT NULL DEFAULT now() -- Last rollup update timestamp
 );
 
 CREATE INDEX IF NOT EXISTS ix_accounts_client
@@ -89,10 +123,16 @@ CREATE INDEX IF NOT EXISTS ix_orders_client_submitted
     ON trading.orders (client_id, submitted_at DESC); -- fetch a client's order history in recency order
 CREATE INDEX IF NOT EXISTS ix_fills_order
     ON trading.fills (order_id, executed_at); -- list an order's fills in execution order
-CREATE INDEX IF NOT EXISTS ix_audit_events_entity
-    ON trading.audit_events (entity_type, entity_id, occurred_at); -- audit trail lookup for a specific entity
+CREATE INDEX IF NOT EXISTS ix_trade_events_entity
+    ON trading.trade_events (entity_type, entity_id, occurred_at); -- audit trail lookup for a specific order or fill
+CREATE INDEX IF NOT EXISTS ix_login_events_client
+    ON trading.login_events (client_id, occurred_at); -- a client's login history in recency order
+CREATE INDEX IF NOT EXISTS ix_fact_daily_instrument_activity_instrument
+    ON analytics.fact_daily_instrument_activity (instrument_id, activity_date); -- an instrument's activity history over time
 
 -- Audit rows must never be changed or removed once written (BR-14)
-REVOKE UPDATE, DELETE ON trading.audit_events FROM PUBLIC;
+REVOKE UPDATE, DELETE ON trading.fills FROM PUBLIC;
+REVOKE UPDATE, DELETE ON trading.trade_events FROM PUBLIC;
+REVOKE UPDATE, DELETE ON trading.login_events FROM PUBLIC;
 
 COMMIT;
