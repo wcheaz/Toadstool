@@ -36,19 +36,17 @@ CREATE TABLE IF NOT EXISTS trading.instruments (
     status varchar(20) NOT NULL CHECK (status IN ('TRADABLE', 'HALTED', 'INACTIVE')) -- Trading status
 );
 
--- Client orders; the central record of trading intent
+-- Client orders; the central record of trading intent (immutable once created)
 CREATE TABLE IF NOT EXISTS trading.orders (
     order_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique order identifier
-    client_id uuid NOT NULL REFERENCES trading.clients(client_id), -- Reference to client placing order
     account_id uuid NOT NULL, -- Reference to trading account
     instrument_id uuid NOT NULL REFERENCES trading.instruments(instrument_id), -- Reference to instrument
     side varchar(4) NOT NULL CHECK (side IN ('BUY', 'SELL')), -- Order side (buy or sell)
     quantity numeric(28,10) NOT NULL CHECK (quantity > 0), -- Order quantity
     idempotency_key varchar(80) NOT NULL, -- Idempotency key for duplicate detection
-    status varchar(20) NOT NULL DEFAULT 'SUBMITTED' CHECK (status IN ('SUBMITTED', 'ACCEPTED', 'REJECTED', 'FILLED')), -- Current order status
     submitted_at timestamptz NOT NULL DEFAULT now(), -- Order submission timestamp
-    UNIQUE (client_id, idempotency_key), -- rejects a duplicate submission outright (BR-06/BR-09)
-    FOREIGN KEY (account_id, client_id) REFERENCES trading.accounts(account_id, client_id)
+    UNIQUE (account_id, idempotency_key), -- rejects a duplicate submission outright (BR-06/BR-09)
+    FOREIGN KEY (account_id) REFERENCES trading.accounts(account_id)
 );
 
 -- Internal users (David/Priya personas) for the admin/reporting dashboard, distinct from clients (W5-4)
@@ -64,11 +62,13 @@ CREATE TABLE IF NOT EXISTS trading.admin_users (
 
 -- Executed trades; the price a client bought/sold at, for later up/down comparison against a quote.
 -- Insert-only: a row is written once, when execution completes; the request itself is a trade_events row.
+-- Status tracks the outcome: Filled (successful execution), Failed (execution failed), or Pending (awaiting fill).
 CREATE TABLE IF NOT EXISTS trading.fills (
     fill_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique fill identifier
     order_id uuid NOT NULL REFERENCES trading.orders(order_id), -- Reference to order
     price numeric(28,10) NOT NULL CHECK (price >= 0), -- Execution price
     quantity numeric(28,10) NOT NULL CHECK (quantity > 0), -- Filled quantity
+    status varchar(20) NOT NULL CHECK (status IN ('Filled', 'Failed', 'Pending')), -- Fill status: Filled/Failed/Pending
     executed_at timestamptz NOT NULL DEFAULT now() -- Execution timestamp
 );
 
@@ -119,8 +119,7 @@ CREATE TABLE IF NOT EXISTS analytics.fact_daily_platform_activity (
 
 CREATE INDEX IF NOT EXISTS ix_accounts_client
     ON trading.accounts (client_id); -- speeds up looking up a client's accounts
-CREATE INDEX IF NOT EXISTS ix_orders_client_submitted
-    ON trading.orders (client_id, submitted_at DESC); -- fetch a client's order history in recency order
+
 CREATE INDEX IF NOT EXISTS ix_fills_order
     ON trading.fills (order_id, executed_at); -- list an order's fills in execution order
 CREATE INDEX IF NOT EXISTS ix_trade_events_entity
@@ -131,6 +130,8 @@ CREATE INDEX IF NOT EXISTS ix_fact_daily_instrument_activity_instrument
     ON analytics.fact_daily_instrument_activity (instrument_id, activity_date); -- an instrument's activity history over time
 
 -- Audit rows must never be changed or removed once written (BR-14)
+-- Orders are also immutable once submitted; only fills track status changes
+REVOKE UPDATE, DELETE ON trading.orders FROM PUBLIC;
 REVOKE UPDATE, DELETE ON trading.fills FROM PUBLIC;
 REVOKE UPDATE, DELETE ON trading.trade_events FROM PUBLIC;
 REVOKE UPDATE, DELETE ON trading.login_events FROM PUBLIC;
