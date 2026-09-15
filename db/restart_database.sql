@@ -197,27 +197,20 @@ INSERT INTO trading.accounts (client_id, status)
 SELECT client_id, 'ACTIVE' FROM client_data;
 
 -- Create 120 orders and associated fills to generate realistic trade data
-WITH
-  clients AS (SELECT client_id FROM trading.clients ORDER BY created_at),
-  accounts AS (SELECT account_id, client_id FROM trading.accounts),
-  instruments AS (SELECT instrument_id, symbol FROM trading.instruments ORDER BY random()),
-  order_data AS (
-    SELECT
-      (array_agg(account_id))[((row_number() OVER (ORDER BY random()) - 1) % (SELECT COUNT(*) FROM accounts)) + 1] as account_id,
-      (array_agg(instrument_id))[((row_number() OVER (ORDER BY random()) - 1) % (SELECT COUNT(*) FROM instruments)) + 1] as instrument_id,
-      CASE WHEN random() < 0.5 THEN 'BUY' ELSE 'SELL' END as side,
-      (random() * 10000 + 10)::numeric(28,10) as quantity,
-      'IDEM-' || gen_random_uuid()::text as idempotency_key,
-      now() - (random() * interval '30 days') as submitted_at,
-      row_number() OVER (ORDER BY random()) as rn
-    FROM accounts
-    CROSS JOIN (SELECT 1) -- Generate 1 row per account
-    CROSS JOIN LATERAL (SELECT generate_series(1, 5)) AS gs(n) -- 5 orders per account attempt
-    LIMIT 120
-  )
 INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key, submitted_at)
-SELECT account_id, instrument_id, side, quantity, idempotency_key, submitted_at
-FROM order_data;
+SELECT
+  a.account_id,
+  i.instrument_id,
+  CASE WHEN random() < 0.5 THEN 'BUY' ELSE 'SELL' END as side,
+  (random() * 10000 + 10)::numeric(28,10) as quantity,
+  'IDEM-' || gen_random_uuid()::text as idempotency_key,
+  now() - (random() * interval '30 days') as submitted_at
+FROM (
+  SELECT account_id FROM trading.accounts, generate_series(1, 5)
+  LIMIT 120
+) AS account_expansion(account_id)
+JOIN trading.accounts a ON account_expansion.account_id = a.account_id
+CROSS JOIN LATERAL (SELECT instrument_id FROM trading.instruments ORDER BY random() LIMIT 1) i;
 
 -- Create fills for the orders (80% fill rate to have some open orders)
 WITH order_subset AS (
