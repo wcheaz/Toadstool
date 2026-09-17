@@ -3,6 +3,7 @@ package com.neueda.leap;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.neueda.leap.enums.FillStatus;
 
 public class Fill {
 
@@ -80,12 +81,5 @@ public class Fill {
 
     public void setExecutedAt(OffsetDateTime executedAt) {
         this.executedAt = executedAt;
-    }
-
-    // Enums matching database constraints
-    public enum FillStatus {
-        Filled,
-        Failed,
-        Pending
     }
 }

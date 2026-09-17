@@ -2,6 +2,7 @@ package com.neueda.leap;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.neueda.leap.enums.AccountStatus;
 
 public class Account {
 
@@ -57,12 +58,5 @@ public class Account {
 
     public void setOpenedAt(OffsetDateTime openedAt) {
         this.openedAt = openedAt;
-    }
-
-    // Enums matching database constraints
-    public enum AccountStatus {
-        ACTIVE,
-        SUSPENDED,
-        CLOSED
     }
 }

@@ -3,6 +3,7 @@ package com.neueda.leap;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.neueda.leap.enums.OrderSide;
 
 public class Order {
 
@@ -91,11 +92,5 @@ public class Order {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
-    }
-
-    // Enums matching database constraints
-    public enum OrderSide {
-        BUY,
-        SELL
     }
 }

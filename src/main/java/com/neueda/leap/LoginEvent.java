@@ -2,6 +2,7 @@ package com.neueda.leap;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.neueda.leap.enums.LoginOutcome;
 
 public class LoginEvent {
 
@@ -84,11 +85,5 @@ public class LoginEvent {
 
     public void setDetails(String details) {
         this.details = details;
-    }
-
-    // Enums matching database constraints
-    public enum LoginOutcome {
-        SUCCESS,
-        FAILURE
     }
 }
