@@ -2,6 +2,8 @@ package com.neueda.leap;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.neueda.leap.enums.AdminRole;
+import com.neueda.leap.enums.AdminUserStatus;
 
 public class AdminUser {
 
@@ -89,16 +91,5 @@ public class AdminUser {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    // Enums matching database constraints
-    public enum AdminRole {
-        ADMIN,
-        ANALYST
-    }
-
-    public enum AdminUserStatus {
-        ACTIVE,
-        SUSPENDED
     }
 }

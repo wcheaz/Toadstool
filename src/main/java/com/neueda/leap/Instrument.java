@@ -1,6 +1,8 @@
 package com.neueda.leap;
 
 import java.util.UUID;
+import com.neueda.leap.enums.AssetClass;
+import com.neueda.leap.enums.InstrumentStatus;
 
 public class Instrument {
     
@@ -69,17 +71,5 @@ public class Instrument {
     public void setStatus(InstrumentStatus status) {
         this.status = status;
     }
-    
-    // Enums matching database constraints
-    public enum AssetClass {
-        EQUITY,
-        FX,
-        CRYPTO
-    }
-    
-    public enum InstrumentStatus {
-        TRADABLE,
-        HALTED,
-        INACTIVE
-    }
 }
+

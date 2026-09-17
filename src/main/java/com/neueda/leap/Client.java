@@ -2,6 +2,7 @@ package com.neueda.leap;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.neueda.leap.enums.ClientStatus;
 
 public class Client {
 
@@ -78,12 +79,5 @@ public class Client {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    // Enums matching database constraints
-    public enum ClientStatus {
-        ACTIVE,
-        SUSPENDED,
-        CLOSED
     }
 }

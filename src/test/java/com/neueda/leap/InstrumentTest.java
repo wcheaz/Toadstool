@@ -3,6 +3,8 @@ package com.neueda.leap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import com.neueda.leap.enums.AssetClass;
+import com.neueda.leap.enums.InstrumentStatus;
 
 import java.util.UUID;
 
@@ -34,28 +36,28 @@ class InstrumentTest {
     @DisplayName("Constructor with symbol, name, assetClass, status")
     void testConstructorWithoutId() {
         instrument = new Instrument("AAPL", "Apple Inc.", 
-            Instrument.AssetClass.EQUITY, 
-            Instrument.InstrumentStatus.TRADABLE);
+            AssetClass.EQUITY, 
+            InstrumentStatus.TRADABLE);
         
         assertNull(instrument.getInstrumentId());
         assertEquals("AAPL", instrument.getSymbol());
         assertEquals("Apple Inc.", instrument.getName());
-        assertEquals(Instrument.AssetClass.EQUITY, instrument.getAssetClass());
-        assertEquals(Instrument.InstrumentStatus.TRADABLE, instrument.getStatus());
+        assertEquals(AssetClass.EQUITY, instrument.getAssetClass());
+        assertEquals(InstrumentStatus.TRADABLE, instrument.getStatus());
     }
 
     @Test
     @DisplayName("Constructor with all fields including ID")
     void testConstructorWithId() {
         instrument = new Instrument(testUUID, "GOOGL", "Alphabet Inc.",
-            Instrument.AssetClass.EQUITY,
-            Instrument.InstrumentStatus.TRADABLE);
+            AssetClass.EQUITY,
+            InstrumentStatus.TRADABLE);
         
         assertEquals(testUUID, instrument.getInstrumentId());
         assertEquals("GOOGL", instrument.getSymbol());
         assertEquals("Alphabet Inc.", instrument.getName());
-        assertEquals(Instrument.AssetClass.EQUITY, instrument.getAssetClass());
-        assertEquals(Instrument.InstrumentStatus.TRADABLE, instrument.getStatus());
+        assertEquals(AssetClass.EQUITY, instrument.getAssetClass());
+        assertEquals(InstrumentStatus.TRADABLE, instrument.getStatus());
     }
 
     @Test
@@ -86,16 +88,16 @@ class InstrumentTest {
     @DisplayName("setAssetClass and getAssetClass")
     void testSetAndGetAssetClass() {
         instrument = new Instrument();
-        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
-        assertEquals(Instrument.AssetClass.EQUITY, instrument.getAssetClass());
+        instrument.setAssetClass(AssetClass.EQUITY);
+        assertEquals(AssetClass.EQUITY, instrument.getAssetClass());
     }
 
     @Test
     @DisplayName("setStatus and getStatus")
     void testSetAndGetStatus() {
         instrument = new Instrument();
-        instrument.setStatus(Instrument.InstrumentStatus.HALTED);
-        assertEquals(Instrument.InstrumentStatus.HALTED, instrument.getStatus());
+        instrument.setStatus(InstrumentStatus.HALTED);
+        assertEquals(InstrumentStatus.HALTED, instrument.getStatus());
     }
 
     @Test
@@ -103,14 +105,14 @@ class InstrumentTest {
     void testMultipleAssetClasses() {
         instrument = new Instrument();
         
-        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
-        assertEquals(Instrument.AssetClass.EQUITY, instrument.getAssetClass());
+        instrument.setAssetClass(AssetClass.EQUITY);
+        assertEquals(AssetClass.EQUITY, instrument.getAssetClass());
         
-        instrument.setAssetClass(Instrument.AssetClass.FX);
-        assertEquals(Instrument.AssetClass.FX, instrument.getAssetClass());
+        instrument.setAssetClass(AssetClass.FX);
+        assertEquals(AssetClass.FX, instrument.getAssetClass());
         
-        instrument.setAssetClass(Instrument.AssetClass.CRYPTO);
-        assertEquals(Instrument.AssetClass.CRYPTO, instrument.getAssetClass());
+        instrument.setAssetClass(AssetClass.CRYPTO);
+        assertEquals(AssetClass.CRYPTO, instrument.getAssetClass());
     }
 
     @Test
@@ -118,14 +120,14 @@ class InstrumentTest {
     void testMultipleStatuses() {
         instrument = new Instrument();
         
-        instrument.setStatus(Instrument.InstrumentStatus.TRADABLE);
-        assertEquals(Instrument.InstrumentStatus.TRADABLE, instrument.getStatus());
+        instrument.setStatus(InstrumentStatus.TRADABLE);
+        assertEquals(InstrumentStatus.TRADABLE, instrument.getStatus());
         
-        instrument.setStatus(Instrument.InstrumentStatus.HALTED);
-        assertEquals(Instrument.InstrumentStatus.HALTED, instrument.getStatus());
+        instrument.setStatus(InstrumentStatus.HALTED);
+        assertEquals(InstrumentStatus.HALTED, instrument.getStatus());
         
-        instrument.setStatus(Instrument.InstrumentStatus.INACTIVE);
-        assertEquals(Instrument.InstrumentStatus.INACTIVE, instrument.getStatus());
+        instrument.setStatus(InstrumentStatus.INACTIVE);
+        assertEquals(InstrumentStatus.INACTIVE, instrument.getStatus());
     }
 
     @Test
@@ -137,55 +139,55 @@ class InstrumentTest {
         instrument.setInstrumentId(newId);
         instrument.setSymbol("TSLA");
         instrument.setName("Tesla Inc.");
-        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
-        instrument.setStatus(Instrument.InstrumentStatus.TRADABLE);
+        instrument.setAssetClass(AssetClass.EQUITY);
+        instrument.setStatus(InstrumentStatus.TRADABLE);
         
         assertEquals(newId, instrument.getInstrumentId());
         assertEquals("TSLA", instrument.getSymbol());
         assertEquals("Tesla Inc.", instrument.getName());
-        assertEquals(Instrument.AssetClass.EQUITY, instrument.getAssetClass());
-        assertEquals(Instrument.InstrumentStatus.TRADABLE, instrument.getStatus());
+        assertEquals(AssetClass.EQUITY, instrument.getAssetClass());
+        assertEquals(InstrumentStatus.TRADABLE, instrument.getStatus());
     }
 
     @Test
     @DisplayName("FX Instrument")
     void testFxInstrument() {
         instrument = new Instrument(testUUID, "EURUSD", "Euro vs US Dollar",
-            Instrument.AssetClass.FX,
-            Instrument.InstrumentStatus.TRADABLE);
+            AssetClass.FX,
+            InstrumentStatus.TRADABLE);
         
         assertEquals("EURUSD", instrument.getSymbol());
-        assertEquals(Instrument.AssetClass.FX, instrument.getAssetClass());
+        assertEquals(AssetClass.FX, instrument.getAssetClass());
     }
 
     @Test
     @DisplayName("Crypto Instrument")
     void testCryptoInstrument() {
         instrument = new Instrument(testUUID, "BTC", "Bitcoin",
-            Instrument.AssetClass.CRYPTO,
-            Instrument.InstrumentStatus.TRADABLE);
+            AssetClass.CRYPTO,
+            InstrumentStatus.TRADABLE);
         
         assertEquals("BTC", instrument.getSymbol());
-        assertEquals(Instrument.AssetClass.CRYPTO, instrument.getAssetClass());
+        assertEquals(AssetClass.CRYPTO, instrument.getAssetClass());
     }
 
     @Test
     @DisplayName("Instrument with halted status")
     void testHaltedInstrument() {
         instrument = new Instrument("HALT", "Halted Stock",
-            Instrument.AssetClass.EQUITY,
-            Instrument.InstrumentStatus.HALTED);
+            AssetClass.EQUITY,
+            InstrumentStatus.HALTED);
         
-        assertEquals(Instrument.InstrumentStatus.HALTED, instrument.getStatus());
+        assertEquals(InstrumentStatus.HALTED, instrument.getStatus());
     }
 
     @Test
     @DisplayName("Instrument with inactive status")
     void testInactiveInstrument() {
         instrument = new Instrument("INAC", "Inactive Stock",
-            Instrument.AssetClass.EQUITY,
-            Instrument.InstrumentStatus.INACTIVE);
+            AssetClass.EQUITY,
+            InstrumentStatus.INACTIVE);
         
-        assertEquals(Instrument.InstrumentStatus.INACTIVE, instrument.getStatus());
+        assertEquals(InstrumentStatus.INACTIVE, instrument.getStatus());
     }
 }
