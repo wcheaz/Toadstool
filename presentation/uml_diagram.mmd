@@ -1,5 +1,29 @@
 %%{init: {'flowchart': {'curve': 'linear'}, 'classDiagram': {'direction': 'LR'}}}%%
 classDiagram
+    %% Interfaces for separation of concerns (Interface Segregation & Dependency Inversion)
+    class Identifiable {
+        <<interface>>
+        + getId() UUID
+    }
+
+    class Auditable {
+        <<interface>>
+        + getCreatedAt() OffsetDateTime
+        + getUpdatedAt() OffsetDateTime
+    }
+
+    %% Abstract base class for common entity patterns (Open/Closed Principle)
+    class AbstractEntity {
+        <<abstract>>
+        # entityId: UUID
+        # createdAt: OffsetDateTime
+        # updatedAt: OffsetDateTime
+        + getId() UUID
+        + getCreatedAt() OffsetDateTime
+        + getUpdatedAt() OffsetDateTime
+    }
+
+    %% Core domain entities
     class Client {
         - clientId: UUID
         - email: String
@@ -24,31 +48,18 @@ classDiagram
         - name: String
         - assetClass: AssetClass
         - status: InstrumentStatus
-        + getInstrumentId() UUID
-        + setInstrumentId(UUID)
-        + getSymbol() String
-        + setSymbol(String)
-        + getName() String
-        + setName(String)
-        + getAssetClass() AssetClass
-        + setters/setters
+        + getters/setters
+    }
+
+    class Order {
+        - orderId: UUID
+        - accountId: UUID
+        - instrumentId: UUID
+        - side: OrderSide
         - quantity: BigDecimal
         - idempotencyKey: String
         - submittedAt: OffsetDateTime
-        + getOrderId() UUID
-        + setOrderId(UUID)
-        + getAccountId() UUID
-        + setAccountId(UUID)
-        + getInstrumentId() UUID
-        + setInstrumentId(UUID)
-        + getSide() OrderSide
-        + setSide(OrderSide)
-        + getQuantity() BigDecimal
-        + setQuantity(BigDecimal)
-        + getIdempotencyKey() String
-        + setIdempotencyKey(String)
-        + getSubmittedAt() OffsetDateTime
-        + setSubmittedAt(OffsetDateTime)
+        + getters/setters
     }
 
     class Fill {
@@ -72,6 +83,7 @@ classDiagram
         + getters/setters
     }
 
+    %% Event entities - separated for Single Responsibility
     class LoginEvent {
         - loginEventId: UUID
         - clientId: UUID
@@ -82,17 +94,17 @@ classDiagram
         + getters/setters
     }
 
-    class TradeEvent {
-        - tradeEventId: UUID
-        - clientId: UUID
-        - entityType: TradeEventEntityType
-        - entityId: UUID
+    class OrderEvent {
+        - orderEventId: UUID
+        - orderId: UUID
+        - accountId: UUID
         - action: String
         - occurredAt: OffsetDateTime
         - details: String
         + getters/setters
     }
 
+    %% Analytics/Fact tables
     class FactDailyInstrumentActivity {
         - activityDate: LocalDate
         - instrumentId: UUID
@@ -100,24 +112,27 @@ classDiagram
         - filledQuantity: BigDecimal
         - grossAmount: BigDecimal
         - updatedAt: OffsetDateTime
-        + getActivityDate() LocalDate
-        + setActivityDate(LocalDate)
-        + getInstrumentId() UUID
-        + setInstrumentId(UUID)
-        + getOrderCount() Integer
-        + setOrderCount(Integer)
-        + getFilledQuantity() BigDecimal
-        + setFilledQuantity(BigDecimal)
-        + getGrossAmount() BigDecimal
-        + setGrossAmount(BigDecimal)
-        + getUpdatedAt() OffsetDateTime
-        + setUpdatedAt(OffsetDateTime)
+        + getters/setters
     }
-ters/settersal
-        + setFilledQuantity(BigDecimal)
-        + getGrossAmount() BigDecimal
-        + setGrossAmount(BigDecimal)
-        + getUpdatedAt() OffsetDateTime
-        + setUpdatedAt(OffsetDateTime)
+
+    class FactDailyPlatformActivity {
+        - activityDate: LocalDate
+        - totalOrders: Integer
+        - totalFills: Integer
+        - grossAmount: BigDecimal
+        - updatedAt: OffsetDateTime
+        + getters/setters
     }
-ters/setters
+
+    %% Relationships
+    Identifiable <|.. AbstractEntity
+    Auditable <|.. AbstractEntity
+    AbstractEntity <|-- Client
+    AbstractEntity <|-- AdminUser
+    Client "1" --> "*" Account
+    Account "1" --> "*" Order
+    Instrument "1" --> "*" Order
+    Order "1" --> "*" Fill
+    Client "1" --> "*" LoginEvent
+    Order "1" --> "*" OrderEvent
+    Instrument "1" --> "*" FactDailyInstrumentActivity
