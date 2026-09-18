@@ -1,0 +1,39 @@
+# Speaker Notes for Presentation Diagrams
+
+## UML Class Diagram - Application Domain Model
+
+- **Client**: Root identity; owns accounts and generates login/trade events
+- **Account**: Trading account owned by a client; contains orders
+- **Instrument**: Tradable asset (equity, FX, crypto); tracked daily
+- **Order**: Trading intent; immutable once submitted; references instrument and account
+- **Fill**: Executed trade; records price, quantity, and execution status
+- **AdminUser**: Administrative user for dashboard and reporting
+- **LoginEvent**: Security audit trail; tracks login attempts and outcomes
+- **TradeEvent**: Operational audit trail; tracks order/fill lifecycle events
+- **FactDailyInstrumentActivity**: Daily aggregated metrics per instrument
+- **FactDailyPlatformActivity**: Daily aggregated metrics across entire platform
+
+## Database Schema Diagram - Persistent Storage Model
+
+- **clients**: Registered platform users; root entity for all trading activity
+- **accounts**: Trading accounts owned by clients; one-to-many relationship
+- **instruments**: Tradable assets with symbol, name, asset class, and status
+- **orders**: Immutable order records; central trading transaction
+- **fills**: Executed trades linked to orders; tracks price, quantity, status
+- **trade_events**: Append-only audit trail for order/fill lifecycle events
+- **login_events**: Append-only security log for login attempts and outcomes
+- **admin_users**: Internal administrative users (separate from clients)
+- **fact_daily_instrument_activity**: Nightly aggregates per instrument (analytics schema)
+- **fact_daily_platform_activity**: Nightly platform-wide aggregates (analytics schema)
+
+---
+
+## Diagram Files Generated
+
+- **UML Diagrams**: 
+  - `uml_diagram_simplified_large.png` (2x scale) - Recommended for standard presentations
+  - `uml_diagram_simplified_xlarge.png` (3x scale) - High-resolution version for projection
+
+- **Database Diagrams**:
+  - `database_schema.png` (2x scale) - Recommended for standard presentations
+  - `database_schema_large.png` (3x scale) - High-resolution version for projection

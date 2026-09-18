@@ -1,0 +1,99 @@
+%%{init: {'flowchart': {'curve': 'linear'}, 'erDiagram': {'direction': 'LR', 'maxWidth': 100}}}%%
+erDiagram
+    CLIENTS ||--o{ ACCOUNTS : owns
+    CLIENTS ||--o{ LOGIN_EVENTS : generates
+    CLIENTS ||--o{ TRADE_EVENTS : generates
+    ACCOUNTS ||--o{ ORDERS : contains
+    INSTRUMENTS ||--o{ ORDERS : referenced
+    INSTRUMENTS ||--o{ FACT_DAILY_INSTRUMENT : tracked
+    ORDERS ||--o{ FILLS : generates
+    TRADE_EVENTS ||--o{ ORDERS : references
+
+    CLIENTS {
+        uuid client_id PK
+        string email UK
+        string display_name
+        string status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ACCOUNTS {
+        uuid account_id PK
+        uuid client_id FK
+        string status
+        timestamp opened_at
+    }
+
+    INSTRUMENTS {
+        uuid instrument_id PK
+        string symbol UK
+        string name
+        string asset_class
+        string status
+    }
+
+    ORDERS {
+        uuid order_id PK
+        uuid account_id FK
+        uuid instrument_id FK
+        string side
+        decimal quantity
+        string idempotency_key
+        timestamp submitted_at
+    }
+
+    FILLS {
+        uuid fill_id PK
+        uuid order_id FK
+        decimal price
+        decimal quantity
+        string status
+        timestamp executed_at
+    }
+
+    TRADE_EVENTS {
+        uuid trade_event_id PK
+        uuid client_id FK
+        string entity_type
+        uuid entity_id
+        string action
+        timestamp occurred_at
+        jsonb details
+    }
+
+    LOGIN_EVENTS {
+        uuid login_event_id PK
+        uuid client_id FK
+        string email_attempted
+        string outcome
+        timestamp occurred_at
+        jsonb details
+    }
+
+    ADMIN_USERS {
+        uuid admin_user_id PK
+        string email UK
+        string display_name
+        string role
+        string status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    FACT_DAILY_INSTRUMENT {
+        date activity_date PK
+        uuid instrument_id FK "PK"
+        integer order_count
+        decimal filled_quantity
+        decimal gross_amount
+        timestamp updated_at
+    }
+
+    FACT_DAILY_PLATFORM {
+        date activity_date PK
+        integer order_count
+        decimal filled_quantity
+        decimal gross_amount
+        timestamp updated_at
+    }

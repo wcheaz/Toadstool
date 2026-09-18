@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant Client
+    participant OrderService
+    participant ValidationService
+    participant OrderRepository
+    participant EventService
+    participant Database
+
+    Client->>OrderService: submitOrder(accountId, instrumentId, side, quantity)
+    
+    OrderService->>ValidationService: validateAccount(accountId)
+    OrderService->>ValidationService: validateInstrument(instrumentId)
+    OrderService->>ValidationService: validateQuantity(quantity)
+    
+    alt Validation Successful
+        ValidationService-->>OrderService: All validations passed ✓
+        
+        OrderService->>OrderRepository: createOrder(Order)
+        OrderRepository->>Database: INSERT INTO orders
+        Database-->>OrderRepository: orderId
+        OrderRepository-->>OrderService: Order created
+        
+        OrderService->>EventService: recordTradeEvent(clientId, ORDER, orderId, "SUBMITTED")
+        EventService->>Database: INSERT INTO trade_events
+        Database-->>EventService: success
+        EventService-->>OrderService: event recorded
+        
+        OrderService-->>Client: Order confirmed (orderId)
+        
+    else Validation Failed
+        ValidationService-->>OrderService: Validation error ✗
+        
+        OrderService->>EventService: recordTradeEvent(clientId, ORDER, null, "REJECTED")
+        EventService->>Database: INSERT INTO trade_events
+        Database-->>EventService: success
+        EventService-->>OrderService: event recorded
+        
+        OrderService-->>Client: Order rejected (error message)
+    end
