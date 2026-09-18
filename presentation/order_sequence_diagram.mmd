@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant Client
+    participant OrderService
+    participant ValidationService
+    participant OrderRepository
+    participant EventService
+    participant Database
+
+    Client->>OrderService: submitOrder(accountId, instrumentId, side, quantity)
+    
+    OrderService->>ValidationService: validateAccount(accountId)
+    ValidationService-->>OrderService: Account valid ✓
+    
+    OrderService->>ValidationService: validateInstrument(instrumentId)
+    ValidationService-->>OrderService: Instrument tradeable ✓
+    
+    OrderService->>ValidationService: validateQuantity(quantity)
+    ValidationService-->>OrderService: Quantity valid ✓
+    
+    OrderService->>OrderRepository: createOrder(Order)
+    OrderRepository->>Database: INSERT INTO orders
+    Database-->>OrderRepository: orderId
+    OrderRepository-->>OrderService: Order created
+    
+    OrderService->>EventService: recordTradeEvent(clientId, ORDER, orderId, "SUBMITTED")
+    EventService->>Database: INSERT INTO trade_events
+    Database-->>EventService: success
+    EventService-->>OrderService: event recorded
+    
+    OrderService-->>Client: Order confirmed (orderId)
+    
+    Note over OrderService,Database: Optional: Order matching & execution
+    
+    OrderService->>OrderService: matchOrder(orderId)
+    OrderService->>OrderRepository: createFill(Fill)
+    OrderRepository->>Database: INSERT INTO fills
+    Database-->>OrderRepository: fillId
+    
+    OrderService->>EventService: recordTradeEvent(clientId, FILL, fillId, "EXECUTED")
+    EventService->>Database: INSERT INTO trade_events
+    Database-->>EventService: success
+    EventService-->>OrderService: event recorded
+    
+    OrderService-->>Client: Order filled (fillId, price, quantity)

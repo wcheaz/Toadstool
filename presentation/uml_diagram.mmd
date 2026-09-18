@@ -1,0 +1,123 @@
+%%{init: {'flowchart': {'curve': 'linear'}, 'classDiagram': {'direction': 'LR'}}}%%
+classDiagram
+    class Client {
+        - clientId: UUID
+        - email: String
+        - displayName: String
+        - status: ClientStatus
+        - createdAt: OffsetDateTime
+        - updatedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class Account {
+        - accountId: UUID
+        - clientId: UUID
+        - status: AccountStatus
+        - openedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class Instrument {
+        - instrumentId: UUID
+        - symbol: String
+        - name: String
+        - assetClass: AssetClass
+        - status: InstrumentStatus
+        + getInstrumentId() UUID
+        + setInstrumentId(UUID)
+        + getSymbol() String
+        + setSymbol(String)
+        + getName() String
+        + setName(String)
+        + getAssetClass() AssetClass
+        + setters/setters
+        - quantity: BigDecimal
+        - idempotencyKey: String
+        - submittedAt: OffsetDateTime
+        + getOrderId() UUID
+        + setOrderId(UUID)
+        + getAccountId() UUID
+        + setAccountId(UUID)
+        + getInstrumentId() UUID
+        + setInstrumentId(UUID)
+        + getSide() OrderSide
+        + setSide(OrderSide)
+        + getQuantity() BigDecimal
+        + setQuantity(BigDecimal)
+        + getIdempotencyKey() String
+        + setIdempotencyKey(String)
+        + getSubmittedAt() OffsetDateTime
+        + setSubmittedAt(OffsetDateTime)
+    }
+
+    class Fill {
+        - fillId: UUID
+        - orderId: UUID
+        - price: BigDecimal
+        - quantity: BigDecimal
+        - status: FillStatus
+        - executedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class AdminUser {
+        - adminUserId: UUID
+        - email: String
+        - displayName: String
+        - role: AdminRole
+        - status: AdminUserStatus
+        - createdAt: OffsetDateTime
+        - updatedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class LoginEvent {
+        - loginEventId: UUID
+        - clientId: UUID
+        - emailAttempted: String
+        - outcome: LoginOutcome
+        - occurredAt: OffsetDateTime
+        - details: String
+        + getters/setters
+    }
+
+    class TradeEvent {
+        - tradeEventId: UUID
+        - clientId: UUID
+        - entityType: TradeEventEntityType
+        - entityId: UUID
+        - action: String
+        - occurredAt: OffsetDateTime
+        - details: String
+        + getters/setters
+    }
+
+    class FactDailyInstrumentActivity {
+        - activityDate: LocalDate
+        - instrumentId: UUID
+        - orderCount: Integer
+        - filledQuantity: BigDecimal
+        - grossAmount: BigDecimal
+        - updatedAt: OffsetDateTime
+        + getActivityDate() LocalDate
+        + setActivityDate(LocalDate)
+        + getInstrumentId() UUID
+        + setInstrumentId(UUID)
+        + getOrderCount() Integer
+        + setOrderCount(Integer)
+        + getFilledQuantity() BigDecimal
+        + setFilledQuantity(BigDecimal)
+        + getGrossAmount() BigDecimal
+        + setGrossAmount(BigDecimal)
+        + getUpdatedAt() OffsetDateTime
+        + setUpdatedAt(OffsetDateTime)
+    }
+ters/settersal
+        + setFilledQuantity(BigDecimal)
+        + getGrossAmount() BigDecimal
+        + setGrossAmount(BigDecimal)
+        + getUpdatedAt() OffsetDateTime
+        + setUpdatedAt(OffsetDateTime)
+    }
+ters/setters
