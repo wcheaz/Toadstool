@@ -1,1 +1,15 @@
 target/
+# Spring Boot application properties with credentials
+src/main/resources/application.yml
+src/main/resources/application.properties
+src/test/resources/application.yml
+src/test/resources/application.properties
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.class

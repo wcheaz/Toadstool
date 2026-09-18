@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-psql -U postgres -d Toadstool -f restart_database.sql
+psql -U postgres -d Toadstool -f db/restart_database.sql
 ```
 
 This command drops all schemas, recreates the database structure, and inserts comprehensive test data (25 clients, 120 orders, ~96 fills).

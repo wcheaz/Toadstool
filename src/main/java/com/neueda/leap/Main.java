@@ -1,8 +1,15 @@
 package com.neueda.leap;
 
-// Main.java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.mybatis.spring.annotation.MapperScan;
+
+@SpringBootApplication
+@MapperScan("com.neueda.leap.mapper")
 public class Main {
-   public static void main(String[] args) {
-       System.out.println("Hello, World!"); // Prints "Hello, World!" to the console
-   }
+
+    public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
+    }
+
 }

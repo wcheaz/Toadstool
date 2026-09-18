@@ -1,6 +1,6 @@
 -- Test data insertion script
 -- Populates the database with realistic test data for development and testing
--- Includes: 20+ clients, trading accounts, instruments, orders, and fills
+-- Includes: clients, accounts, instruments, orders, fills, admin users, and analytics data
 
 BEGIN;
 
@@ -73,6 +73,19 @@ FROM (
 JOIN trading.accounts a ON account_expansion.account_id = a.account_id
 CROSS JOIN LATERAL (SELECT instrument_id FROM trading.instruments ORDER BY random() LIMIT 1) i;
 
+-- Add specific test orders with known properties for testing
+INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key, submitted_at) VALUES
+-- Large BUY order for Apple
+((SELECT account_id FROM trading.accounts LIMIT 1), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'AAPL'), 'BUY', 1000, 'TEST-BUY-AAPL-1000', now() - interval '5 days'),
+-- Large SELL order for Microsoft
+((SELECT account_id FROM trading.accounts LIMIT 1 OFFSET 1), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'MSFT'), 'SELL', 500, 'TEST-SELL-MSFT-500', now() - interval '3 days'),
+-- Crypto BUY order for Bitcoin
+((SELECT account_id FROM trading.accounts LIMIT 1 OFFSET 2), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC/USD'), 'BUY', 0.5, 'TEST-BUY-BTC-0.5', now() - interval '2 days'),
+-- FX order for EUR/USD
+((SELECT account_id FROM trading.accounts LIMIT 1 OFFSET 3), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'EUR/USD'), 'BUY', 100000, 'TEST-BUY-EUR-100K', now() - interval '1 day'),
+-- Small order for ETF
+((SELECT account_id FROM trading.accounts LIMIT 1 OFFSET 4), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'SPY'), 'BUY', 10, 'TEST-BUY-SPY-10', now() - interval '12 hours');
+
 -- Create fills for the orders (80% fill rate to have some open orders)
 WITH order_subset AS (
   SELECT order_id, random() < 0.8 as should_fill
@@ -144,5 +157,40 @@ SELECT
 FROM trading.clients c
 CROSS JOIN generate_series(1, 3) -- 3 login events per client
 ORDER BY random();
+
+-- Add admin users (internal staff for dashboard and reporting)
+INSERT INTO trading.admin_users (email, display_name, role, status) VALUES
+('david.admin@neueda.com', 'David Kumar', 'ADMIN', 'ACTIVE'),
+('priya.analyst@neueda.com', 'Priya Sharma', 'ANALYST', 'ACTIVE'),
+('john.super@neueda.com', 'John Supervisor', 'ADMIN', 'ACTIVE'),
+('sarah.analyst@neueda.com', 'Sarah Johnson', 'ANALYST', 'ACTIVE'),
+('michael.admin@neueda.com', 'Michael Chen', 'ADMIN', 'ACTIVE');
+
+-- Populate analytics.fact_daily_instrument_activity - rollup of daily trading by instrument
+INSERT INTO analytics.fact_daily_instrument_activity (activity_date, instrument_id, order_count, filled_quantity, gross_amount, updated_at)
+SELECT
+  date_trunc('day', o.submitted_at)::date as activity_date,
+  o.instrument_id,
+  COUNT(DISTINCT o.order_id)::integer as order_count,
+  COALESCE(SUM(f.quantity), 0)::numeric(28,10) as filled_quantity,
+  COALESCE(SUM(f.price * f.quantity), 0)::numeric(28,10) as gross_amount,
+  now()::timestamptz as updated_at
+FROM trading.orders o
+LEFT JOIN trading.fills f ON o.order_id = f.order_id AND f.status = 'Filled'
+GROUP BY activity_date, o.instrument_id
+ORDER BY activity_date DESC;
+
+-- Populate analytics.fact_daily_platform_activity - rollup of daily trading across entire platform
+INSERT INTO analytics.fact_daily_platform_activity (activity_date, order_count, filled_quantity, gross_amount, updated_at)
+SELECT
+  date_trunc('day', o.submitted_at)::date as activity_date,
+  COUNT(DISTINCT o.order_id)::integer as order_count,
+  COALESCE(SUM(f.quantity), 0)::numeric(28,10) as filled_quantity,
+  COALESCE(SUM(f.price * f.quantity), 0)::numeric(28,10) as gross_amount,
+  now()::timestamptz as updated_at
+FROM trading.orders o
+LEFT JOIN trading.fills f ON o.order_id = f.order_id AND f.status = 'Filled'
+GROUP BY activity_date
+ORDER BY activity_date DESC;
 
 COMMIT;
