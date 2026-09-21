@@ -70,9 +70,9 @@ public class FillMapperTest {
             assertNotNull(fill.getFillId());
             assertTrue(fill.getPrice().signum() >= 0);
             assertTrue(fill.getQuantity().signum() > 0);
-            assertTrue(fill.getStatus().equals("Filled") || 
-                      fill.getStatus().equals("Failed") || 
-                      fill.getStatus().equals("Pending"));
+            assertTrue(fill.getStatus() == FillStatus.Filled || 
+                      fill.getStatus() == FillStatus.Failed || 
+                      fill.getStatus() == FillStatus.Pending);
             assertNotNull(fill.getExecutedAt());
         });
     }

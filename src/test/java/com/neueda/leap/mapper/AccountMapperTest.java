@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class AccountMapperTest {
 
     @Autowired
@@ -28,7 +31,7 @@ public class AccountMapperTest {
     public void setUp() {
         // Get a test client ID
         Client client = clientMapper.selectClientByEmail("alice.johnson@example.com");
-        assertNotNull(client);
+        assertNotNull(client, "Client 'alice.johnson@example.com' not found - check database migration");
         testClientId = client.getClientId();
     }
 
@@ -71,6 +74,39 @@ public class AccountMapperTest {
     public void testSelectAccountByIdNotFound() {
         Account account = accountMapper.selectAccountById(UUID.randomUUID());
         assertNull(account);
+    }
+
+    @Test
+    public void testTotalAccountsInDatabase() {
+        // Check if ANY accounts exist at all
+        List<Account> allAccounts = accountMapper.selectAccountsByStatus(AccountStatus.ACTIVE, 100000, 0);
+        System.out.println("TOTAL ACTIVE accounts in database: " + (allAccounts != null ? allAccounts.size() : "null"));
+        
+        assertTrue(allAccounts != null && allAccounts.size() > 0, "NO ACCOUNTS IN DATABASE");
+        
+        if (allAccounts.size() > 0) {
+            System.out.println("First account clientId: " + allAccounts.get(0).getClientId());
+            System.out.println("First account accountId: " + allAccounts.get(0).getAccountId());
+        }
+    }
+
+    @Test
+    public void testClientIdMatching() {
+        System.out.println("testClientId from setUp: " + testClientId);
+        System.out.println("testClientId type: " + (testClientId == null ? "null" : testClientId.getClass().getName()));
+        
+        // Get first account from DB
+        List<Account> allAccounts = accountMapper.selectAccountsByStatus(AccountStatus.ACTIVE, 1, 0);
+        if (allAccounts.size() > 0) {
+            Account firstAccount = allAccounts.get(0);
+            System.out.println("First account in DB - clientId: " + firstAccount.getClientId());
+            System.out.println("First account in DB - clientId type: " + firstAccount.getClientId().getClass().getName());
+            System.out.println("Do they match? " + testClientId.equals(firstAccount.getClientId()));
+        }
+        
+        // Now try to query for accounts with testClientId
+        List<Account> accountsForTestClient = accountMapper.selectAccountsByClientId(testClientId, 10, 0);
+        System.out.println("Accounts found for testClientId: " + (accountsForTestClient == null ? "null" : accountsForTestClient.size()));
     }
 
     @Test
