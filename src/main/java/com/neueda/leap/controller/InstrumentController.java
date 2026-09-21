@@ -16,8 +16,11 @@ import java.util.UUID;
 @RequestMapping("/api/instruments")
 public class InstrumentController {
 
-    @Autowired
-    private InstrumentMapper instrumentMapper;
+    private final InstrumentMapper instrumentMapper;
+
+    public InstrumentController(InstrumentMapper instrumentMapper) {
+        this.instrumentMapper = instrumentMapper;
+    }
 
     @GetMapping("/{id}")
     public Instrument getInstrument(@PathVariable UUID id) {

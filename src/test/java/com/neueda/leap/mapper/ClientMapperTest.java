@@ -2,7 +2,6 @@ package com.neueda.leap.mapper;
 
 import com.neueda.leap.Client;
 import com.neueda.leap.enums.ClientStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
