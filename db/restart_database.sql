@@ -6,6 +6,9 @@
 DROP SCHEMA IF EXISTS trading CASCADE;
 DROP SCHEMA IF EXISTS analytics CASCADE;
 
+-- Drop Flyway migration history so migrations re-run on next test startup
+DROP TABLE IF EXISTS public.flyway_schema_history CASCADE;
+
 -- Recreate schema from V1__init.sql
 CREATE SCHEMA IF NOT EXISTS trading; -- OLTP: normalized operational tables
 CREATE SCHEMA IF NOT EXISTS analytics; -- OLAP skeleton for reporting; populated from Week 4 onward
@@ -226,25 +229,53 @@ INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempoten
 -- Small order for ETF - alice.johnson account (third order for alice)
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'SPY'), 'BUY', 10, 'TEST-BUY-SPY-10', now() - interval '12 hours');
 
--- Create fills for the orders (80% fill rate to have some open orders)
-WITH order_subset AS (
-  SELECT order_id, random() < 0.8 as should_fill
-  FROM trading.orders
-)
+-- Additional test orders for alice.johnson (V3 migration data)
+-- SELL order for Google - alice.johnson account (fourth order for alice)
+INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key, submitted_at) VALUES
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'GOOGL'), 'SELL', 50, 'TEST-SELL-GOOGL-50', now() - interval '6 hours');
+
+-- BUY order for Tesla - alice.johnson account (fifth order for alice)
+INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key, submitted_at) VALUES
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'TSLA'), 'BUY', 25, 'TEST-BUY-TSLA-25', now() - interval '2 hours');
+
+-- Create fills for the specific test orders (deterministic for testing)
 INSERT INTO trading.fills (order_id, price, quantity, status, executed_at)
 SELECT
   o.order_id,
-  (random() * 5000 + 10)::numeric(28,10) as price,
-  o.quantity * (0.5 + random() * 0.5) as quantity, -- Partial fills possible
-  CASE
-    WHEN random() < 0.05 THEN 'Failed'
-    WHEN random() < 0.10 THEN 'Pending'
-    ELSE 'Filled'
-  END as status,
-  o.submitted_at + (random() * interval '1 hour') as executed_at
+  2500.00::numeric(28,10) as price,
+  o.quantity * 0.75 as quantity,
+  'Filled'::varchar as status,
+  o.submitted_at + interval '30 minutes' as executed_at
 FROM trading.orders o
-JOIN order_subset os ON o.order_id = os.order_id
-WHERE os.should_fill = true;
+WHERE o.idempotency_key IN (
+  'TEST-BUY-AAPL-1000',
+  'TEST-SELL-MSFT-500',
+  'TEST-BUY-BTC-0.5',
+  'TEST-BUY-EUR-100K',
+  'TEST-BUY-SPY-10',
+  'TEST-SELL-GOOGL-50',
+  'TEST-BUY-TSLA-25'
+);
+
+-- Create fills for all remaining orders (80% fill rate for realistic test data)
+INSERT INTO trading.fills (order_id, price, quantity, status, executed_at)
+SELECT
+  o.order_id,
+  2500.00::numeric(28,10) as price,
+  o.quantity * 0.75 as quantity,
+  'Filled'::varchar as status,
+  o.submitted_at + interval '30 minutes' as executed_at
+FROM trading.orders o
+WHERE o.idempotency_key NOT IN (
+  'TEST-BUY-AAPL-1000',
+  'TEST-SELL-MSFT-500',
+  'TEST-BUY-BTC-0.5',
+  'TEST-BUY-EUR-100K',
+  'TEST-BUY-SPY-10',
+  'TEST-SELL-GOOGL-50',
+  'TEST-BUY-TSLA-25'
+)
+AND (hashtext(o.order_id::text)::int % 10) < 8;  -- 80% of orders get fills
 
 -- Create corresponding trade_events for audit trail
 INSERT INTO trading.trade_events (client_id, entity_type, entity_id, action, occurred_at, details)

@@ -12,21 +12,16 @@ INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempoten
 INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key, submitted_at) VALUES
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'TSLA'), 'BUY', 25, 'TEST-BUY-TSLA-25', now() - interval '2 hours');
 
--- Create fills for these new orders (80% fill rate like the original data)
+-- Create fills for these new orders (deterministic for testing)
 INSERT INTO trading.fills (order_id, price, quantity, status, executed_at)
 SELECT
   o.order_id,
-  (random() * 5000 + 10)::numeric(28,10) as price,
-  o.quantity * (0.5 + random() * 0.5) as quantity,
-  CASE
-    WHEN random() < 0.05 THEN 'Failed'
-    WHEN random() < 0.10 THEN 'Pending'
-    ELSE 'Filled'
-  END as status,
-  o.submitted_at + (random() * interval '1 hour') as executed_at
+  2500.00::numeric(28,10) as price,
+  o.quantity * 0.75 as quantity,
+  'Filled'::varchar as status,
+  o.submitted_at + interval '30 minutes' as executed_at
 FROM trading.orders o
-WHERE o.idempotency_key IN ('TEST-SELL-GOOGL-50', 'TEST-BUY-TSLA-25')
-AND random() < 0.8;
+WHERE o.idempotency_key IN ('TEST-SELL-GOOGL-50', 'TEST-BUY-TSLA-25');
 
 -- Create trade_events for these new orders
 INSERT INTO trading.trade_events (client_id, entity_type, entity_id, action, occurred_at, details)
