@@ -1,12 +1,12 @@
- Failures: 
+[ERROR] Failures: 
 [ERROR]   AccountMapperTest.testAccountHasTimestamps:144 expected: <false> but was: <true>
 [ERROR]   AccountMapperTest.testAccountPagination:136 expected: not equal but was: <null>
 [ERROR]   AccountMapperTest.testCountAccountsByClientId:54 expected: <true> but was: <false>
 [ERROR]   AccountMapperTest.testSelectAccountById:62 expected: <false> but was: <true>
 [ERROR]   AccountMapperTest.testSelectAccountsByClientId:42 expected: <false> but was: <true>
-[ERROR]   AccountMapperTest.testSelectAccountsByStatus:118->lambda$1:120 expected: not <null>
+[ERROR]   AccountMapperTest.testSelectAccountsByStatus:118->lambda$testSelectAccountsByStatus$0:120 expected: not <null>
 [ERROR]   ClientMapperTest.testClientPagination:79 expected: not equal but was: <null>
-[ERROR]   ClientMapperTest.testSelectAllClients:60->lambda$0:61 expected: not <null>
+[ERROR]   ClientMapperTest.testSelectAllClients:60->lambda$testSelectAllClients$0:61 expected: not <null>
 [ERROR]   ClientMapperTest.testSelectClientById:49 expected: not <null>
 [ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
 [ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
@@ -32,8 +32,8 @@
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  12.286 s
-[INFO] Finished at: 2026-09-22T20:09:20Z
+[INFO] Total time:  16.004 s
+[INFO] Finished at: 2026-09-22T20:41:32Z
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.6:test (default-test) on project team-skeleton: There are test failures.
 [ERROR] 
@@ -44,3 +44,5 @@
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
 [ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
