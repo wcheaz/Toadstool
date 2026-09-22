@@ -78,34 +78,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.10.0</version>
-                <configuration>
-                    <url>jdbc:postgresql://localhost:5432/Toadstool</url>
-                    <user>postgres</user>
-                    <password>n3u3d4!</password>
-                    <locations>filesystem:src/test/resources/db/migration</locations>
-                    <cleanDisabled>false</cleanDisabled>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>flyway-clean-before-test</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>flyway-migrate-before-test</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>migrate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>
