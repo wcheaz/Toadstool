@@ -1,0 +1,46 @@
+ Failures: 
+[ERROR]   AccountMapperTest.testAccountHasTimestamps:144 expected: <false> but was: <true>
+[ERROR]   AccountMapperTest.testAccountPagination:136 expected: not equal but was: <null>
+[ERROR]   AccountMapperTest.testCountAccountsByClientId:54 expected: <true> but was: <false>
+[ERROR]   AccountMapperTest.testSelectAccountById:62 expected: <false> but was: <true>
+[ERROR]   AccountMapperTest.testSelectAccountsByClientId:42 expected: <false> but was: <true>
+[ERROR]   AccountMapperTest.testSelectAccountsByStatus:118->lambda$1:120 expected: not <null>
+[ERROR]   ClientMapperTest.testClientPagination:79 expected: not equal but was: <null>
+[ERROR]   ClientMapperTest.testSelectAllClients:60->lambda$0:61 expected: not <null>
+[ERROR]   ClientMapperTest.testSelectClientById:49 expected: not <null>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   FillMapperTest.setUp:43 expected: <false> but was: <true>
+[ERROR]   InstrumentMapperTest.testPagination:90 expected: not equal but was: <null>
+[ERROR]   InstrumentMapperTest.testSelectInstrumentById:60 expected: not <null>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR]   OrderMapperTest.setUp:39 expected: <false> but was: <true>
+[ERROR] Errors: 
+[ERROR]   AccountMapperTest.testClientIdMatching:103 NullPointer Cannot invoke "Object.getClass()" because the return value of "com.neueda.leap.Account.getClientId()" is null
+[INFO] 
+[ERROR] Tests run: 137, Failures: 25, Errors: 1, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  12.286 s
+[INFO] Finished at: 2026-09-22T20:09:20Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.6:test (default-test) on project team-skeleton: There are test failures.
+[ERROR] 
+[ERROR] See C:\Users\Administrator\Toadstool\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
