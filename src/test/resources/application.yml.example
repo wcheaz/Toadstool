@@ -21,6 +21,7 @@ spring:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.neueda.leap
+  type-handlers-package: com.neueda.leap.mapper
   configuration:
     map-underscore-to-camel-case: true
 
