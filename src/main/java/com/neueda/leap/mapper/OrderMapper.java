@@ -4,6 +4,8 @@ import com.neueda.leap.Order;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Update;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,4 +23,11 @@ public interface OrderMapper {
 
     @Select("SELECT COUNT(*) FROM trading.orders WHERE account_id = #{accountId}")
     int countOrdersByAccountId(@Param("accountId") UUID accountId);
+
+    @Insert("INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key) VALUES (#{accountId}, #{instrumentId}, #{side}, #{quantity}, #{idempotencyKey})")
+    void insertOrder(@Param("accountId") UUID accountId, @Param("instrumentId") UUID instrumentId, 
+                     @Param("side") String side, @Param("quantity") String quantity, @Param("idempotencyKey") String idempotencyKey);
+
+    @Update("UPDATE trading.orders SET status = #{status} WHERE order_id = #{orderId}")
+    void updateOrderStatus(@Param("orderId") UUID orderId, @Param("status") String status);
 }
