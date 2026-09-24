@@ -29,7 +29,7 @@ class InstrumentTest {
         assertNull(instrument.getSymbol());
         assertNull(instrument.getName());
         assertNull(instrument.getAssetClass());
-        assertNull(instrument.getStatus());
+        assertEquals(InstrumentStatus.TRADABLE, instrument.getStatus());
     }
 
     @Test
