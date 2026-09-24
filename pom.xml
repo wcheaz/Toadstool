@@ -74,6 +74,22 @@
     <build>
         <finalName>team-skeleton</finalName>
         <plugins>
+            <!-- Maven Surefire Plugin for Tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Allow environment variables to be passed to tests -->
+                    <systemPropertyVariables>
+                        <DB_HOST>${env.DB_HOST}</DB_HOST>
+                        <DB_PORT>${env.DB_PORT}</DB_PORT>
+                        <DB_NAME>${env.DB_NAME}</DB_NAME>
+                        <DB_USERNAME>${env.DB_USERNAME}</DB_USERNAME>
+                        <DB_PASSWORD>${env.DB_PASSWORD}</DB_PASSWORD>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
