@@ -22,21 +22,20 @@ services:
     networks:
       - toadstool-network
 
-  # Uncomment below once you have a built JAR in target/
-   api:
-     build: .
-     container_name: toadstool-api
-     environment:
-       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/toadstool_db
-       SPRING_DATASOURCE_USERNAME: toadstool_user
-       SPRING_DATASOURCE_PASSWORD: your_secure_password_here
-     ports:
-       - "8080:8080"
-     depends_on:
-       postgres:
-         condition: service_healthy
-     networks:
-       - toadstool-network
+  api:
+    build: .
+    container_name: toadstool-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/toadstool_db
+      SPRING_DATASOURCE_USERNAME: toadstool_user
+      SPRING_DATASOURCE_PASSWORD: your_secure_password_here
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - toadstool-network
 
 volumes:
   postgres_data:
