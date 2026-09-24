@@ -14,6 +14,7 @@ public class Instrument {
     
     // Constructors
     public Instrument() {
+        this.status = InstrumentStatus.TRADABLE;
     }
     
     public Instrument(String symbol, String name, AssetClass assetClass, InstrumentStatus status) {

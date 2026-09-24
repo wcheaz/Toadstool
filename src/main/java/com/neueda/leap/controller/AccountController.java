@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * REST Controller for Account endpoints
  */
 @RestController
-@RequestMapping("/api/accounts")
+@RequestMapping("/api")
 public class AccountController {
 
     private final AccountService accountService;
@@ -33,9 +33,15 @@ public class AccountController {
      * POST /api/accounts
      * Create a new trading account for a client
      */
-    @PostMapping
-    public ResponseEntity<AccountResponse> createAccount(@RequestParam UUID clientId) {
+    @PostMapping("/accounts")
+    public ResponseEntity<AccountResponse> createAccount(@RequestBody CreateAccountRequest request) {
         try {
+            if (request == null || request.getClientId() == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            UUID clientId = request.getClientId();
+
             // Verify client exists
             if (clientService.getClientById(clientId) == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -54,7 +60,7 @@ public class AccountController {
      * GET /api/accounts/{accountId}
      * Retrieve account details
      */
-    @GetMapping("/{accountId}")
+    @GetMapping("/accounts/{accountId}")
     public ResponseEntity<AccountResponse> getAccount(@PathVariable UUID accountId) {
         Account account = accountService.getAccountById(accountId);
         if (account == null) {
@@ -67,7 +73,7 @@ public class AccountController {
      * GET /api/clients/{clientId}/accounts
      * List accounts for a client
      */
-    @GetMapping("/client/{clientId}")
+    @GetMapping("/clients/{clientId}/accounts")
     public ResponseEntity<PaginatedResponse<AccountResponse>> listAccountsByClient(
             @PathVariable UUID clientId,
             @RequestParam(defaultValue = "50") int limit,
@@ -104,7 +110,7 @@ public class AccountController {
      * Get current positions and cash balance
      * (Stub implementation - returns empty holdings for now)
      */
-    @GetMapping("/{accountId}/holdings")
+    @GetMapping("/accounts/{accountId}/holdings")
     public ResponseEntity<HoldingsResponse> getHoldings(@PathVariable UUID accountId) {
         try {
             Account account = accountService.getAccountById(accountId);
@@ -137,5 +143,17 @@ public class AccountController {
                 account.getStatus() != null ? account.getStatus().toString() : "ACTIVE",
                 account.getOpenedAt()
         );
+    }
+
+    public static class CreateAccountRequest {
+        private UUID clientId;
+
+        public UUID getClientId() {
+            return clientId;
+        }
+
+        public void setClientId(UUID clientId) {
+            this.clientId = clientId;
+        }
     }
 }

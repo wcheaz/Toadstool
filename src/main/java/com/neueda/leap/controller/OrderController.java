@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * Handles order placement, retrieval, and listing
  */
 @RestController
-@RequestMapping("/api/accounts/{accountId}/orders")
+@RequestMapping("/api")
 public class OrderController {
 
     private final OrderService orderService;
@@ -37,7 +37,7 @@ public class OrderController {
      * POST /api/accounts/{accountId}/orders
      * Place a new buy/sell order
      */
-    @PostMapping
+    @PostMapping("/accounts/{accountId}/orders")
     public ResponseEntity<OrderResponse> placeOrder(
             @PathVariable UUID accountId,
             @RequestBody PlaceOrderRequest request,
@@ -83,19 +83,12 @@ public class OrderController {
      * GET /api/orders/{orderId}
      * Retrieve a single order by ID
      */
-    @GetMapping("/{orderId}")
-    public ResponseEntity<OrderResponse> getOrder(
-            @PathVariable UUID accountId,
-            @PathVariable UUID orderId) {
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<OrderResponse> getOrder(@PathVariable UUID orderId) {
 
         Order order = orderService.getOrderById(orderId);
         if (order == null) {
             return ResponseEntity.notFound().build();
-        }
-
-        // Verify order belongs to account
-        if (!order.getAccountId().equals(accountId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         return ResponseEntity.ok(mapToOrderResponse(order));
@@ -105,7 +98,7 @@ public class OrderController {
      * GET /api/accounts/{accountId}/orders
      * List orders for an account with pagination
      */
-    @GetMapping
+    @GetMapping("/accounts/{accountId}/orders")
     public ResponseEntity<PaginatedResponse<OrderResponse>> listOrders(
             @PathVariable UUID accountId,
             @RequestParam(defaultValue = "50") int limit,
@@ -142,7 +135,7 @@ public class OrderController {
      * Get indicative price for a hypothetical order
      * (Stub implementation - returns fixed price for now)
      */
-    @GetMapping("/quote-preview")
+    @GetMapping("/accounts/{accountId}/quote-preview")
     public ResponseEntity<QuotePreviewResponse> getQuotePreview(
             @PathVariable UUID accountId,
             @RequestParam UUID instrumentId,

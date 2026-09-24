@@ -92,11 +92,11 @@ public class AdminUserController {
             int totalCount;
 
             if (role != null && !role.isEmpty()) {
-                adminUsers = adminUserService.listAdminUsersByRole(role);
-                totalCount = adminUsers.size();
+                adminUsers = adminUserService.listAdminUsersByRole(role, limit, offset);
+                totalCount = adminUserService.countAdminUsersByRole(role);
             } else {
-                adminUsers = adminUserService.listAllAdminUsers();
-                totalCount = adminUsers.size();
+                adminUsers = adminUserService.listAllAdminUsers(limit, offset);
+                totalCount = adminUserService.countAllAdminUsers();
             }
 
             List<AdminUserDto> responses = adminUsers.stream()

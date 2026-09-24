@@ -83,7 +83,7 @@ public class ClientController {
     @PutMapping("/{clientId}")
     public ResponseEntity<ClientResponse> updateClient(
             @PathVariable UUID clientId,
-            @RequestParam(required = false) String displayName) {
+            @RequestBody(required = false) UpdateClientRequest request) {
 
         try {
             Client client = clientService.getClientById(clientId);
@@ -91,6 +91,7 @@ public class ClientController {
                 return ResponseEntity.notFound().build();
             }
 
+            String displayName = request != null ? request.getDisplayName() : null;
             if (displayName != null && !displayName.isEmpty()) {
                 clientService.updateClientProfile(clientId, displayName);
                 // Refresh client from database
@@ -118,5 +119,17 @@ public class ClientController {
                 client.getCreatedAt(),
                 client.getUpdatedAt()
         );
+    }
+
+    public static class UpdateClientRequest {
+        private String displayName;
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public void setDisplayName(String displayName) {
+            this.displayName = displayName;
+        }
     }
 }

@@ -1,7 +1,11 @@
 package com.neueda.leap.controller;
 
 import com.neueda.leap.Instrument;
+import com.neueda.leap.InstrumentCreateRequest;
+import com.neueda.leap.InstrumentStatusUpdateRequest;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.enums.AssetClass;
+import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.service.InstrumentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,11 +63,11 @@ public class InstrumentController {
             int totalCount;
 
             if (status != null && !status.isEmpty()) {
-                instruments = instrumentService.listInstrumentsByStatus(status);
-                totalCount = instruments.size();
+                instruments = instrumentService.listInstrumentsByStatus(status, limit, offset);
+                totalCount = instrumentService.listInstrumentsByStatus(status).size();
             } else {
-                instruments = instrumentService.listAllInstruments();
-                totalCount = instruments.size();
+                instruments = instrumentService.listAllInstruments(limit, offset);
+                totalCount = instrumentService.countAllInstruments();
             }
 
             List<InstrumentDto> responses = instruments.stream()
@@ -83,7 +87,7 @@ public class InstrumentController {
      * Create a new instrument (admin-only)
      */
     @PostMapping
-    public ResponseEntity<InstrumentDto> createInstrument(@RequestBody CreateInstrumentRequest request) {
+    public ResponseEntity<InstrumentDto> createInstrument(@RequestBody InstrumentCreateRequest request) {
         try {
             // Validate input
             if (request.getSymbol() == null || request.getSymbol().trim().isEmpty()) {
@@ -92,14 +96,14 @@ public class InstrumentController {
             if (request.getName() == null || request.getName().trim().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
-            if (request.getAssetClass() == null || request.getAssetClass().trim().isEmpty()) {
+            if (request.getAssetClass() == null) {
                 return ResponseEntity.badRequest().build();
             }
 
             Instrument instrument = instrumentService.createInstrument(
                     request.getSymbol(),
                     request.getName(),
-                    request.getAssetClass()
+                    request.getAssetClass().toString()
             );
 
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -119,7 +123,7 @@ public class InstrumentController {
     @PatchMapping("/{instrumentId}/status")
     public ResponseEntity<InstrumentDto> updateInstrumentStatus(
             @PathVariable UUID instrumentId,
-            @RequestBody UpdateInstrumentStatusRequest request) {
+            @RequestBody InstrumentStatusUpdateRequest request) {
 
         try {
             Instrument instrument = instrumentService.getInstrumentById(instrumentId);
@@ -127,11 +131,11 @@ public class InstrumentController {
                 return ResponseEntity.notFound().build();
             }
 
-            if (request.getStatus() == null || request.getStatus().trim().isEmpty()) {
+            if (request.getStatus() == null) {
                 return ResponseEntity.badRequest().build();
             }
 
-            instrumentService.updateInstrumentStatus(instrumentId, request.getStatus());
+            instrumentService.updateInstrumentStatus(instrumentId, request.getStatus().toString());
 
             // Refresh from database
             instrument = instrumentService.getInstrumentById(instrumentId);
@@ -184,43 +188,5 @@ public class InstrumentController {
         public String getName() { return name; }
         public String getAssetClass() { return assetClass; }
         public String getStatus() { return status; }
-    }
-
-    /**
-     * Request DTO for creating an instrument
-     */
-    public static class CreateInstrumentRequest {
-        private String symbol;
-        private String name;
-        private String assetClass;
-
-        public CreateInstrumentRequest() {}
-        public CreateInstrumentRequest(String symbol, String name, String assetClass) {
-            this.symbol = symbol;
-            this.name = name;
-            this.assetClass = assetClass;
-        }
-
-        public String getSymbol() { return symbol; }
-        public void setSymbol(String symbol) { this.symbol = symbol; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getAssetClass() { return assetClass; }
-        public void setAssetClass(String assetClass) { this.assetClass = assetClass; }
-    }
-
-    /**
-     * Request DTO for updating instrument status
-     */
-    public static class UpdateInstrumentStatusRequest {
-        private String status;
-
-        public UpdateInstrumentStatusRequest() {}
-        public UpdateInstrumentStatusRequest(String status) {
-            this.status = status;
-        }
-
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
     }
 }
