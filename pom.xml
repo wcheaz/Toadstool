@@ -33,6 +33,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -68,27 +69,18 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- OpenAPI / Swagger Documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.0.4</version>
+        </dependency>
     </dependencies>
 
     <build>
         <finalName>team-skeleton</finalName>
         <plugins>
-            <!-- Maven Surefire Plugin for Tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <!-- Allow environment variables to be passed to tests -->
-                    <systemPropertyVariables>
-                        <DB_HOST>${env.DB_HOST}</DB_HOST>
-                        <DB_PORT>${env.DB_PORT}</DB_PORT>
-                        <DB_NAME>${env.DB_NAME}</DB_NAME>
-                        <DB_USERNAME>${env.DB_USERNAME}</DB_USERNAME>
-                        <DB_PASSWORD>${env.DB_PASSWORD}</DB_PASSWORD>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
