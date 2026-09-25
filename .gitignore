@@ -1,4 +1,9 @@
 target/
+
+# Environment variables with credentials
+.env
+.env.local
+
 # Spring Boot application properties with credentials
 src/main/resources/application.yml
 src/main/resources/application.properties

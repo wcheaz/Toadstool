@@ -3,9 +3,12 @@ spring:
     name: trading-platform
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/Toadstool
-    username: postgres
-    password: YOUR_PASSWORD_HERE
+    # Connects to shared VM database via SSH tunnel
+    # Prerequisites: SSH tunnel must be running:
+    # ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
+    url: jdbc:postgresql://localhost:5432/toadstool_db
+    username: ec2-user
+    password: your_secure_password_here
     driver-class-name: org.postgresql.Driver
 
   jpa:
