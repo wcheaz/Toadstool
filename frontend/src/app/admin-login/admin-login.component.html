@@ -1,0 +1,46 @@
+<div class="admin-login-container">
+  <div class="admin-login-card">
+    <h1 class="admin-login-title">Admin Login</h1>
+    
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #adminLoginForm="ngForm">
+      <div class="form-group">
+        <label for="username">Admin Username</label>
+        <input
+          type="text"
+          id="username"
+          class="form-control"
+          [(ngModel)]="username"
+          name="username"
+          placeholder="Enter your admin username"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Admin Password</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter your admin password"
+          required
+        />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Login</button>
+        <button type="button" class="btn btn-secondary" (click)="resetForm()">Clear</button>
+      </div>
+
+      <div class="form-footer">
+        <p><a routerLink="/login" class="user-link">Back to User Login</a></p>
+      </div>
+    </form>
+  </div>
+</div>
