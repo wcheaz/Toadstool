@@ -14,6 +14,7 @@ public class Order {
     private BigDecimal quantity;
     private String idempotencyKey;
     private OffsetDateTime submittedAt;
+    private BigDecimal totalPrice;
 
     // Constructors
     public Order() {
@@ -92,5 +93,13 @@ public class Order {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public BigDecimal getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(BigDecimal totalPrice) {
+        this.totalPrice = totalPrice;
     }
 }
