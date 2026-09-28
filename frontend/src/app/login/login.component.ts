@@ -28,7 +28,7 @@ export class LoginComponent {
     }
 
     // TODO: Replace with actual authentication service
-    console.log('Login attempt:', { username: this.username, password: this.password });
+    console.log('Login attempt for user:', this.username);
     
     // Store client name in localStorage
     localStorage.setItem('clientName', this.username);

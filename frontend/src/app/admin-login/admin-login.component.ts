@@ -26,7 +26,7 @@ export class AdminLoginComponent {
     }
 
     // TODO: Replace with actual admin authentication service
-    console.log('Admin login attempt:', { username: this.username, password: this.password });
+    console.log('Admin login attempt for user:', this.username);
     
     // Simulated successful login
     alert(`Welcome, Admin ${this.username}!`);
