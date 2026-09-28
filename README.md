@@ -64,11 +64,11 @@ Before running the application or tests, you need to configure environment varia
 
 2. Edit the `.env` file with your database connection details:
    ```env
-   DB_HOST=10.18.73.92
+   DB_HOST=<your-db-host>
    DB_PORT=5432
-   DB_NAME=toadstool_db
-   DB_USERNAME=toadstool_user
-   DB_PASSWORD=toadstool_password
+   DB_NAME=<your-db-name>
+   DB_USERNAME=<your-db-username>
+   DB_PASSWORD=<your-db-password>
    ```
 
 **Important:** The `.env` file is git-ignored and contains sensitive credentials. Never commit it to version control.
@@ -91,11 +91,11 @@ The following Spring Boot configuration files use environment variables with fal
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `DB_HOST` | PostgreSQL server hostname or IP | `10.18.73.92` or `localhost` |
+| `DB_HOST` | PostgreSQL server hostname or IP | `<your-db-host>` or `localhost` |
 | `DB_PORT` | PostgreSQL server port | `5432` |
-| `DB_NAME` | Database name | `toadstool_db` |
-| `DB_USERNAME` | Database username | `toadstool_user` |
-| `DB_PASSWORD` | Database password | `toadstool_password` |
+| `DB_NAME` | Database name | `<your-db-name>` |
+| `DB_USERNAME` | Database username | `<your-db-username>` |
+| `DB_PASSWORD` | Database password | `<your-db-password>` |
 
 # Testing
 
@@ -106,7 +106,7 @@ The test suite includes integration tests that connect to the PostgreSQL databas
 ### Prerequisites
 
 - SSH access to the VM: `ec2-user@10.18.73.92`
-- SSH credentials: password `n3u3da!`
+- SSH credentials configured (username and password)
 - `.env` file configured (see Setup/Initialization section)
 - Two terminal windows (one for tunnel, one for tests)
 
@@ -118,7 +118,7 @@ Open a PowerShell window and create a local port forward to the VM's PostgreSQL:
 ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
 ```
 
-When prompted, enter the SSH password: `n3u3da!`
+When prompted, enter your SSH password.
 
 **Important:** Keep this terminal window open while running tests. The SSH tunnel must remain active for tests to connect to the database. Do not close this window until tests are complete.
 
@@ -157,8 +157,8 @@ The `-L 5432:localhost:5432` flag creates a **local port forward**:
 When tests run through the tunnel:
 - **Local:** `127.0.0.1:5432` (where tests connect)
 - **Remote:** VM's `10.18.73.92:5432` (PostgreSQL container)
-- **Database:** `toadstool_db`
-- **User:** `toadstool_user`
+- **Database:** `<your-db-name>`
+- **User:** `<your-db-username>`
 - **Authentication:** SCRAM-SHA-256
 
 ### Test Execution
@@ -185,10 +185,10 @@ Example successful test run output:
 
 **Error: "FATAL: password authentication failed"**
 - Verify `.env` file has correct DB_USERNAME and DB_PASSWORD
-- Verify SSH credentials in Terminal 1 (ec2-user password)
-- Confirm toadstool_db container is running on the VM
+- Verify SSH credentials in Terminal 1
+- Confirm database container is running on the VM
 
 **Error: "Cannot obtain connection from database"**
 - Ensure SSH tunnel is established before running tests
 - Check that `.env` variables are set correctly
-- Verify network connectivity to VM at `10.18.73.92`
+- Verify network connectivity to your VM
