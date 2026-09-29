@@ -1,9 +1,9 @@
 package com.neueda.leap;
 
 import org.flywaydb.core.Flyway;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.TestContext;
-import org.springframework.test.context.TestExecutionListener;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 
 import javax.sql.DataSource;
@@ -16,6 +16,7 @@ import javax.sql.DataSource;
  */
 public class FlywayTestExecutionListener extends AbstractTestExecutionListener {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlywayTestExecutionListener.class);
     private static boolean initialized = false;
 
     @Override
@@ -29,6 +30,12 @@ public class FlywayTestExecutionListener extends AbstractTestExecutionListener {
     public void beforeTestClass(TestContext testContext) throws Exception {
         // Only initialize once per test run
         if (!initialized) {
+            if (testContext.getApplicationContext().getBeanNamesForType(DataSource.class).length == 0) {
+                LOGGER.debug("Skipping Flyway test initialization for {} because no DataSource bean is present",
+                        testContext.getTestClass().getName());
+                return;
+            }
+
             DataSource dataSource = testContext.getApplicationContext().getBean(DataSource.class);
             
             Flyway flyway = Flyway.configure()

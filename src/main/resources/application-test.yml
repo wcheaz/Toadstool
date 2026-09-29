@@ -1,11 +1,16 @@
+# Test configuration for JWT authentication testing
 spring:
   application:
-    name: trading-platform
+    name: trading-platform-test
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/Toadstool
+    url: jdbc:postgresql://localhost:5432/Toadstool_test
     username: postgres
-    password: YOUR_PASSWORD_HERE
+    password: n3u3d4!
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -21,7 +26,6 @@ spring:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.neueda.leap
-  type-handlers-package: com.neueda.leap.mapper
   configuration:
     map-underscore-to-camel-case: true
 
@@ -31,14 +35,10 @@ server:
 logging:
   level:
     root: INFO
-    com.neueda.leap: DEBUG
-    org.springframework.web: DEBUG
+    "[com.neueda.leap]": DEBUG
+    "[org.springframework.web]": DEBUG
 
+# JWT Authentication Configuration for Testing
 auth:
   jwt:
-    public-key: BASE64_X509_PUBLIC_KEY
-    private-key: BASE64_PKCS8_PRIVATE_KEY
-    issuer: toadstool
-    access-token-ttl-minutes: 60
-    refresh-token-ttl-days: 30
-    enabled: true
+    enabled: false

@@ -100,6 +100,30 @@ CREATE TABLE IF NOT EXISTS trading.login_events (
     details jsonb NOT NULL DEFAULT '{}'::jsonb -- Additional event details, e.g. failure reason
 );
 
+-- Username/password credentials tied to a specific trading account
+CREATE TABLE IF NOT EXISTS trading.account_credentials (
+    credential_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique credential identifier
+    account_id uuid NOT NULL REFERENCES trading.accounts(account_id) ON DELETE CASCADE, -- Account being authenticated
+    username varchar(80) NOT NULL UNIQUE, -- Login username
+    password_hash varchar(100) NOT NULL, -- BCrypt password hash
+    created_at timestamptz NOT NULL DEFAULT now(), -- Record creation timestamp
+    updated_at timestamptz NOT NULL DEFAULT now(), -- Record last update timestamp
+    last_login_at timestamptz -- Last successful login timestamp
+);
+
+-- Active JWT sessions; session_key_id is also the JWT jti claim
+CREATE TABLE IF NOT EXISTS trading.auth_sessions (
+    session_key_id uuid PRIMARY KEY, -- JWT session identifier
+    credential_id uuid NOT NULL REFERENCES trading.account_credentials(credential_id) ON DELETE CASCADE, -- Auth credential
+    account_id uuid NOT NULL REFERENCES trading.accounts(account_id) ON DELETE CASCADE, -- Account tied to the session
+    refresh_token_hash varchar(128) NOT NULL UNIQUE, -- SHA-256 hash of the refresh token
+    issued_at timestamptz NOT NULL DEFAULT now(), -- Session issue time
+    access_token_expires_at timestamptz NOT NULL, -- Access token expiry
+    refresh_token_expires_at timestamptz NOT NULL, -- Refresh token expiry
+    revoked_at timestamptz, -- Revocation timestamp
+    last_used_at timestamptz NOT NULL DEFAULT now() -- Last time the session was used
+);
+
 -- Daily trading activity per instrument, summed across every client; read by the admin dashboard
 -- instead of live trading tables (BR-16)
 CREATE TABLE IF NOT EXISTS analytics.fact_daily_instrument_activity (
@@ -131,6 +155,16 @@ CREATE INDEX IF NOT EXISTS ix_trade_events_entity
     ON trading.trade_events (entity_type, entity_id, occurred_at); -- audit trail lookup for a specific order or fill
 CREATE INDEX IF NOT EXISTS ix_login_events_client
     ON trading.login_events (client_id, occurred_at); -- a client's login history in recency order
+CREATE INDEX IF NOT EXISTS ix_account_credentials_account
+    ON trading.account_credentials (account_id);
+CREATE INDEX IF NOT EXISTS ix_account_credentials_username
+    ON trading.account_credentials (username);
+CREATE INDEX IF NOT EXISTS ix_auth_sessions_account
+    ON trading.auth_sessions (account_id, revoked_at);
+CREATE INDEX IF NOT EXISTS ix_auth_sessions_refresh_hash
+    ON trading.auth_sessions (refresh_token_hash);
+CREATE INDEX IF NOT EXISTS ix_auth_sessions_active
+    ON trading.auth_sessions (session_key_id, revoked_at, access_token_expires_at);
 CREATE INDEX IF NOT EXISTS ix_fact_daily_instrument_activity_instrument
     ON analytics.fact_daily_instrument_activity (instrument_id, activity_date); -- an instrument's activity history over time
 
@@ -140,6 +174,8 @@ REVOKE UPDATE, DELETE ON trading.orders FROM PUBLIC;
 REVOKE UPDATE, DELETE ON trading.fills FROM PUBLIC;
 REVOKE UPDATE, DELETE ON trading.trade_events FROM PUBLIC;
 REVOKE UPDATE, DELETE ON trading.login_events FROM PUBLIC;
+REVOKE UPDATE, DELETE ON trading.account_credentials FROM PUBLIC;
+REVOKE UPDATE, DELETE ON trading.auth_sessions FROM PUBLIC;
 
 -- ============================================================================
 -- TEST DATA INSERTION
