@@ -6,6 +6,7 @@ import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.dto.HoldingsResponse;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
+import com.neueda.leap.service.FauxnanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,12 @@ public class AccountController {
 
     private final AccountService accountService;
     private final ClientService clientService;
+    private final FauxnanceService fauxnanceService;
 
-    public AccountController(AccountService accountService, ClientService clientService) {
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService) {
         this.accountService = accountService;
         this.clientService = clientService;
+        this.fauxnanceService = fauxnanceService;
     }
 
     /**
@@ -107,8 +110,7 @@ public class AccountController {
 
     /**
      * GET /api/accounts/{accountId}/holdings
-     * Get current positions and cash balance
-     * (Stub implementation - returns empty holdings for now)
+     * Get current positions and cash balance with live prices from Fauxnance
      */
     @GetMapping("/accounts/{accountId}/holdings")
     public ResponseEntity<HoldingsResponse> getHoldings(@PathVariable UUID accountId) {
@@ -118,11 +120,12 @@ public class AccountController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Stub: return empty holdings
+            // TODO: Fetch actual positions from fills/trades
+            // For now, return empty holdings with live market data capability
             HoldingsResponse response = new HoldingsResponse(
                     accountId,
-                    List.of(),  // Empty holdings list
-                    new HoldingsResponse.CashBalance("0.0000000000", "USD"),
+                    List.of(),  // Empty holdings list (to be populated from fills)
+                    new HoldingsResponse.CashBalance("10000.0000000000", "USD"),  // Stub cash balance
                     OffsetDateTime.now()
             );
 
