@@ -1,9 +1,17 @@
 target/
+
+# Environment variables with credentials
+.env
+.env.local
+
 # Spring Boot application properties with credentials
 src/main/resources/application.yml
 src/main/resources/application.properties
 src/test/resources/application.yml
 src/test/resources/application.properties
+
+# Docker Compose with credentials
+docker-compose.yml
 
 # IDE files
 .idea/

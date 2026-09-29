@@ -1,0 +1,47 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1 class="login-title">User Login</h1>
+    
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="Enter your email"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="isLoading"
+        >
+          {{ isLoading ? 'Logging in...' : 'Login' }}
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="resetForm()"
+          [disabled]="isLoading"
+        >
+          Clear
+        </button>
+      </div>
+
+      <div class="form-footer">
+        <p><a routerLink="/admin-login" class="admin-link">Admin Login</a></p>
+      </div>
+    </form>
+  </div>
+</div>

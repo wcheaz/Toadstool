@@ -5,11 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.mybatis.spring.annotation.MapperScan;
 
 @SpringBootApplication
-@MapperScan({"com.neueda.leap.mapper", "com.neueda.leap.auth"})
-public class Main {
+@MapperScan("com.neueda.leap.mapper")
+public class ToadstoolApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(Main.class, args);
-    }
-
+	public static void main(String[] args) {
+		SpringApplication.run(ToadstoolApplication.class, args);
+	}
 }
