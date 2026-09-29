@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8082/api';
+  private apiUrl = 'http://localhost:8081/api';
 
   constructor(private http: HttpClient) {}
 
@@ -15,6 +15,47 @@ export class ApiService {
    */
   login(email: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email });
+  }
+
+  /**
+   * Get all instruments (without live prices)
+   */
+  getInstruments(limit: number = 50, offset: number = 0): Observable<PaginatedResponse<Instrument>> {
+    return this.http.get<PaginatedResponse<Instrument>>(
+      `${this.apiUrl}/instruments?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  /**
+   * Get live quote for an instrument
+   */
+  getInstrumentQuote(instrumentId: string): Observable<QuoteResponse> {
+    return this.http.get<QuoteResponse>(
+      `${this.apiUrl}/instruments/${instrumentId}/quote`
+    );
+  }
+
+  /**
+   * Get historical candles for a chart
+   */
+  getCandles(instrumentId: string, days: number = 30): Observable<CandleResponse[]> {
+    return this.http.get<CandleResponse[]>(
+      `${this.apiUrl}/instruments/${instrumentId}/candles?days=${days}`
+    );
+  }
+
+  /**
+   * Get quote preview before placing order
+   */
+  getQuotePreview(
+    accountId: string,
+    instrumentId: string,
+    side: string,
+    quantity: string
+  ): Observable<QuotePreviewResponse> {
+    return this.http.get<QuotePreviewResponse>(
+      `${this.apiUrl}/accounts/${accountId}/quote-preview?instrumentId=${instrumentId}&side=${side}&quantity=${quantity}`
+    );
   }
 }
 
@@ -25,3 +66,52 @@ export interface LoginResponse {
   status: string;
   message: string;
 }
+
+export interface Instrument {
+  instrumentId: string;
+  symbol: string;
+  name: string;
+  assetClass: string;
+  status: string;
+}
+
+export interface QuoteResponse {
+  symbol: string;
+  price: number;
+  bid: number;
+  ask: number;
+  change: number;
+  changePercent: number;
+  asOf: string;
+}
+
+export interface CandleResponse {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface QuotePreviewResponse {
+  instrumentId: string;
+  symbol: string;
+  side: string;
+  quantity: string;
+  indicativePrice: string;
+  estimatedTotal: string;
+  timestamp: string;
+  notes: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: {
+    limit: number;
+    offset: number;
+    totalCount: number;
+    hasMore: boolean;
+  };
+}
+
