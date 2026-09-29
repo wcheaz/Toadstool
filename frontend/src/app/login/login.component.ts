@@ -13,6 +13,8 @@ import { ApiService } from '../api.service';
 })
 export class LoginComponent {
   email: string = '';
+  password: string = '';
+  rememberMe: boolean = false;
   submitted: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
@@ -26,6 +28,12 @@ export class LoginComponent {
 
     if (!this.email || this.email.trim() === '') {
       this.errorMessage = 'Please enter your email';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.password || this.password.trim() === '') {
+      this.errorMessage = 'Please enter your password';
       this.isLoading = false;
       return;
     }
@@ -62,6 +70,8 @@ export class LoginComponent {
 
   resetForm() {
     this.email = '';
+    this.password = '';
+    this.rememberMe = false;
     this.submitted = false;
     this.errorMessage = '';
     this.isLoading = false;

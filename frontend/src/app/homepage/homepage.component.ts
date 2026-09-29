@@ -14,6 +14,7 @@ export class HomepageComponent {
   availableForTrading: number = 12450.00;
   isBalanceVisible: boolean = true;
   activeTab: string = 'news';
+  platformStatus: string = 'Platform live status: Standard Trading Hours';
 
   constructor() {
     // Get client name from session/localStorage

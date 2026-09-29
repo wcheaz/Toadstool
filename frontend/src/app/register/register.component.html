@@ -1,0 +1,104 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="logo-section">
+      <div class="logo-icon">T</div>
+      <h1 class="brand-title">Toadstool Trader</h1>
+    </div>
+
+    <h2 class="welcome-title">Create an account</h2>
+    <p class="welcome-subtitle">Start trading in less than 5 minutes</p>
+    
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input
+          type="text"
+          id="fullName"
+          class="form-control"
+          [(ngModel)]="fullName"
+          name="fullName"
+          placeholder="e.g. John Doe"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="you@example.com"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-input-wrapper">
+          <input
+            type="password"
+            id="password"
+            class="form-control"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="Minimum 8 characters"
+            [disabled]="isLoading"
+            required
+          />
+          <span class="password-icon">👁️</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="password-input-wrapper">
+          <input
+            type="password"
+            id="confirmPassword"
+            class="form-control"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            placeholder="Repeat your password"
+            [disabled]="isLoading"
+            required
+          />
+          <span class="password-icon">👁️</span>
+        </div>
+      </div>
+
+      <div class="terms-group">
+        <input
+          type="checkbox"
+          id="agreeTerms"
+          [(ngModel)]="agreedToTerms"
+          name="agreedToTerms"
+          [disabled]="isLoading"
+        />
+        <label for="agreeTerms" class="terms-label">
+          I agree to the <a href="#" class="terms-link">Terms & Conditions</a> and the <a href="#" class="terms-link">Privacy Policy</a>
+        </label>
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+      </button>
+
+      <div class="form-footer">
+        <p>Already have an account? <a routerLink="/login" class="login-link">Log in</a></p>
+      </div>
+    </form>
+  </div>
+</div>

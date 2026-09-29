@@ -1,6 +1,12 @@
 <div class="login-container">
   <div class="login-card">
-    <h1 class="login-title">User Login</h1>
+    <div class="logo-section">
+      <div class="logo-icon">T</div>
+      <h1 class="brand-title">Toadstool Trader</h1>
+    </div>
+
+    <h2 class="welcome-title">Welcome back</h2>
+    <p class="welcome-subtitle">Enter your credentials to access your portal</p>
     
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
@@ -8,39 +14,58 @@
 
     <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
       <div class="form-group">
-        <label for="email">Email</label>
+        <label for="email">Client email</label>
         <input
           type="email"
           id="email"
           class="form-control"
           [(ngModel)]="email"
           name="email"
-          placeholder="Enter your email"
+          placeholder="you@example.com"
           [disabled]="isLoading"
           required
         />
       </div>
 
-      <div class="form-actions">
-        <button 
-          type="submit" 
-          class="btn btn-primary"
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter your password"
           [disabled]="isLoading"
-        >
-          {{ isLoading ? 'Logging in...' : 'Login' }}
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
-          (click)="resetForm()"
-          [disabled]="isLoading"
-        >
-          Clear
-        </button>
+          required
+        />
       </div>
 
+      <div class="form-options">
+        <div class="checkbox-group">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            [(ngModel)]="rememberMe"
+            name="rememberMe"
+            [disabled]="isLoading"
+          />
+          <label for="rememberMe" class="checkbox-label">Remember Me</label>
+        </div>
+        <a href="#" class="forgot-password">Forgot Password?</a>
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Logging in...' : 'Log In' }}
+      </button>
+
       <div class="form-footer">
-        <p><a routerLink="/admin-login" class="admin-link">Admin Login</a></p>
+        <p>Don't have an account? <a routerLink="/register" class="register-link">Register</a></p>
+        <p class="admin-footer">Admin? <a routerLink="/admin-login" class="admin-link">Click Here</a></p>
       </div>
     </form>
   </div>

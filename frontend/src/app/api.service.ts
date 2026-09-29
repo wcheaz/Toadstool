@@ -16,6 +16,13 @@ export class ApiService {
   login(email: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email });
   }
+
+  /**
+   * Register a new client account
+   */
+  register(data: RegisterRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/register`, data);
+  }
 }
 
 export interface LoginResponse {
@@ -24,4 +31,10 @@ export interface LoginResponse {
   displayName: string;
   status: string;
   message: string;
+}
+
+export interface RegisterRequest {
+  displayName: string;
+  email: string;
+  password: string;
 }
