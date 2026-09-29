@@ -131,4 +131,95 @@ class AssetClassFeeStructureTest {
                     feeStructure + " fee should increase with order value");
         }
     }
+
+    // ==================== EDGE CASE & ERROR HANDLING TESTS ====================
+
+    @Test
+    @DisplayName("calculateFee throws IllegalArgumentException for null order value")
+    void testCalculateFeeNullOrderValue() {
+        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> feeStructure.calculateFee(null),
+                    feeStructure + " should throw for null order value");
+        }
+    }
+
+    @Test
+    @DisplayName("fromAssetClass returns correct EQUITY fee structure")
+    void testFromAssetClassEquity() {
+        AssetClassFeeStructure result = AssetClassFeeStructure.fromAssetClass(AssetClass.EQUITY);
+        assertEquals(AssetClassFeeStructure.EQUITY, result);
+    }
+
+    @Test
+    @DisplayName("fromAssetClass returns correct CRYPTO fee structure")
+    void testFromAssetClassCrypto() {
+        AssetClassFeeStructure result = AssetClassFeeStructure.fromAssetClass(AssetClass.CRYPTO);
+        assertEquals(AssetClassFeeStructure.CRYPTO, result);
+    }
+
+    @Test
+    @DisplayName("fromAssetClass returns correct FX fee structure")
+    void testFromAssetClassFx() {
+        AssetClassFeeStructure result = AssetClassFeeStructure.fromAssetClass(AssetClass.FX);
+        assertEquals(AssetClassFeeStructure.FX, result);
+    }
+
+    @Test
+    @DisplayName("fromAssetClass throws IllegalArgumentException for null asset class")
+    void testFromAssetClassNull() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AssetClassFeeStructure.fromAssetClass(null),
+                "Should throw for null asset class");
+    }
+
+    @Test
+    @DisplayName("calculateFee handles negative order value (returns minimum fee)")
+    void testCalculateFeeNegativeOrderValue() {
+        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
+            BigDecimal negativeOrderValue = new BigDecimal("-1000.00");
+            BigDecimal fee = feeStructure.calculateFee(negativeOrderValue);
+            
+            // Negative order value * positive percentage = negative fee
+            // MAX(negative, minimum) = minimum
+            assertEquals(feeStructure.getMinimumFee(), fee,
+                    feeStructure + " should return minimum fee for negative order value");
+        }
+    }
+
+    @Test
+    @DisplayName("calculateFee handles very large order value")
+    void testCalculateFeeVeryLargeOrderValue() {
+        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
+            BigDecimal veryLargeOrderValue = new BigDecimal("999999999.99");
+            BigDecimal fee = feeStructure.calculateFee(veryLargeOrderValue);
+            
+            assertTrue(fee.compareTo(BigDecimal.ZERO) > 0);
+            assertEquals(5, fee.scale(), "Should maintain 5 decimal precision");
+        }
+    }
+
+    @Test
+    @DisplayName("EQUITY has lower fee percentage than CRYPTO")
+    void testEquityFeeLowerThanCrypto() {
+        assertTrue(AssetClassFeeStructure.EQUITY.getFeePercentage()
+                .compareTo(AssetClassFeeStructure.CRYPTO.getFeePercentage()) < 0,
+                "EQUITY fee (0.05%) should be lower than CRYPTO (0.10%)");
+    }
+
+    @Test
+    @DisplayName("FX has lowest fee percentage")
+    void testFxHasLowestFeePercentage() {
+        BigDecimal fxFee = AssetClassFeeStructure.FX.getFeePercentage();
+        assertTrue(fxFee.compareTo(AssetClassFeeStructure.EQUITY.getFeePercentage()) < 0);
+        assertTrue(fxFee.compareTo(AssetClassFeeStructure.CRYPTO.getFeePercentage()) < 0);
+    }
+
+    @Test
+    @DisplayName("CRYPTO has highest minimum fee")
+    void testCryptoHasHighestMinimumFee() {
+        BigDecimal cryptoMin = AssetClassFeeStructure.CRYPTO.getMinimumFee();
+        assertTrue(cryptoMin.compareTo(AssetClassFeeStructure.EQUITY.getMinimumFee()) > 0);
+        assertTrue(cryptoMin.compareTo(AssetClassFeeStructure.FX.getMinimumFee()) > 0);
+    }
 }

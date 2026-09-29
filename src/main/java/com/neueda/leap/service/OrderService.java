@@ -118,6 +118,11 @@ public class OrderService {
 
         // Step 5: Fetch instrument price
         BigDecimal instrumentPrice = pricingService.getPrice(instrument.getAssetClass(), instrumentId);
+        
+        // Defensive check: Ensure pricing service returned a valid price
+        if (instrumentPrice == null) {
+            throw new RuntimeException("Pricing service returned null price for instrument: " + instrumentId);
+        }
 
         // Step 6: Parse quantity and calculate order value
         BigDecimal orderQuantity = new BigDecimal(quantity);
@@ -135,6 +140,11 @@ public class OrderService {
 
         // Step 10: Retrieve and return the created order
         Order order = getOrderByIdempotencyKey(accountId, idempotencyKey);
+        
+        // Defensive check: Ensure order was persisted and retrieved successfully
+        if (order == null) {
+            throw new RuntimeException("Order insertion failed: order not found after insert for idempotencyKey: " + idempotencyKey);
+        }
         
         // Step 11: Set totalPrice on the order object (not persisted to DB, calculated at submission time)
         order.setTotalPrice(totalPrice);

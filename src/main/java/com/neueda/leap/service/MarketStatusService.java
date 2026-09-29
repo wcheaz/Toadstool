@@ -128,4 +128,28 @@ public class MarketStatusService {
     public ZoneId getMarketTimezone() {
         return MARKET_TIMEZONE;
     }
+
+    /**
+     * Checks if the market is open at a specific time (for testing)
+     * 
+     * This method allows tests to inject specific timestamps to verify market hour logic
+     * bypassing the normal test environment detection.
+     * 
+     * Production code should use isMarketOpen(), not this method.
+     * 
+     * @param testTime The time to check market status for
+     * @return true if market would be open at the given time
+     */
+    protected boolean isMarketOpenAt(ZonedDateTime testTime) {
+        LocalTime currentTime = testTime.toLocalTime();
+        
+        // Check if it's a weekday (Monday = 1 to Friday = 5)
+        int dayOfWeek = testTime.getDayOfWeek().getValue();
+        boolean isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+        
+        // Check if current time is within market hours
+        boolean isWithinHours = !currentTime.isBefore(MARKET_OPEN) && currentTime.isBefore(MARKET_CLOSE);
+        
+        return isWeekday && isWithinHours;
+    }
 }
