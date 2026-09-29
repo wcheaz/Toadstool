@@ -251,6 +251,7 @@
   font-weight: 700;
   color: #34d399;
   line-height: 1.2;
+  min-height: 53px;
 }
 
 .balance-value.hidden {
@@ -263,6 +264,7 @@
   font-size: 18px;
   font-weight: 600;
   color: #d1d5db;
+  min-height: 22px;
 }
 
 .available-value.hidden {
