@@ -1,9 +1,7 @@
 package com.neueda.leap;
 
 import org.flywaydb.core.Flyway;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestContext;
-import org.springframework.test.context.TestExecutionListener;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 
 import javax.sql.DataSource;

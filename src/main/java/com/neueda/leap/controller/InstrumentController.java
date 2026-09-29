@@ -4,8 +4,6 @@ import com.neueda.leap.Instrument;
 import com.neueda.leap.InstrumentCreateRequest;
 import com.neueda.leap.InstrumentStatusUpdateRequest;
 import com.neueda.leap.dto.PaginatedResponse;
-import com.neueda.leap.enums.AssetClass;
-import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.service.InstrumentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

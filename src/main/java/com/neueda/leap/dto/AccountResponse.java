@@ -2,8 +2,6 @@ package com.neueda.leap.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import java.util.List;
-
 /**
  * Response DTO for account data
  */
