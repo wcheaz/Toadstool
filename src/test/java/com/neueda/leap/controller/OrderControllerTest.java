@@ -10,6 +10,7 @@ import com.neueda.leap.enums.OrderSide;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.OrderService;
+import com.neueda.leap.service.FauxnanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,11 +47,14 @@ class OrderControllerTest {
     @Mock
     private InstrumentService instrumentService;
 
+    @Mock
+    private FauxnanceService fauxnanceService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService));
+        mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService, fauxnanceService));
     }
 
     @Test

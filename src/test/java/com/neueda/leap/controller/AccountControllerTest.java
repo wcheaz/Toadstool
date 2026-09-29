@@ -6,6 +6,7 @@ import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.ClientStatus;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
+import com.neueda.leap.service.FauxnanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,11 +39,14 @@ class AccountControllerTest {
     @Mock
     private ClientService clientService;
 
+    @Mock
+    private FauxnanceService fauxnanceService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = ControllerTestSupport.buildMockMvc(new AccountController(accountService, clientService));
+        mockMvc = ControllerTestSupport.buildMockMvc(new AccountController(accountService, clientService, fauxnanceService));
     }
 
     @Test
