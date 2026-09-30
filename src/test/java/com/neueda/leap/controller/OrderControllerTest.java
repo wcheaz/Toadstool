@@ -12,6 +12,7 @@ import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.FauxnanceService;
 import org.junit.jupiter.api.BeforeEach;
+import static org.mockito.ArgumentMatchers.anyString;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -189,6 +190,11 @@ class OrderControllerTest {
         when(instrumentService.getInstrumentById(instrumentId))
                 .thenReturn(new Instrument(instrumentId, "AAPL", "Apple Inc.", AssetClass.EQUITY, InstrumentStatus.TRADABLE));
 
+        FauxnanceService.QuoteResponse mockQuote = new FauxnanceService.QuoteResponse(
+                "AAPL", 100.0, 99.99, 100.01, 1.0, 1.0, "2026-09-29T20:00:00Z"
+        );
+        when(fauxnanceService.getQuote(anyString())).thenReturn(mockQuote);
+
         mockMvc.perform(get("/api/accounts/{accountId}/quote-preview", accountId)
                         .param("instrumentId", instrumentId.toString())
                         .param("side", "BUY")
@@ -198,8 +204,8 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.symbol").value("AAPL"))
                 .andExpect(jsonPath("$.side").value("BUY"))
                 .andExpect(jsonPath("$.quantity").value("2"))
-                .andExpect(jsonPath("$.indicativePrice").value("100.0000000000"))
-                .andExpect(jsonPath("$.estimatedTotal").value("200.0000000000"))
-                .andExpect(jsonPath("$.notes").value("Indicative price only; actual execution price may differ"));
+                .andExpect(jsonPath("$.indicativePrice").value("100.0"))
+                .andExpect(jsonPath("$.estimatedTotal").value("200.0"))
+                .andExpect(jsonPath("$.notes").value("Live price from Fauxnance API"));
     }
 }
