@@ -35,10 +35,6 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadInstruments();
-    // Refresh every 5 seconds (matching Fauxnance cache TTL)
-    interval(5000)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.refreshQuotes());
   }
 
   ngOnDestroy() {
@@ -48,7 +44,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   loadInstruments() {
     this.loadingInstruments = true;
-    this.apiService.getInstruments(10, 0).subscribe({
+    this.apiService.getInstruments(1, 0).subscribe({
       next: (response) => {
         console.log('Instruments loaded:', response.items);
         this.instruments = response.items;
