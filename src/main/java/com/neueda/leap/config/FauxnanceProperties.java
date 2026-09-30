@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "fauxnance.api")
+@ConfigurationProperties(prefix = "fauxnance")
 public class FauxnanceProperties {
     private String baseUrl;
     private String apiKey;

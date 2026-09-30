@@ -109,7 +109,7 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").value(accountId.toString()))
                 .andExpect(jsonPath("$.holdings.length()").value(0))
-                .andExpect(jsonPath("$.cash.balance").value("0.0000000000"))
+                .andExpect(jsonPath("$.cash.balance").value("10000.0000000000"))
                 .andExpect(jsonPath("$.cash.currency").value("USD"))
                 .andExpect(jsonPath("$.asOfTimestamp").exists());
     }

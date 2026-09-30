@@ -22,6 +22,10 @@ export class HomepageComponent implements OnInit, OnDestroy {
   instrumentQuotes: Map<string, QuoteResponse> = new Map();
   loadingInstruments: boolean = false;
 
+  // Test: display first instrument price
+  testInstrument: Instrument | null = null;
+  testPrice: number | null = null;
+
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService) {
@@ -46,7 +50,21 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.loadingInstruments = true;
     this.apiService.getInstruments(10, 0).subscribe({
       next: (response) => {
+        console.log('Instruments loaded:', response.items);
         this.instruments = response.items;
+
+        // TEST: Load first instrument
+        if (response.items.length > 0) {
+          this.testInstrument = response.items[0];
+          this.apiService.getInstrumentQuote(this.testInstrument.instrumentId).subscribe({
+            next: (quote) => {
+              this.testPrice = quote.price;
+              console.log('Test price loaded:', this.testPrice);
+            },
+            error: (e) => console.error('Test price error:', e)
+          });
+        }
+
         this.refreshQuotes();
       },
       error: (error) => {
