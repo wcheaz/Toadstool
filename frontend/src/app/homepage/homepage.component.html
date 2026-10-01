@@ -153,15 +153,29 @@
 
       <!-- NEWS TAB CONTENT -->
       <div class="tab-content" *ngIf="activeTab === 'news'">
-        <!-- TEST: Single Price Display -->
-        <div style="background: #f0f0f0; padding: 20px; margin-bottom: 20px; border-radius: 8px;">
-          <h3>TEST: Live Price (First Instrument)</h3>
-          <p *ngIf="testInstrument">
-            <strong>{{ testInstrument.symbol }}</strong>:
-            <span *ngIf="testPrice">{{ testPrice | currency }}</span>
-            <span *ngIf="!testPrice">Loading...</span>
-          </p>
-          <p *ngIf="!testInstrument">No instruments loaded</p>
+        <!-- TEST: Single Instrument Data Display -->
+        <div style="background: #f0f0f0; padding: 20px; margin-bottom: 20px; border-radius: 8px; font-family: monospace;">
+          <h3 style="margin-top: 0;">Instrument Data</h3>
+          <div *ngIf="testInstrument">
+            <p><strong>Symbol:</strong> {{ testInstrument.symbol }}</p>
+            <p><strong>Name:</strong> {{ testInstrument.name }}</p>
+            <p><strong>Asset Class:</strong> {{ testInstrument.assetClass }}</p>
+            <p><strong>Status:</strong> {{ testInstrument.status }}</p>
+            <ng-container *ngIf="getQuote(testInstrument.instrumentId) as quote">
+              <p><strong>Price:</strong> {{ quote.price | currency }}</p>
+              <p><strong>Bid:</strong> {{ quote.bid | currency }}</p>
+              <p><strong>Ask:</strong> {{ quote.ask | currency }}</p>
+              <p><strong>Change:</strong> {{ quote.change | currency }}</p>
+              <p><strong>Change %:</strong> {{ quote.changePercent }}%</p>
+              <p><strong>As Of:</strong> {{ quote.asOf }}</p>
+            </ng-container>
+            <div *ngIf="!getQuote(testInstrument.instrumentId)">
+              <p style="color: #999;"><em>Quote data loading...</em></p>
+            </div>
+          </div>
+          <div *ngIf="!testInstrument">
+            <p style="color: #999;"><em>No instruments loaded</em></p>
+          </div>
         </div>
 
         <div class="news-section">
