@@ -1,13 +1,12 @@
 package com.neueda.leap.enums;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 /**
  * Fee structure enumeration for different asset classes
- * Maps AssetClass to their respective trading fees
+ * Holds fee configuration (percentages and minimums) for each asset class
  * 
- * Fees are calculated as: MAX(orderValue × percentage, minimumFee)
+ * Fee calculation logic is delegated to FeeStrategy implementations
  * All monetary values use 5 decimal places precision
  */
 public enum AssetClassFeeStructure {
@@ -45,53 +44,5 @@ public enum AssetClassFeeStructure {
      */
     public BigDecimal getMinimumFee() {
         return minimumFee;
-    }
-
-    /**
-     * Calculates the fee for a given order value
-     * 
-     * Formula: MAX(orderValue × feePercentage, minimumFee)
-     * Result is rounded to 5 decimal places using ROUND_HALF_UP
-     * 
-     * @param orderValue The total value of the order (price × quantity)
-     * @return The calculated fee with 5 decimal places precision
-     */
-    public BigDecimal calculateFee(BigDecimal orderValue) {
-        if (orderValue == null) {
-            throw new IllegalArgumentException("Order value cannot be null");
-        }
-
-        // Calculate percentage-based fee
-        BigDecimal percentageFee = orderValue.multiply(feePercentage);
-        
-        // Return the maximum of percentage fee and minimum fee
-        BigDecimal actualFee = percentageFee.max(minimumFee);
-        
-        // Ensure 5 decimal places precision
-        return actualFee.setScale(5, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Gets the fee structure for a given asset class
-     * 
-     * @param assetClass The asset class to get the fee structure for
-     * @return The corresponding AssetClassFeeStructure enum value
-     * @throws IllegalArgumentException if the asset class is not supported
-     */
-    public static AssetClassFeeStructure fromAssetClass(AssetClass assetClass) {
-        if (assetClass == null) {
-            throw new IllegalArgumentException("Asset class cannot be null");
-        }
-
-        switch (assetClass) {
-            case EQUITY:
-                return EQUITY;
-            case CRYPTO:
-                return CRYPTO;
-            case FX:
-                return FX;
-            default:
-                throw new IllegalArgumentException("Unsupported asset class: " + assetClass);
-        }
     }
 }
