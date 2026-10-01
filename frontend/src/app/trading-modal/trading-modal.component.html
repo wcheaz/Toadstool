@@ -1,0 +1,209 @@
+<div class="trading-modal-overlay" *ngIf="isOpen" (click)="closeModal()">
+  <div class="trading-modal" (click)="$event.stopPropagation()">
+    <!-- Close Button -->
+    <button class="close-btn" (click)="closeModal()" title="Close trading panel">
+      ✕
+    </button>
+
+    <div class="trading-content">
+      <!-- Left Panel: Asset Details and Chart -->
+      <div class="trading-left">
+        <!-- Asset Header -->
+        <div class="asset-header" *ngIf="selectedAsset">
+          <div class="asset-ticker">
+            <div class="ticker-badge">{{ selectedAsset.symbol }}</div>
+            <div class="asset-info">
+              <h2>{{ selectedAsset.name }}</h2>
+              <span class="market-status">● MARKET OPEN</span>
+            </div>
+          </div>
+          <button class="close-icon-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <!-- Price Section -->
+        <div class="price-section" *ngIf="selectedAsset">
+          <div class="current-price">
+            <span class="price-label">LAST PRICE</span>
+            <div class="price-display">
+              <span class="price-value">${{ selectedAsset.price.toFixed(2) }}</span>
+              <span class="price-change" [ngClass]="{ 'positive': selectedAsset.change > 0, 'negative': selectedAsset.change < 0 }">
+                {{ selectedAsset.change > 0 ? '+' : '' }}{{ selectedAsset.change.toFixed(2) }} ({{ (selectedAsset.change / (selectedAsset.price - selectedAsset.change) * 100).toFixed(2) }}%)
+              </span>
+            </div>
+          </div>
+          <div class="price-range">
+            <span>${{ (selectedAsset.price * 0.95).toFixed(2) }}</span>
+            <span>${{ (selectedAsset.price * 1.05).toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Chart Placeholder -->
+        <div class="chart-container">
+          <div class="time-period-selector">
+            <button class="period-btn">1D</button>
+            <button class="period-btn">1W</button>
+            <button class="period-btn">1M</button>
+            <button class="period-btn active">3M</button>
+            <button class="period-btn">1Y</button>
+          </div>
+          <div class="chart-placeholder">
+            <div class="chart-bar bar1"></div>
+            <div class="chart-bar bar2"></div>
+            <div class="chart-bar bar3"></div>
+            <div class="chart-bar bar4"></div>
+            <div class="chart-bar bar5"></div>
+            <div class="chart-bar bar6"></div>
+            <div class="chart-bar bar7"></div>
+            <div class="chart-bar bar8"></div>
+            <div class="chart-bar bar9"></div>
+            <div class="chart-bar bar10"></div>
+          </div>
+          <div class="chart-axis">0 -</div>
+        </div>
+
+        <!-- Market Depth Section -->
+        <div class="market-depth">
+          <div class="depth-header">Market depth <span class="level-badge">LEVEL 2</span></div>
+          <div class="depth-table">
+            <div class="depth-row">
+              <div class="depth-price">1,660</div>
+              <div class="depth-volume depth-bar" style="width: 30%;">142.10</div>
+              <div class="depth-type">142.10</div>
+            </div>
+            <div class="depth-row">
+              <div class="depth-price">2,400</div>
+              <div class="depth-volume depth-bar" style="width: 50%;">142.09</div>
+              <div class="depth-type">142.09</div>
+            </div>
+            <div class="depth-row">
+              <div class="depth-price">950</div>
+              <div class="depth-volume depth-bar" style="width: 20%;">142.08</div>
+              <div class="depth-type">142.08</div>
+            </div>
+            <div class="depth-row separator"></div>
+            <div class="depth-row">
+              <div class="depth-price">3,180</div>
+              <div class="depth-volume depth-bar" style="width: 60%;">142.12</div>
+              <div class="depth-type">142.12</div>
+            </div>
+            <div class="depth-row">
+              <div class="depth-price">1,440</div>
+              <div class="depth-volume depth-bar" style="width: 25%;">142.13</div>
+              <div class="depth-type">142.13</div>
+            </div>
+            <div class="depth-row">
+              <div class="depth-price">2,760</div>
+              <div class="depth-volume depth-bar" style="width: 55%;">142.14</div>
+              <div class="depth-type">142.14</div>
+            </div>
+            <div class="depth-row">
+              <div class="depth-price">1,330</div>
+              <div class="depth-volume depth-bar" style="width: 23%;">142.15</div>
+              <div class="depth-type">142.15</div>
+            </div>
+          </div>
+          <div class="depth-footer">
+            <div>BID 10.2K</div>
+            <div>ASK 14.2K</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Order Ticket -->
+      <div class="trading-right">
+        <div class="order-ticket">
+          <h3>Order ticket</h3>
+
+          <!-- Buy/Sell Buttons -->
+          <div class="side-selector">
+            <button class="side-btn" [class.active]="orderSide === 'buy'" (click)="orderSide = 'buy'">
+              BUY
+            </button>
+            <button class="side-btn sell" [class.active]="orderSide === 'sell'" (click)="orderSide = 'sell'">
+              SELL
+            </button>
+          </div>
+
+          <!-- Order Type -->
+          <div class="form-section">
+            <label>Order type</label>
+            <div class="order-type-selector">
+              <button class="type-btn" [class.active]="orderType === 'market'" (click)="orderType = 'market'">
+                Market
+              </button>
+              <button class="type-btn" [class.active]="orderType === 'limit'" (click)="orderType = 'limit'">
+                Limit
+              </button>
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="form-section">
+            <label>Quantity</label>
+            <div class="quantity-input">
+              <input type="number" [(ngModel)]="quantity" min="1" placeholder="0">
+              <span class="unit-label">Shares</span>
+            </div>
+          </div>
+
+          <!-- Limit Price (if Limit order) -->
+          <div class="form-section" *ngIf="orderType === 'limit'">
+            <label>Limit Price</label>
+            <input type="number" [(ngModel)]="limitPrice" min="0" step="0.01" placeholder="0.00">
+          </div>
+
+          <!-- Duration -->
+          <div class="form-section">
+            <label>Duration</label>
+            <div class="duration-selector">
+              <select [(ngModel)]="duration" class="duration-select">
+                <option value="day">Day</option>
+                <option value="gtc">GTC (Good Till Cancel)</option>
+              </select>
+              <div class="price-info">
+                <div class="info-label">Est. Fill</div>
+                <div class="info-value">{{ estFillPrice }}</div>
+              </div>
+              <div class="price-info">
+                <div class="info-label">LIVE</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="summary-section">
+            <div class="summary-row">
+              <span>Estimated value</span>
+              <span>${{ estimatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Estimated fees</span>
+              <span>${{ estimatedFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="summary-row total">
+              <span>Order total</span>
+              <span>${{ orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="button-group">
+            <button class="btn-preview" (click)="previewOrder()">Preview Order</button>
+            <button class="btn-place" [class.buy]="orderSide === 'buy'" [class.sell]="orderSide === 'sell'" 
+                    (click)="placeOrder()" [disabled]="!agreedToTerms">
+              Place {{ orderSide === 'buy' ? 'Buy' : 'Sell' }} Order
+            </button>
+          </div>
+
+          <!-- Terms Disclaimer -->
+          <div class="terms-section">
+            <label class="terms-checkbox">
+              <input type="checkbox" [(ngModel)]="agreedToTerms">
+              <span>Orders are subject to market conditions and account approval.</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

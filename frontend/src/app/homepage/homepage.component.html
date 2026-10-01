@@ -243,7 +243,7 @@
               {{ getQuote(instrument.instrumentId)?.changePercent?.toFixed(2) || 'Loading...' }}%
             </div>
             <div class="table-cell">-- Units</div>
-            <div class="table-cell"><button class="trade-btn">Trade</button></div>
+            <div class="table-cell"><button class="trade-btn" (click)="openTradeModal(instrument, getQuote(instrument.instrumentId))">Trade</button></div>
           </div>
 
           <!-- Fallback: No instruments loaded -->
@@ -287,4 +287,11 @@
       </div>
     </section>
   </main>
+
+  <!-- Trading Modal -->
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="selectedAsset"
+    (close)="closeTradeModal()">
+  </app-trading-modal>
 </div>

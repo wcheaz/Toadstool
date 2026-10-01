@@ -1,14 +1,23 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
+import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
 
+interface Asset {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  holdings: number;
+}
+
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TradingModalComponent],
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
@@ -45,6 +54,10 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   ];
   candles: CandleResponse[] = [];
   loadingCandles: boolean = false;
+
+  // Trading modal state
+  isTradeModalOpen: boolean = false;
+  selectedAsset: Asset | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -224,6 +237,23 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   openNotifications() {
     alert('Notifications settings coming soon');
+  }
+
+  openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
+    if (!quote) return;
+    this.selectedAsset = {
+      symbol: instrument.symbol,
+      name: instrument.name,
+      price: quote.price,
+      change: quote.changePercent,
+      holdings: 0
+    };
+    this.isTradeModalOpen = true;
+  }
+
+  closeTradeModal() {
+    this.isTradeModalOpen = false;
+    this.selectedAsset = null;
   }
 
   logout() {
