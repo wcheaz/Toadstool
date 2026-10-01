@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
-import { createChart, ColorType } from 'lightweight-charts';
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
 
 @Component({
   selector: 'app-homepage',
@@ -163,11 +163,11 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
       timeScale: { timeVisible: true, secondsVisible: true }
     });
 
-    const candlestickSeries = chart.addCandlestickSeries({ upColor: '#26a69a', downColor: '#ef5350' });
-    const volumeSeries = chart.addHistogramSeries({ color: '#1f77b4' });
+    const candlestickSeries = chart.addSeries(CandlestickSeries, { upColor: '#26a69a', downColor: '#ef5350' });
+    const volumeSeries = chart.addSeries(HistogramSeries, { color: '#1f77b4' });
 
     const candleData = this.candles.map(c => ({
-      time: Math.floor(new Date(c.date).getTime() / 1000),
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -175,7 +175,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     }));
 
     const volumeData = this.candles.map(c => ({
-      time: Math.floor(new Date(c.date).getTime() / 1000),
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
       value: c.volume,
       color: c.close >= c.open ? '#26a69a' : '#ef5350'
     }));
