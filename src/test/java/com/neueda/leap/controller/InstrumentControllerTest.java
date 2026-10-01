@@ -4,6 +4,7 @@ import com.neueda.leap.Instrument;
 import com.neueda.leap.enums.AssetClass;
 import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.service.InstrumentService;
+import com.neueda.leap.service.FauxnanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,11 +32,14 @@ class InstrumentControllerTest {
     @Mock
     private InstrumentService instrumentService;
 
+    @Mock
+    private FauxnanceService fauxnanceService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = ControllerTestSupport.buildMockMvc(new InstrumentController(instrumentService));
+        mockMvc = ControllerTestSupport.buildMockMvc(new InstrumentController(instrumentService, fauxnanceService));
     }
 
     @Test
