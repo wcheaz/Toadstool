@@ -4,6 +4,7 @@ import com.neueda.leap.Order;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
+import com.neueda.leap.service.FauxnanceService;
 import com.neueda.leap.dto.PlaceOrderRequest;
 import com.neueda.leap.dto.OrderResponse;
 import com.neueda.leap.dto.PaginatedResponse;
@@ -26,11 +27,13 @@ public class OrderController {
     private final OrderService orderService;
     private final AccountService accountService;
     private final InstrumentService instrumentService;
+    private final FauxnanceService fauxnanceService;
 
-    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService) {
+    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService) {
         this.orderService = orderService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
+        this.fauxnanceService = fauxnanceService;
     }
 
     /**
@@ -133,7 +136,6 @@ public class OrderController {
     /**
      * GET /api/accounts/{accountId}/quote-preview
      * Get indicative price for a hypothetical order
-     * (Stub implementation - returns fixed price for now)
      */
     @GetMapping("/accounts/{accountId}/quote-preview")
     public ResponseEntity<QuotePreviewResponse> getQuotePreview(
@@ -154,8 +156,13 @@ public class OrderController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Stub: return fixed indicative price
-            String indicativePrice = "100.0000000000";
+            // Fetch live quote from Fauxnance API
+            FauxnanceService.QuoteResponse quote = fauxnanceService.getQuote(instrument.getSymbol());
+            if (quote == null) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+            }
+
+            String indicativePrice = String.valueOf(quote.getPrice());
             java.math.BigDecimal qty = new java.math.BigDecimal(quantity);
             java.math.BigDecimal price = new java.math.BigDecimal(indicativePrice);
             String estimatedTotal = qty.multiply(price).toPlainString();
@@ -168,7 +175,7 @@ public class OrderController {
                     indicativePrice,
                     estimatedTotal,
                     OffsetDateTime.now(),
-                    "Indicative price only; actual execution price may differ"
+                    "Live price from Fauxnance API"
             );
 
             return ResponseEntity.ok(response);
