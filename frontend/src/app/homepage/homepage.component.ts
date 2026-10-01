@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService, Instrument, QuoteResponse } from '../api.service';
+import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
+import { createChart, ColorType } from 'lightweight-charts';
 
 @Component({
   selector: 'app-homepage',
@@ -11,7 +12,7 @@ import { takeUntil, switchMap } from 'rxjs/operators';
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
-export class HomepageComponent implements OnInit, OnDestroy {
+export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   clientName: string = '';
   currentBalance: number = 142384.50;
   availableForTrading: number = 12450.00;
@@ -27,15 +28,39 @@ export class HomepageComponent implements OnInit, OnDestroy {
   testInstrument: Instrument | null = null;
   testPrice: number | null = null;
 
+  // Charting
+  @ViewChild('chartContainer') chartContainer: ElementRef | null = null;
+  selectedTimeframe: string = '1day';
+  timeframes = [
+    { label: '1m', days: 0.0007 },
+    { label: '15m', days: 0.01 },
+    { label: '30m', days: 0.02 },
+    { label: '1h', days: 0.042 },
+    { label: '1d', days: 1 },
+    { label: '7d', days: 7 },
+    { label: '1mo', days: 30 },
+    { label: '6mo', days: 180 },
+    { label: '1y', days: 365 },
+    { label: 'all', days: 1825 }
+  ];
+  candles: CandleResponse[] = [];
+  loadingCandles: boolean = false;
+
   private destroy$ = new Subject<void>();
 
-  constructor(private apiService: ApiService) {
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
     // Get client name from session/localStorage
     this.clientName = localStorage.getItem('clientName') || 'User';
   }
 
   ngOnInit() {
     this.loadInstruments();
+  }
+
+  ngAfterViewInit() {
+    if (this.testInstrument) {
+      this.loadCandles(this.selectedTimeframe);
+    }
   }
 
   ngOnDestroy() {
@@ -53,10 +78,13 @@ export class HomepageComponent implements OnInit, OnDestroy {
         // TEST: Load first instrument
         if (response.items.length > 0) {
           this.testInstrument = response.items[0];
+          this.cdr.detectChanges();
+          this.loadCandles(this.selectedTimeframe);
           this.apiService.getInstrumentQuote(this.testInstrument.instrumentId).subscribe({
             next: (quote) => {
               this.testPrice = quote.price;
               console.log('Test price loaded:', this.testPrice);
+              this.cdr.detectChanges();
             },
             error: (e) => console.error('Test price error:', e)
           });
@@ -84,6 +112,77 @@ export class HomepageComponent implements OnInit, OnDestroy {
         }
       });
     });
+  }
+
+  selectTimeframe(timeframe: string) {
+    this.selectedTimeframe = timeframe;
+    if (this.testInstrument) {
+      this.loadCandles(timeframe);
+    }
+  }
+
+  loadCandles(timeframe: string) {
+    if (!this.testInstrument) return;
+
+    this.loadingCandles = true;
+    const timeframeObj = this.timeframes.find(tf => tf.label === timeframe);
+    if (!timeframeObj) {
+      this.loadingCandles = false;
+      return;
+    }
+
+    const days = Math.max(1, Math.ceil(timeframeObj.days));
+    this.apiService.getCandles(this.testInstrument.instrumentId, days).subscribe({
+      next: (candles) => {
+        this.candles = candles;
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+        setTimeout(() => this.renderChart(), 0);
+      },
+      error: (error) => {
+        console.error('Failed to load candles:', error);
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  renderChart() {
+    if (!this.chartContainer || this.candles.length === 0) return;
+
+    const container = this.chartContainer.nativeElement;
+    container.innerHTML = '';
+
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#1e1e1e' },
+        textColor: '#d1d5db'
+      },
+      width: container.clientWidth,
+      height: 400,
+      timeScale: { timeVisible: true, secondsVisible: true }
+    });
+
+    const candlestickSeries = chart.addCandlestickSeries({ upColor: '#26a69a', downColor: '#ef5350' });
+    const volumeSeries = chart.addHistogramSeries({ color: '#1f77b4' });
+
+    const candleData = this.candles.map(c => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000),
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close
+    }));
+
+    const volumeData = this.candles.map(c => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000),
+      value: c.volume,
+      color: c.close >= c.open ? '#26a69a' : '#ef5350'
+    }));
+
+    candlestickSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+    chart.timeScale().fitContent();
   }
 
   getQuote(instrumentId: string): QuoteResponse | undefined {
