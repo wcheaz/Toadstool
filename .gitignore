@@ -4,6 +4,9 @@ target/
 .env
 .env.local
 
+# Spring Boot application properties with credentials
+src/test/resources/application.yml
+
 # Docker Compose with credentials
 docker-compose.yml
 
