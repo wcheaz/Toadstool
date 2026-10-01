@@ -6,6 +6,8 @@ import com.neueda.leap.InstrumentStatusUpdateRequest;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.FauxnanceService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/instruments")
 public class InstrumentController {
 
+    private static final Logger logger = LoggerFactory.getLogger(InstrumentController.class);
     private final InstrumentService instrumentService;
     private final FauxnanceService fauxnanceService;
 
@@ -212,6 +215,7 @@ public class InstrumentController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            logger.error("Error fetching quote for instrument {}: {}", instrumentId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

@@ -3,6 +3,8 @@ package com.neueda.leap.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.leap.config.FauxnanceProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -14,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class FauxnanceService {
+    private static final Logger logger = LoggerFactory.getLogger(FauxnanceService.class);
     private final RestTemplate restTemplate;
     private final FauxnanceProperties properties;
     private final ObjectMapper objectMapper;
@@ -100,24 +103,34 @@ public class FauxnanceService {
             String url = properties.getBaseUrl() + "/quotes/" + symbol;
             ResponseEntity<String> response = makeRequest(url);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode data = root.get("data");
-                if (data != null) {
-                    return new QuoteResponse(
-                            data.get("symbol").asText(),
-                            data.get("price").asDouble(),
-                            data.get("bid").asDouble(),
-                            data.get("ask").asDouble(),
-                            data.get("change").asDouble(),
-                            data.get("changePercent").asDouble(),
-                            data.get("asOf").asText()
-                    );
-                }
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                logger.warn("Fauxnance API returned non-success status {} for symbol {}", response.getStatusCode(), symbol);
+                return null;
             }
+            
+            if (response.getBody() == null) {
+                logger.warn("Fauxnance API returned empty body for symbol {}", symbol);
+                return null;
+            }
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode data = root.get("data");
+            if (data != null) {
+                return new QuoteResponse(
+                        data.get("symbol").asText(),
+                        data.get("price").asDouble(),
+                        data.get("bid").asDouble(),
+                        data.get("ask").asDouble(),
+                        data.get("change").asDouble(),
+                        data.get("changePercent").asDouble(),
+                        data.get("asOf").asText()
+                );
+            }
+            logger.warn("Fauxnance API response missing 'data' field for symbol {}", symbol);
             return null;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch quote for " + symbol, e);
+            logger.error("Error fetching quote for symbol {}: {}", symbol, e.getMessage(), e);
+            return null;
         }
     }
 
@@ -126,29 +139,37 @@ public class FauxnanceService {
             String url = properties.getBaseUrl() + "/quotes?symbols=" + String.join(",", symbols);
             ResponseEntity<String> response = makeRequest(url);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode data = root.get("data");
-                List<QuoteResponse> quotes = new ArrayList<>();
-                if (data.isObject()) {
-                    data.fields().forEachRemaining(entry -> {
-                        JsonNode quote = entry.getValue();
-                        quotes.add(new QuoteResponse(
-                                quote.get("symbol").asText(),
-                                quote.get("price").asDouble(),
-                                quote.get("bid").asDouble(),
-                                quote.get("ask").asDouble(),
-                                quote.get("change").asDouble(),
-                                quote.get("changePercent").asDouble(),
-                                quote.get("asOf").asText()
-                        ));
-                    });
-                }
-                return quotes;
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                logger.warn("Fauxnance API returned non-success status {} for batch quotes", response.getStatusCode());
+                return Collections.emptyList();
             }
-            return Collections.emptyList();
+            
+            if (response.getBody() == null) {
+                logger.warn("Fauxnance API returned empty body for batch quotes");
+                return Collections.emptyList();
+            }
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode data = root.get("data");
+            List<QuoteResponse> quotes = new ArrayList<>();
+            if (data != null && data.isObject()) {
+                data.fields().forEachRemaining(entry -> {
+                    JsonNode quote = entry.getValue();
+                    quotes.add(new QuoteResponse(
+                            quote.get("symbol").asText(),
+                            quote.get("price").asDouble(),
+                            quote.get("bid").asDouble(),
+                            quote.get("ask").asDouble(),
+                            quote.get("change").asDouble(),
+                            quote.get("changePercent").asDouble(),
+                            quote.get("asOf").asText()
+                    ));
+                });
+            }
+            return quotes;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch batch quotes", e);
+            logger.error("Error fetching batch quotes: {}", e.getMessage(), e);
+            return Collections.emptyList();
         }
     }
 
@@ -157,25 +178,33 @@ public class FauxnanceService {
             String url = properties.getBaseUrl() + "/candles/" + symbol + "?from=" + fromDate + "&to=" + toDate;
             ResponseEntity<String> response = makeRequest(url);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode data = root.get("data");
-                List<CandleResponse> candles = new ArrayList<>();
-                if (data.isArray()) {
-                    data.forEach(candle -> candles.add(new CandleResponse(
-                            candle.get("date").asText(),
-                            candle.get("open").asDouble(),
-                            candle.get("high").asDouble(),
-                            candle.get("low").asDouble(),
-                            candle.get("close").asDouble(),
-                            candle.get("volume").asLong()
-                    )));
-                }
-                return candles;
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                logger.warn("Fauxnance API returned non-success status {} for candles {}", response.getStatusCode(), symbol);
+                return Collections.emptyList();
             }
-            return Collections.emptyList();
+            
+            if (response.getBody() == null) {
+                logger.warn("Fauxnance API returned empty body for candles {}", symbol);
+                return Collections.emptyList();
+            }
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode data = root.get("data");
+            List<CandleResponse> candles = new ArrayList<>();
+            if (data != null && data.isArray()) {
+                data.forEach(candle -> candles.add(new CandleResponse(
+                        candle.get("date").asText(),
+                        candle.get("open").asDouble(),
+                        candle.get("high").asDouble(),
+                        candle.get("low").asDouble(),
+                        candle.get("close").asDouble(),
+                        candle.get("volume").asLong()
+                )));
+            }
+            return candles;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch candles for " + symbol, e);
+            logger.error("Error fetching candles for symbol {}: {}", symbol, e.getMessage(), e);
+            return Collections.emptyList();
         }
     }
 
@@ -184,20 +213,30 @@ public class FauxnanceService {
             String url = properties.getBaseUrl() + "/symbols/" + symbol;
             ResponseEntity<String> response = makeRequest(url);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode data = root.get("data");
-                if (data != null) {
-                    return new SymbolResponse(
-                            data.get("symbol").asText(),
-                            data.get("name").asText(),
-                            data.get("currency").asText()
-                    );
-                }
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                logger.warn("Fauxnance API returned non-success status {} for symbol {}", response.getStatusCode(), symbol);
+                return null;
             }
+            
+            if (response.getBody() == null) {
+                logger.warn("Fauxnance API returned empty body for symbol {}", symbol);
+                return null;
+            }
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode data = root.get("data");
+            if (data != null) {
+                return new SymbolResponse(
+                        data.get("symbol").asText(),
+                        data.get("name").asText(),
+                        data.get("currency").asText()
+                );
+            }
+            logger.warn("Fauxnance API response missing 'data' field for symbol {}", symbol);
             return null;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch symbol for " + symbol, e);
+            logger.error("Error fetching symbol {}: {}", symbol, e.getMessage(), e);
+            return null;
         }
     }
 

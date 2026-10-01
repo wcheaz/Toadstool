@@ -30,6 +30,11 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
+fauxnance:
+  baseUrl: ${FAUXNANCE_BASE_URL:https://api.fauxnance.dev}
+  apiKey: ${FAUXNANCE_API_KEY:your-api-key-here}
+  timeoutSeconds: ${FAUXNANCE_TIMEOUT_SECONDS:10}
+
 server:
   port: 8080
 
