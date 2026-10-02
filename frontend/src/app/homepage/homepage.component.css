@@ -729,6 +729,32 @@
   }
 }
 
+.change-positive {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.change-negative {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.change-neutral {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.loading {
+  font-size: 0.8em;
+  color: #007bff;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 49%, 100% { opacity: 1; }
+  50%, 99% { opacity: 0.5; }
+}
+
 @media (max-width: 768px) {
   .homepage-container {
     flex-direction: column;
