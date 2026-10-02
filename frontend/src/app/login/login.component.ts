@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { ApiService } from '../api.service';
+import { timeout } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +20,11 @@ export class LoginComponent {
   errorMessage: string = '';
   isLoading: boolean = false;
 
-  constructor(private router: Router, private apiService: ApiService) {}
+  constructor(
+    private router: Router,
+    private apiService: ApiService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   onSubmit() {
     this.submitted = true;
@@ -39,7 +44,10 @@ export class LoginComponent {
     }
 
     // Call backend API to verify email exists in clients table
-    this.apiService.login(this.email).subscribe({
+    // Add timeout to prevent indefinite hanging (10 seconds)
+    this.apiService.login(this.email).pipe(
+      timeout(10000)
+    ).subscribe({
       next: (response) => {
         // Login successful - store client info in localStorage
         localStorage.setItem('clientId', response.clientId);
@@ -55,13 +63,25 @@ export class LoginComponent {
       error: (error) => {
         // Login failed - show error message
         this.isLoading = false;
-        if (error.status === 401) {
+        
+        // Handle timeout
+        if (error.name === 'TimeoutError') {
+          this.errorMessage = 'Login request timed out. Please check your connection and try again.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'Cannot connect to server. Please check your internet connection.';
+        } else if (error.status === 401) {
           this.errorMessage = 'Email not found. Please check your email and try again.';
         } else if (error.status === 400) {
           this.errorMessage = 'Invalid request. Please try again.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'Server error. Please try again later.';
         } else {
           this.errorMessage = 'Login failed. Please try again.';
         }
+        
+        // Trigger change detection to update the UI
+        this.cdr.markForCheck();
+        
         console.error('Login error:', error);
       }
     });

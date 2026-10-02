@@ -1,6 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { OrderConfirmationComponent } from '../order-confirmation/order-confirmation.component';
+import { OrderSuccessComponent } from '../order-success/order-success.component';
 
 interface Asset {
   symbol: string;
@@ -13,7 +15,7 @@ interface Asset {
 @Component({
   selector: 'app-trading-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OrderConfirmationComponent, OrderSuccessComponent],
   templateUrl: './trading-modal.component.html',
   styleUrl: './trading-modal.component.css'
 })
@@ -28,6 +30,8 @@ export class TradingModalComponent {
   limitPrice: number = 0;
   duration: 'day' | 'gtc' = 'day';
   agreedToTerms: boolean = false;
+  isPreviewOpen: boolean = false;
+  isSuccessOpen: boolean = false;
 
   get estimatedValue(): number {
     if (!this.selectedAsset) return 0;
@@ -59,17 +63,38 @@ export class TradingModalComponent {
       alert('Please agree to market conditions before placing an order');
       return;
     }
-    alert(`${this.orderSide.toUpperCase()} order for ${this.quantity} units of ${this.selectedAsset?.symbol} placed!`);
-    this.closeModal();
+    this.isSuccessOpen = true;
   }
 
   previewOrder() {
-    alert('Order preview: ' + JSON.stringify({
-      side: this.orderSide,
-      symbol: this.selectedAsset?.symbol,
-      quantity: this.quantity,
-      orderType: this.orderType,
-      total: this.orderTotal
-    }));
+    this.isPreviewOpen = true;
+  }
+
+  closePreview() {
+    this.isPreviewOpen = false;
+  }
+
+  editOrder() {
+    this.isPreviewOpen = false;
+  }
+
+  confirmOrder() {
+    this.isPreviewOpen = false;
+    this.isSuccessOpen = true;
+  }
+
+  onSuccessClose() {
+    this.isSuccessOpen = false;
+    this.closeModal();
+  }
+
+  onReturnToDashboard() {
+    this.onSuccessClose();
+  }
+
+  onViewActivity() {
+    // Navigate to activity or show activity view
+    console.log('View activity clicked');
+    this.onSuccessClose();
   }
 }
