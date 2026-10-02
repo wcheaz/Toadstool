@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterVie
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, CandleResponse } from '../api.service';
-import { createChart, ColorType, LineSeries, UTCTimestamp } from 'lightweight-charts';
+import { createChart, ColorType, CandlestickSeries, UTCTimestamp } from 'lightweight-charts';
 
 interface Asset {
   symbol: string;
@@ -129,15 +129,25 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
       timeScale: { timeVisible: true, secondsVisible: false }
     });
 
-    const lineSeries = chart.addSeries(LineSeries, { color: '#26a69a', lineWidth: 2 });
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderUpColor: '#26a69a',
+      borderDownColor: '#ef5350',
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350'
+    });
 
     const chartData = this.candleData.map(c => ({
       time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
-      value: c.close
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close
     }));
 
     console.log('Chart data points:', chartData.length);
-    lineSeries.setData(chartData);
+    candlestickSeries.setData(chartData);
     chart.timeScale().fitContent();
     console.log('Chart rendered successfully');
   }
