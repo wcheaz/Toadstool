@@ -67,6 +67,11 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   candles: CandleResponse[] = [];
   loadingCandles: boolean = false;
 
+  // Trading modal state
+  tradingChartData: CandleResponse[] = [];
+  selectedInstrumentId: string = '';
+  selectedTimeframeForChart: string = '90'; // default 3M
+
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
@@ -251,6 +256,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
     if (!quote) return;
+    console.log('Opening trade modal for:', instrument.symbol);
     this.selectedAsset = {
       symbol: instrument.symbol,
       name: instrument.name,
@@ -258,7 +264,25 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
       change: quote.changePercent,
       holdings: 0
     };
+    this.selectedInstrumentId = instrument.instrumentId;
+    this.selectedTimeframeForChart = '90'; // default to 3M
     this.isTradeModalOpen = true;
+
+    // Fetch chart data for the default timeframe
+    console.log('Fetching candles for:', instrument.instrumentId);
+    this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
+      next: (candles) => {
+        console.log('Candles received:', candles.length, 'items');
+        this.tradingChartData = candles;
+        console.log('tradingChartData set to:', this.tradingChartData.length, 'items');
+        this.cdr.detectChanges();
+        console.log('detectChanges called');
+      },
+      error: (e) => {
+        console.error('Failed to load chart data:', e);
+        console.error('Error details:', e.status, e.statusText, e.message);
+      }
+    });
   }
 
   closeTradeModal() {

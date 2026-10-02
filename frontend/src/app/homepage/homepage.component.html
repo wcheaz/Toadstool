@@ -261,11 +261,13 @@
       </div>
     </section>
 
-    <!-- Trading Modal -->
-    <app-trading-modal 
-      [isOpen]="isTradeModalOpen" 
-      [selectedAsset]="selectedAsset"
-      (close)="closeTradeModal()">
-    </app-trading-modal>
+  <!-- Trading Modal -->
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="selectedAsset"
+    [candleData]="tradingChartData"
+    [instrumentId]="selectedInstrumentId"
+    (close)="closeTradeModal()">
+  </app-trading-modal>
   </main>
 </div>

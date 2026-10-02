@@ -52,6 +52,15 @@ export class ApiService {
   }
 
   /**
+   * Get market depth (Level 2) for an instrument
+   */
+  getMarketDepth(instrumentId: string): Observable<DepthLevel[]> {
+    return this.http.get<DepthLevel[]>(
+      `${this.apiUrl}/instruments/${instrumentId}/depth`
+    );
+  }
+
+  /**
    * Get quote preview before placing order
    */
   getQuotePreview(
@@ -126,4 +135,10 @@ export interface PaginatedResponse<T> {
     totalCount: number;
     hasMore: boolean;
   };
+}
+
+export interface DepthLevel {
+  volume: number;
+  price: number;
+  side: string;
 }
