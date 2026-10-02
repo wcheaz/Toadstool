@@ -246,6 +246,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
     if (!quote) return;
+    console.log('Opening trade modal for:', instrument.symbol);
     this.selectedAsset = {
       symbol: instrument.symbol,
       name: instrument.name,
@@ -258,12 +259,19 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isTradeModalOpen = true;
 
     // Fetch chart data for the default timeframe
+    console.log('Fetching candles for:', instrument.instrumentId);
     this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
       next: (candles) => {
+        console.log('Candles received:', candles.length, 'items');
         this.tradingChartData = candles;
+        console.log('tradingChartData set to:', this.tradingChartData.length, 'items');
         this.cdr.detectChanges();
+        console.log('detectChanges called');
       },
-      error: (e) => console.error('Failed to load chart data:', e)
+      error: (e) => {
+        console.error('Failed to load chart data:', e);
+        console.error('Error details:', e.status, e.statusText, e.message);
+      }
     });
   }
 
