@@ -66,6 +66,7 @@
     <header class="top-bar">
       <div class="welcome-section">
         <h1 class="welcome-text">Welcome, {{ clientName }}</h1>
+        <p class="platform-status">{{ platformStatus }}</p>
       </div>
 
       <div class="top-right-actions">
@@ -152,15 +153,49 @@
 
       <!-- NEWS TAB CONTENT -->
       <div class="tab-content" *ngIf="activeTab === 'news'">
-        <!-- TEST: Single Price Display -->
-        <div style="background: #f0f0f0; padding: 20px; margin-bottom: 20px; border-radius: 8px;">
-          <h3>TEST: Live Price (First Instrument)</h3>
-          <p *ngIf="testInstrument">
-            <strong>{{ testInstrument.symbol }}</strong>:
-            <span *ngIf="testPrice">{{ testPrice | currency }}</span>
-            <span *ngIf="!testPrice">Loading...</span>
-          </p>
-          <p *ngIf="!testInstrument">No instruments loaded</p>
+        <!-- TEST: Single Instrument Data Display -->
+        <div style="background: #f0f0f0; padding: 20px; margin-bottom: 20px; border-radius: 8px; font-family: monospace;">
+          <h3 style="margin-top: 0;">Instrument Data</h3>
+          <div *ngIf="testInstrument">
+            <p><strong>Symbol:</strong> {{ testInstrument.symbol }}</p>
+            <p><strong>Name:</strong> {{ testInstrument.name }}</p>
+            <p><strong>Asset Class:</strong> {{ testInstrument.assetClass }}</p>
+            <p><strong>Status:</strong> {{ testInstrument.status }}</p>
+            <ng-container *ngIf="getQuote(testInstrument.instrumentId) as quote">
+              <p><strong>Price:</strong> {{ quote.price | currency }}</p>
+              <p><strong>Bid:</strong> {{ quote.bid | currency }}</p>
+              <p><strong>Ask:</strong> {{ quote.ask | currency }}</p>
+              <p><strong>Change:</strong> {{ quote.change | currency }}</p>
+              <p><strong>Change %:</strong> {{ quote.changePercent }}%</p>
+              <p><strong>As Of:</strong> {{ quote.asOf }}</p>
+            </ng-container>
+            <div *ngIf="!getQuote(testInstrument.instrumentId)">
+              <p style="color: #999;"><em>Quote data loading...</em></p>
+            </div>
+          </div>
+          <div *ngIf="!testInstrument">
+            <p style="color: #999;"><em>No instruments loaded</em></p>
+          </div>
+        </div>
+
+        <!-- CANDLESTICK CHART SECTION -->
+        <div style="background: #1e1e1e; padding: 20px; margin-bottom: 20px; border-radius: 8px;">
+          <h3 style="margin-top: 0; color: #d1d5db;">Price Chart - {{ testInstrument?.symbol }}</h3>
+
+          <!-- Timeframe Buttons -->
+          <div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <button *ngFor="let tf of timeframes"
+              (click)="selectTimeframe(tf.label)"
+              [style.background]="selectedTimeframe === tf.label ? '#26a69a' : '#374151'"
+              [style.color]="selectedTimeframe === tf.label ? '#1e1e1e' : '#d1d5db'"
+              style="padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+              {{ tf.label }}
+            </button>
+          </div>
+
+          <!-- Chart Container -->
+          <div *ngIf="loadingCandles" style="color: #999; padding: 20px;">Loading chart data...</div>
+          <div #chartContainer [style.display]="loadingCandles ? 'none' : 'block'"></div>
         </div>
 
         <div class="news-section">
@@ -202,13 +237,13 @@
               <span class="asset-full">{{ instrument.name }}</span>
             </div>
             <div class="table-cell">
-              {{ getQuote(instrument.instrumentId)?.price || 'Loading...' | currency }}
+              {{ (getQuote(instrument.instrumentId)?.price || 0) | currency }}
             </div>
             <div class="table-cell" [ngClass]="getPriceChangeClass(getQuote(instrument.instrumentId)?.changePercent)">
               {{ getQuote(instrument.instrumentId)?.changePercent?.toFixed(2) || 'Loading...' }}%
             </div>
             <div class="table-cell">-- Units</div>
-            <div class="table-cell"><button class="trade-btn">Trade</button></div>
+            <div class="table-cell"><button class="trade-btn" (click)="openTradeModal(instrument, getQuote(instrument.instrumentId))">Trade</button></div>
           </div>
 
           <!-- Fallback: No instruments loaded -->
@@ -252,4 +287,11 @@
       </div>
     </section>
   </main>
+
+  <!-- Trading Modal -->
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="selectedAsset"
+    (close)="closeTradeModal()">
+  </app-trading-modal>
 </div>

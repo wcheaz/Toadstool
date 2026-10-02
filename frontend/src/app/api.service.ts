@@ -18,6 +18,13 @@ export class ApiService {
   }
 
   /**
+   * Register a new client account
+   */
+  register(data: RegisterRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/register`, data);
+  }
+
+  /**
    * Get all instruments (without live prices)
    */
   getInstruments(limit: number = 50, offset: number = 0): Observable<PaginatedResponse<Instrument>> {
@@ -67,6 +74,12 @@ export interface LoginResponse {
   message: string;
 }
 
+export interface RegisterRequest {
+  displayName: string;
+  email: string;
+  password: string;
+}
+
 export interface Instrument {
   instrumentId: string;
   symbol: string;
@@ -114,4 +127,3 @@ export interface PaginatedResponse<T> {
     hasMore: boolean;
   };
 }
-
