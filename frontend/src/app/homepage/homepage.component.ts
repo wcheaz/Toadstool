@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { clearAuthSession, getClientDisplayName } from '../auth-storage';
 
 @Component({
   selector: 'app-homepage',
@@ -15,9 +17,8 @@ export class HomepageComponent {
   isBalanceVisible: boolean = true;
   activeTab: string = 'news';
 
-  constructor() {
-    // Get client name from session/localStorage
-    this.clientName = localStorage.getItem('clientName') || 'User';
+  constructor(private readonly router: Router) {
+    this.clientName = getClientDisplayName() || 'User';
   }
 
   toggleBalanceVisibility() {
@@ -53,7 +54,7 @@ export class HomepageComponent {
   }
 
   logout() {
-    localStorage.removeItem('clientName');
-    window.location.href = '/login';
+    clearAuthSession();
+    this.router.navigate(['/login']);
   }
 }

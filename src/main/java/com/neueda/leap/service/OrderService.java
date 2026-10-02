@@ -7,6 +7,8 @@ import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.AssetClassFeeStructure;
 import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.mapper.OrderMapper;
+import com.neueda.leap.security.AuthenticatedUser;
+import com.neueda.leap.security.SecurityAccess;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,17 +27,20 @@ public class OrderService {
     private final MarketStatusService marketStatusService;
     private final AccountService accountService;
     private final InstrumentService instrumentService;
+    private final TradeEventService tradeEventService;
 
     public OrderService(OrderMapper orderMapper, 
                        InstrumentPricingService pricingService,
                        MarketStatusService marketStatusService,
                        AccountService accountService,
-                       InstrumentService instrumentService) {
+                       InstrumentService instrumentService,
+                       TradeEventService tradeEventService) {
         this.orderMapper = orderMapper;
         this.pricingService = pricingService;
         this.marketStatusService = marketStatusService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
+        this.tradeEventService = tradeEventService;
     }
 
     /**
@@ -148,6 +153,12 @@ public class OrderService {
         
         // Step 11: Set totalPrice on the order object (not persisted to DB, calculated at submission time)
         order.setTotalPrice(totalPrice);
+
+        tradeEventService.recordOrderSubmitted(
+                account.getClientId(),
+                order.getOrderId(),
+                buildOrderEventDetails(account.getClientId(), accountId, instrumentId, side, quantity, idempotencyKey)
+        );
         
         return order;
     }
@@ -175,5 +186,19 @@ public class OrderService {
      */
     public void updateOrderStatus(UUID orderId, String status) {
         orderMapper.updateOrderStatus(orderId, status);
+    }
+
+    private String buildOrderEventDetails(UUID ownerClientId, UUID accountId, UUID instrumentId,
+                                          String side, String quantity, String idempotencyKey) {
+        AuthenticatedUser authenticatedUser = SecurityAccess.currentUser();
+        UUID authenticatedUserId = authenticatedUser != null && authenticatedUser.getClientId() != null
+                ? authenticatedUser.getClientId()
+                : ownerClientId;
+        return "{\"authenticatedUserId\":\"" + authenticatedUserId
+                + "\",\"accountId\":\"" + accountId
+                + "\",\"instrumentId\":\"" + instrumentId
+                + "\",\"side\":\"" + side
+                + "\",\"quantity\":\"" + quantity
+                + "\",\"idempotencyKey\":\"" + idempotencyKey + "\"}";
     }
 }

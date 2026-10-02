@@ -4,6 +4,7 @@ import com.neueda.leap.Instrument;
 import com.neueda.leap.InstrumentCreateRequest;
 import com.neueda.leap.InstrumentStatusUpdateRequest;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.InstrumentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -86,6 +87,9 @@ public class InstrumentController {
      */
     @PostMapping
     public ResponseEntity<InstrumentDto> createInstrument(@RequestBody InstrumentCreateRequest request) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         try {
             // Validate input
             if (request.getSymbol() == null || request.getSymbol().trim().isEmpty()) {
@@ -122,6 +126,9 @@ public class InstrumentController {
     public ResponseEntity<InstrumentDto> updateInstrumentStatus(
             @PathVariable UUID instrumentId,
             @RequestBody InstrumentStatusUpdateRequest request) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             Instrument instrument = instrumentService.getInstrumentById(instrumentId);

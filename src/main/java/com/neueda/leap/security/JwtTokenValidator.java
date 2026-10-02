@@ -3,16 +3,11 @@ package com.neueda.leap.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Date;
 
 /**
@@ -26,20 +21,11 @@ import java.util.Date;
 public class JwtTokenValidator {
 
     private final JwtProperties jwtProperties;
-    private PublicKey verificationKey;
+    private final PublicKey verificationKey;
 
-    public JwtTokenValidator(JwtProperties jwtProperties) {
+    public JwtTokenValidator(JwtProperties jwtProperties, JwtKeyProvider jwtKeyProvider) {
         this.jwtProperties = jwtProperties;
-    }
-
-    @PostConstruct
-    void validateConfiguration() {
-        if (jwtProperties.isEnabled() && !StringUtils.hasText(jwtProperties.getPublicKey())) {
-            throw new IllegalStateException("auth.jwt.public-key must be configured when JWT authentication is enabled");
-        }
-        if (jwtProperties.isEnabled()) {
-            verificationKey = JwtKeySupport.loadPublicKey(jwtProperties.getPublicKey());
-        }
+        this.verificationKey = jwtProperties.isEnabled() ? jwtKeyProvider.getVerificationKey() : null;
     }
 
     /**
@@ -61,6 +47,7 @@ public class JwtTokenValidator {
                     .getBody();
 
             String subject = claims.getSubject();
+            String username = claims.get("username", String.class);
             Date issuedAt = claims.getIssuedAt();
             if (!StringUtils.hasText(subject)) {
                 throw new JwtException("JWT subject claim is required");
@@ -68,9 +55,13 @@ public class JwtTokenValidator {
             if (issuedAt == null) {
                 throw new JwtException("JWT issued-at claim is required");
             }
+            if (!StringUtils.hasText(username)) {
+                username = subject;
+            }
 
             return ValidatedToken.authenticated(
                     subject,
+                    username,
                     claims.get("email", String.class),
                     claims.get("roles", String.class),
                     toInstant(issuedAt),

@@ -51,6 +51,9 @@ class OrderServiceTest {
     @Mock
     private InstrumentService instrumentService;
 
+    @Mock
+    private TradeEventService tradeEventService;
+
     private UUID accountId;
     private UUID instrumentId;
     private UUID orderId;

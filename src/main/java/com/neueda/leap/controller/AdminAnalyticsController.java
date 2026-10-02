@@ -1,6 +1,7 @@
 package com.neueda.leap.controller;
 
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,9 @@ public class AdminAnalyticsController {
             @RequestParam(required = false) String toDate,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Validate pagination
@@ -55,6 +59,9 @@ public class AdminAnalyticsController {
             @RequestParam(required = false) String toDate,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Validate pagination
@@ -82,6 +89,9 @@ public class AdminAnalyticsController {
             @RequestParam(required = false) String insight,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Stub: return empty insights for Week 1-3

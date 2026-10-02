@@ -1,12 +1,14 @@
 package com.neueda.leap.controller;
 
 import com.neueda.leap.Order;
+import com.neueda.leap.Account;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.dto.PlaceOrderRequest;
 import com.neueda.leap.dto.OrderResponse;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,9 +46,12 @@ public class OrderController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
         try {
-            // Validate account exists
-            if (accountService.getAccountById(accountId) == null) {
+            Account account = accountService.getAccountById(accountId);
+            if (account == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Validate instrument exists and is tradable
@@ -90,6 +95,13 @@ public class OrderController {
         if (order == null) {
             return ResponseEntity.notFound().build();
         }
+        Account account = accountService.getAccountById(order.getAccountId());
+        if (account == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!SecurityAccess.canAccessAccount(order.getAccountId(), account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         return ResponseEntity.ok(mapToOrderResponse(order));
     }
@@ -105,9 +117,12 @@ public class OrderController {
             @RequestParam(defaultValue = "0") int offset) {
 
         try {
-            // Validate account exists
-            if (accountService.getAccountById(accountId) == null) {
+            Account account = accountService.getAccountById(accountId);
+            if (account == null) {
                 return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Validate pagination params
@@ -143,9 +158,12 @@ public class OrderController {
             @RequestParam String quantity) {
 
         try {
-            // Validate account exists
-            if (accountService.getAccountById(accountId) == null) {
+            Account account = accountService.getAccountById(accountId);
+            if (account == null) {
                 return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Validate instrument exists

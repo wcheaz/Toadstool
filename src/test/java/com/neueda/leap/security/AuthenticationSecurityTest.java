@@ -1,6 +1,8 @@
 package com.neueda.leap.security;
 
-import com.neueda.leap.Main;
+import com.neueda.leap.ToadstoolApplication;
+import com.neueda.leap.auth.AuthResponse;
+import com.neueda.leap.auth.TokenValidationResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.jupiter.api.AfterAll;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -30,8 +33,9 @@ import java.util.Date;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest(classes = Main.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = ToadstoolApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @DisplayName("Authentication Security Tests")
 class AuthenticationSecurityTest {
@@ -136,6 +140,90 @@ class AuthenticationSecurityTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
+    @Test
+    @DisplayName("Registered users receive JWTs whose subject is their client ID")
+    void registerIssuesJwtWithClientIdSubject() {
+        RegisteredUser registeredUser = registerUser();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<TokenValidationResponse> validation = restTemplate.exchange(
+                url("/api/auth/validate"),
+                HttpMethod.POST,
+                new HttpEntity<>("{\"token\":\"" + registeredUser.authResponse().getAccessToken() + "\"}", headers),
+                TokenValidationResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, validation.getStatusCode());
+        assertNotNull(validation.getBody());
+        assertEquals(registeredUser.authResponse().getClientId().toString(), validation.getBody().getSubject());
+        assertEquals(registeredUser.username(), validation.getBody().getUsername());
+        assertEquals(registeredUser.authResponse().getAccountId().toString(), validation.getBody().getAccountId());
+    }
+
+    @Test
+    @DisplayName("A client token can access only its own client data and not another client's")
+    void clientTokenCanAccessOnlyOwnedData() {
+        RegisteredUser firstUser = registerUser();
+        RegisteredUser secondUser = registerUser();
+
+        ResponseEntity<String> ownResponse = restTemplate.exchange(
+                url("/api/clients/" + firstUser.authResponse().getClientId()),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(firstUser.authResponse().getAccessToken())),
+                String.class
+        );
+
+        ResponseEntity<String> forbiddenResponse = restTemplate.exchange(
+                url("/api/clients/" + secondUser.authResponse().getClientId()),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(firstUser.authResponse().getAccessToken())),
+                String.class
+        );
+
+        assertEquals(HttpStatus.OK, ownResponse.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, forbiddenResponse.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Logging out revokes the server-side session for the access token")
+    void logoutRevokesSession() {
+        RegisteredUser registeredUser = registerUser();
+
+        ResponseEntity<Void> logoutResponse = restTemplate.exchange(
+                url("/api/auth/logout"),
+                HttpMethod.POST,
+                new HttpEntity<>(authHeaders(registeredUser.authResponse().getAccessToken())),
+                Void.class
+        );
+
+        ResponseEntity<String> protectedResponse = restTemplate.exchange(
+                url("/api/clients/" + registeredUser.authResponse().getClientId()),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(registeredUser.authResponse().getAccessToken())),
+                String.class
+        );
+
+        assertEquals(HttpStatus.NO_CONTENT, logoutResponse.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, protectedResponse.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Client JWTs cannot access admin-only analytics endpoints")
+    void clientJwtCannotAccessAdminEndpoint() {
+        RegisteredUser registeredUser = registerUser();
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url(PLATFORM_ACTIVITY_PATH),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(registeredUser.authResponse().getAccessToken())),
+                String.class
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
     private String generateValidToken() {
         return Jwts.builder()
                 .setSubject(UUID.randomUUID().toString())
@@ -161,6 +249,38 @@ class AuthenticationSecurityTest {
         return "http://localhost:" + port + path;
     }
 
+    private HttpHeaders authHeaders(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        return headers;
+    }
+
+    private RegisteredUser registerUser() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String username = "client_" + suffix;
+        String email = "client_" + suffix + "@example.com";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<AuthResponse> response = restTemplate.exchange(
+                url("/api/auth/register"),
+                HttpMethod.POST,
+                new HttpEntity<>(
+                        "{\"email\":\"" + email
+                                + "\",\"displayName\":\"Client " + suffix
+                                + "\",\"username\":\"" + username
+                                + "\",\"password\":\"Password123!\"}",
+                        headers
+                ),
+                AuthResponse.class
+        );
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getAccessToken());
+        return new RegisteredUser(username, email, response.getBody());
+    }
+
     private static void recreateTestDatabase() {
         try (Connection connection = DriverManager.getConnection(ADMIN_JDBC_URL, DB_USERNAME, DB_PASSWORD);
              Statement statement = connection.createStatement()) {
@@ -170,5 +290,8 @@ class AuthenticationSecurityTest {
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to create temporary authentication test database " + TEST_DB_NAME, e);
         }
+    }
+
+    private record RegisteredUser(String username, String email, AuthResponse authResponse) {
     }
 }

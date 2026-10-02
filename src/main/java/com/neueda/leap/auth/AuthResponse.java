@@ -5,21 +5,21 @@ import java.util.UUID;
 public class AuthResponse {
 
     private final String accessToken;
-    private final String refreshToken;
     private final long expiresIn;
     private final UUID clientId;
     private final UUID accountId;
+    private final String displayName;
     private final String username;
     private final String email;
     private final String role;
 
-    public AuthResponse(String accessToken, String refreshToken, long expiresIn, UUID clientId, UUID accountId,
-                        String username, String email, String role) {
+    public AuthResponse(String accessToken, long expiresIn, UUID clientId, UUID accountId,
+                        String displayName, String username, String email, String role) {
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
         this.expiresIn = expiresIn;
         this.clientId = clientId;
         this.accountId = accountId;
+        this.displayName = displayName;
         this.username = username;
         this.email = email;
         this.role = role;
@@ -27,10 +27,6 @@ public class AuthResponse {
 
     public String getAccessToken() {
         return accessToken;
-    }
-
-    public String getRefreshToken() {
-        return refreshToken;
     }
 
     public long getExpiresIn() {
@@ -43,6 +39,10 @@ public class AuthResponse {
 
     public UUID getAccountId() {
         return accountId;
+    }
+
+    public String getDisplayName() {
+        return displayName;
     }
 
     public String getUsername() {

@@ -4,6 +4,7 @@ import com.neueda.leap.Account;
 import com.neueda.leap.dto.AccountResponse;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.dto.HoldingsResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,9 @@ public class AccountController {
             }
 
             UUID clientId = request.getClientId();
+            if (!SecurityAccess.canAccessClient(clientId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
             // Verify client exists
             if (clientService.getClientById(clientId) == null) {
@@ -66,6 +70,9 @@ public class AccountController {
         if (account == null) {
             return ResponseEntity.notFound().build();
         }
+        if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(mapToAccountResponse(account));
     }
 
@@ -78,6 +85,9 @@ public class AccountController {
             @PathVariable UUID clientId,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.canAccessClient(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Verify client exists
@@ -116,6 +126,9 @@ public class AccountController {
             Account account = accountService.getAccountById(accountId);
             if (account == null) {
                 return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Stub: return empty holdings

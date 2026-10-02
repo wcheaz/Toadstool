@@ -1,9 +1,13 @@
 package com.neueda.leap.controller;
 
 import com.neueda.leap.TradeEvent;
+import com.neueda.leap.Account;
+import com.neueda.leap.Order;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.TradeEventService;
 import com.neueda.leap.service.OrderService;
+import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,11 +26,14 @@ public class TradeEventController {
 
     private final TradeEventService tradeEventService;
     private final OrderService orderService;
+    private final AccountService accountService;
     private final ClientService clientService;
 
-    public TradeEventController(TradeEventService tradeEventService, OrderService orderService, ClientService clientService) {
+    public TradeEventController(TradeEventService tradeEventService, OrderService orderService,
+                                AccountService accountService, ClientService clientService) {
         this.tradeEventService = tradeEventService;
         this.orderService = orderService;
+        this.accountService = accountService;
         this.clientService = clientService;
     }
 
@@ -39,9 +46,16 @@ public class TradeEventController {
             @PathVariable UUID orderId) {
 
         try {
-            // Verify order exists
-            if (orderService.getOrderById(orderId) == null) {
+            Order order = orderService.getOrderById(orderId);
+            if (order == null) {
                 return ResponseEntity.notFound().build();
+            }
+            Account account = accountService.getAccountById(order.getAccountId());
+            if (account == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(order.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             List<TradeEvent> events = tradeEventService.listTradeEventsByEntity(orderId);
@@ -68,6 +82,9 @@ public class TradeEventController {
             @RequestParam(required = false) String action,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.canAccessClient(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Verify client exists

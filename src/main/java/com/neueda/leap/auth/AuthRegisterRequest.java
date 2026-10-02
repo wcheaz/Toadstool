@@ -1,6 +1,6 @@
 package com.neueda.leap.auth;
 
-public class RegisterRequest {
+public class AuthRegisterRequest {
 
     private String email;
     private String displayName;

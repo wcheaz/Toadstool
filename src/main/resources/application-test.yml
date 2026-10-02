@@ -42,3 +42,4 @@ logging:
 auth:
   jwt:
     enabled: false
+    require-https: false

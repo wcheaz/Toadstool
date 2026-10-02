@@ -1,6 +1,6 @@
 package com.neueda.leap.auth;
 
-public class LoginRequest {
+public class AuthLoginRequest {
 
     private String username;
     private String password;

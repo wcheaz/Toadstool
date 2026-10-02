@@ -1,8 +1,11 @@
 package com.neueda.leap.controller;
 
+import com.neueda.leap.Account;
 import com.neueda.leap.Fill;
+import com.neueda.leap.Order;
 import com.neueda.leap.dto.FillResponse;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.FillService;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.AccountService;
@@ -40,6 +43,17 @@ public class FillController {
         if (fill == null) {
             return ResponseEntity.notFound().build();
         }
+        Order order = orderService.getOrderById(fill.getOrderId());
+        if (order == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Account account = accountService.getAccountById(order.getAccountId());
+        if (account == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!SecurityAccess.canAccessAccount(order.getAccountId(), account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(mapToFillResponse(fill));
     }
 
@@ -54,9 +68,16 @@ public class FillController {
             @RequestParam(defaultValue = "0") int offset) {
 
         try {
-            // Verify order exists
-            if (orderService.getOrderById(orderId) == null) {
+            Order order = orderService.getOrderById(orderId);
+            if (order == null) {
                 return ResponseEntity.notFound().build();
+            }
+            Account account = accountService.getAccountById(order.getAccountId());
+            if (account == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(order.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Validate pagination
@@ -90,9 +111,12 @@ public class FillController {
             @RequestParam(defaultValue = "0") int offset) {
 
         try {
-            // Verify account exists
-            if (accountService.getAccountById(accountId) == null) {
+            Account account = accountService.getAccountById(accountId);
+            if (account == null) {
                 return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // Validate pagination

@@ -3,6 +3,7 @@ package com.neueda.leap.controller;
 import com.neueda.leap.Client;
 import com.neueda.leap.dto.ClientResponse;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.ClientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,9 @@ public class ClientController {
         if (client == null) {
             return ResponseEntity.notFound().build();
         }
+        if (!SecurityAccess.canAccessClient(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(mapToClientResponse(client));
     }
 
@@ -46,6 +50,9 @@ public class ClientController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Validate pagination
@@ -89,6 +96,9 @@ public class ClientController {
             Client client = clientService.getClientById(clientId);
             if (client == null) {
                 return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessClient(clientId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             String displayName = request != null ? request.getDisplayName() : null;

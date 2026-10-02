@@ -31,7 +31,7 @@ mybatis:
     map-underscore-to-camel-case: true
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8081}
 
 logging:
   level:
@@ -41,9 +41,9 @@ logging:
 
 auth:
   jwt:
-    public-key: BASE64_X509_PUBLIC_KEY
-    private-key: BASE64_PKCS8_PRIVATE_KEY
+    public-key: ${AUTH_JWT_PUBLIC_KEY:BASE64_X509_PUBLIC_KEY}
+    private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
     issuer: toadstool
-    access-token-ttl-minutes: 60
-    refresh-token-ttl-days: 30
+    access-token-ttl-minutes: 15
     enabled: true
+    require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

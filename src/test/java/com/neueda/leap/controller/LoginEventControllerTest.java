@@ -39,6 +39,7 @@ class LoginEventControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.clearAuthentication();
         mockMvc = ControllerTestSupport.buildMockMvc(new LoginEventController(loginEventService, clientService));
     }
 
@@ -46,6 +47,7 @@ class LoginEventControllerTest {
     @DisplayName("GET /api/clients/{clientId}/login-events returns paginated login events")
     void listLoginEventsByClientReturnsPaginatedItems() throws Exception {
         UUID clientId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        ControllerTestSupport.authenticateClient(clientId, UUID.fromString("abababab-abab-abab-abab-abababababab"));
         LoginEvent event = new LoginEvent(
                 UUID.fromString("22222222-2222-2222-2222-222222222222"),
                 clientId,
@@ -78,6 +80,7 @@ class LoginEventControllerTest {
     @DisplayName("GET /api/admin/login-events returns the admin login event listing schema")
     void listLoginEventsAdminReturnsPaginatedItems() throws Exception {
         UUID clientId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        ControllerTestSupport.authenticateAdmin();
         LoginEvent event = new LoginEvent(
                 UUID.fromString("44444444-4444-4444-4444-444444444444"),
                 clientId,

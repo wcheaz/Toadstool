@@ -2,6 +2,7 @@ package com.neueda.leap.controller;
 
 import com.neueda.leap.LoginEvent;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.LoginEventService;
 import com.neueda.leap.service.ClientService;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,9 @@ public class LoginEventController {
             @RequestParam(required = false) String outcome,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.canAccessClient(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Verify client exists
@@ -75,6 +79,9 @@ public class LoginEventController {
             @RequestParam(required = false) String emailAttempted,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Validate pagination

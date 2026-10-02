@@ -8,10 +8,8 @@ public class AuthSession {
     private UUID sessionKeyId;
     private UUID credentialId;
     private UUID accountId;
-    private String refreshTokenHash;
     private OffsetDateTime issuedAt;
     private OffsetDateTime accessTokenExpiresAt;
-    private OffsetDateTime refreshTokenExpiresAt;
     private OffsetDateTime revokedAt;
     private OffsetDateTime lastUsedAt;
 
@@ -39,14 +37,6 @@ public class AuthSession {
         this.accountId = accountId;
     }
 
-    public String getRefreshTokenHash() {
-        return refreshTokenHash;
-    }
-
-    public void setRefreshTokenHash(String refreshTokenHash) {
-        this.refreshTokenHash = refreshTokenHash;
-    }
-
     public OffsetDateTime getIssuedAt() {
         return issuedAt;
     }
@@ -61,14 +51,6 @@ public class AuthSession {
 
     public void setAccessTokenExpiresAt(OffsetDateTime accessTokenExpiresAt) {
         this.accessTokenExpiresAt = accessTokenExpiresAt;
-    }
-
-    public OffsetDateTime getRefreshTokenExpiresAt() {
-        return refreshTokenExpiresAt;
-    }
-
-    public void setRefreshTokenExpiresAt(OffsetDateTime refreshTokenExpiresAt) {
-        this.refreshTokenExpiresAt = refreshTokenExpiresAt;
     }
 
     public OffsetDateTime getRevokedAt() {

@@ -8,9 +8,9 @@ public class JwtProperties {
     private String publicKey = "";
     private String privateKey = "";
     private String issuer = "toadstool";
-    private long accessTokenTtlMinutes = 60;
-    private long refreshTokenTtlDays = 30;
+    private long accessTokenTtlMinutes = 15;
     private boolean enabled = true;
+    private boolean requireHttps = true;
 
     public String getPublicKey() {
         return publicKey;
@@ -44,19 +44,19 @@ public class JwtProperties {
         this.accessTokenTtlMinutes = accessTokenTtlMinutes;
     }
 
-    public long getRefreshTokenTtlDays() {
-        return refreshTokenTtlDays;
-    }
-
-    public void setRefreshTokenTtlDays(long refreshTokenTtlDays) {
-        this.refreshTokenTtlDays = refreshTokenTtlDays;
-    }
-
     public boolean isEnabled() {
         return enabled;
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public boolean isRequireHttps() {
+        return requireHttps;
+    }
+
+    public void setRequireHttps(boolean requireHttps) {
+        this.requireHttps = requireHttps;
     }
 }

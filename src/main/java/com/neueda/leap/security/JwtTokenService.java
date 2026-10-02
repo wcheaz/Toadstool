@@ -1,7 +1,6 @@
 package com.neueda.leap.security;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 
 import java.security.PrivateKey;
@@ -16,34 +15,28 @@ public class JwtTokenService {
     private final JwtProperties jwtProperties;
     private final PrivateKey signingKey;
 
-    public JwtTokenService(JwtProperties jwtProperties) {
+    public JwtTokenService(JwtProperties jwtProperties, JwtKeyProvider jwtKeyProvider) {
         this.jwtProperties = jwtProperties;
         if (!jwtProperties.isEnabled()) {
             this.signingKey = null;
             return;
         }
-        if (jwtProperties.getPrivateKey() == null || jwtProperties.getPrivateKey().isBlank()) {
-            throw new IllegalStateException("auth.jwt.private-key must be configured when JWT authentication is enabled");
-        }
-        this.signingKey = JwtKeySupport.loadPrivateKey(jwtProperties.getPrivateKey());
+        this.signingKey = jwtKeyProvider.getSigningKey();
     }
 
-    public IssuedTokenPair issueTokenPair(UUID sessionKeyId, UUID clientId, UUID accountId,
-                                          String username, String email, String role) {
+    public IssuedAccessToken issueAccessToken(UUID sessionKeyId, UUID clientId, UUID accountId,
+                                              String username, String email, String role) {
         if (!jwtProperties.isEnabled()) {
-            return IssuedTokenPair.disabled();
+            return IssuedAccessToken.disabled();
         }
 
         Instant now = Instant.now();
         Instant accessExpiresAt = now.plus(Duration.ofMinutes(jwtProperties.getAccessTokenTtlMinutes()));
-        Instant refreshExpiresAt = now.plus(Duration.ofDays(jwtProperties.getRefreshTokenTtlDays()));
 
         String accessToken = buildToken(sessionKeyId, clientId, accountId, username, email, role,
                 "ACCESS", now, accessExpiresAt);
-        String refreshToken = buildToken(sessionKeyId, clientId, accountId, username, email, role,
-                "REFRESH", now, refreshExpiresAt);
 
-        return new IssuedTokenPair(accessToken, refreshToken, accessExpiresAt, refreshExpiresAt);
+        return new IssuedAccessToken(accessToken, accessExpiresAt);
     }
 
     private String buildToken(UUID sessionKeyId, UUID clientId, UUID accountId, String username, String email,
@@ -54,10 +47,11 @@ public class JwtTokenService {
 
         return Jwts.builder()
                 .setId(sessionKeyId.toString())
-                .setSubject(username)
+                .setSubject(clientId.toString())
                 .setIssuer(jwtProperties.getIssuer())
                 .setIssuedAt(Date.from(issuedAt))
                 .setExpiration(Date.from(expiresAt))
+                .claim("username", username)
                 .claim("clientId", clientId.toString())
                 .claim("accountId", accountId.toString())
                 .claim("email", email)
@@ -67,37 +61,25 @@ public class JwtTokenService {
                 .compact();
     }
 
-    public static class IssuedTokenPair {
+    public static class IssuedAccessToken {
         private final String accessToken;
-        private final String refreshToken;
         private final Instant accessTokenExpiresAt;
-        private final Instant refreshTokenExpiresAt;
 
-        public IssuedTokenPair(String accessToken, String refreshToken, Instant accessTokenExpiresAt, Instant refreshTokenExpiresAt) {
+        public IssuedAccessToken(String accessToken, Instant accessTokenExpiresAt) {
             this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
             this.accessTokenExpiresAt = accessTokenExpiresAt;
-            this.refreshTokenExpiresAt = refreshTokenExpiresAt;
         }
 
-        public static IssuedTokenPair disabled() {
-            return new IssuedTokenPair(null, null, null, null);
+        public static IssuedAccessToken disabled() {
+            return new IssuedAccessToken(null, null);
         }
 
         public String getAccessToken() {
             return accessToken;
         }
 
-        public String getRefreshToken() {
-            return refreshToken;
-        }
-
         public Instant getAccessTokenExpiresAt() {
             return accessTokenExpiresAt;
-        }
-
-        public Instant getRefreshTokenExpiresAt() {
-            return refreshTokenExpiresAt;
         }
     }
 }

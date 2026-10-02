@@ -42,6 +42,7 @@ class AccountControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.clearAuthentication();
         mockMvc = ControllerTestSupport.buildMockMvc(new AccountController(accountService, clientService));
     }
 
@@ -50,6 +51,7 @@ class AccountControllerTest {
     void createAccountReturnsCreatedAccount() throws Exception {
         UUID clientId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID accountId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
 
         when(clientService.getClientById(clientId))
                 .thenReturn(new Client(clientId, "client@example.com", "Alice", ClientStatus.ACTIVE, OPENED_AT, OPENED_AT));
@@ -73,6 +75,7 @@ class AccountControllerTest {
     void listAccountsByClientUsesYamlPath() throws Exception {
         UUID clientId = UUID.fromString("33333333-3333-3333-3333-333333333333");
         UUID accountId = UUID.fromString("44444444-4444-4444-4444-444444444444");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Account account = new Account(accountId, clientId, AccountStatus.ACTIVE, OPENED_AT);
 
         when(clientService.getClientById(clientId))
@@ -97,6 +100,7 @@ class AccountControllerTest {
     void getHoldingsReturnsStubHoldingsPayload() throws Exception {
         UUID accountId = UUID.fromString("55555555-5555-5555-5555-555555555555");
         UUID clientId = UUID.fromString("66666666-6666-6666-6666-666666666666");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
 
         when(accountService.getAccountById(accountId))
                 .thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, OPENED_AT));

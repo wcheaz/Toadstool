@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * JWT authentication filter that intercepts all requests and validates JWT tokens.
@@ -23,7 +24,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
+    public static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenValidator tokenValidator;
     private final com.neueda.leap.auth.SessionKeyService sessionKeyService;
@@ -51,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     throw new JwtException("Refresh token cannot be used for API authentication");
                 }
             }
-        } catch (JwtException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             logger.debug("JWT validation failed: " + e.getMessage());
         }
 
@@ -86,8 +87,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        return new UsernamePasswordAuthenticationToken(
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(
                 validatedToken.getSubject(),
+                validatedToken.getUsername(),
+                validatedToken.getEmail(),
+                parseUuid(validatedToken.getClientId()),
+                parseUuid(validatedToken.getAccountId())
+        );
+
+        return new UsernamePasswordAuthenticationToken(
+                authenticatedUser,
                 null,
                 authorities
         );
@@ -96,5 +105,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isAccessToken(ValidatedToken validatedToken) {
         return !StringUtils.hasText(validatedToken.getTokenType())
                 || "ACCESS".equalsIgnoreCase(validatedToken.getTokenType());
+    }
+
+    private UUID parseUuid(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return UUID.fromString(value);
     }
 }
