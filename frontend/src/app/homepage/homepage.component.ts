@@ -87,6 +87,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
       next: (response) => {
         console.log('Instruments loaded:', response.items);
         this.instruments = response.items;
+        this.cdr.detectChanges();
 
         // TEST: Load first instrument
         if (response.items.length > 0) {
@@ -118,6 +119,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
         next: (quote) => {
           this.instrumentQuotes.set(instrument.instrumentId, quote);
           this.loadingInstruments = false;
+          this.cdr.detectChanges();
         },
         error: (error) => {
           console.error(`Failed to load quote for ${instrument.symbol}:`, error);
