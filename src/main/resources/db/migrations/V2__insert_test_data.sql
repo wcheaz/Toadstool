@@ -57,11 +57,12 @@ SELECT client_id, 'ACTIVE' FROM trading.clients;
 
 -- Create 120 orders and associated fills to generate realistic trade data
 -- This uses a simpler approach to reliably generate orders across clients
+-- Weighted towards BUY (80%) vs SELL (20%) to ensure realistic positive positions
 INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key, submitted_at)
 SELECT
   a.account_id,
   i.instrument_id,
-  CASE WHEN random() < 0.5 THEN 'BUY' ELSE 'SELL' END as side,
+  CASE WHEN random() < 0.8 THEN 'BUY' ELSE 'SELL' END as side,
   (random() * 10000 + 10)::numeric(28,10) as quantity,
   'IDEM-' || gen_random_uuid()::text as idempotency_key,
   now() - (random() * interval '30 days') as submitted_at
@@ -86,16 +87,25 @@ INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempoten
 -- Small order for ETF - alice.johnson account (third order for alice)
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'SPY'), 'BUY', 10, 'TEST-BUY-SPY-10', now() - interval '12 hours');
 
--- Create fills for the orders (deterministic 80% fill rate for consistent testing)
+-- Create fills for the orders (80% fill rate to have some open orders)
+WITH order_subset AS (
+  SELECT order_id, random() < 0.8 as should_fill
+  FROM trading.orders
+)
 INSERT INTO trading.fills (order_id, price, quantity, status, executed_at)
 SELECT
   o.order_id,
-  2500.00::numeric(28,10) as price,
-  o.quantity * 0.75 as quantity,
-  'Filled'::varchar as status,
-  o.submitted_at + interval '30 minutes' as executed_at
+  (random() * 5000 + 10)::numeric(28,10) as price,
+  o.quantity * (0.5 + random() * 0.5) as quantity, -- Partial fills possible
+  CASE
+    WHEN random() < 0.05 THEN 'Failed'
+    WHEN random() < 0.10 THEN 'Pending'
+    ELSE 'Filled'
+  END as status,
+  o.submitted_at + (random() * interval '1 hour') as executed_at
 FROM trading.orders o
-WHERE (hashtext(o.order_id::text)::int % 10) < 8;  -- Deterministic 80% of orders get fills
+JOIN order_subset os ON o.order_id = os.order_id
+WHERE os.should_fill = true;
 
 -- Create corresponding trade_events for audit trail
 INSERT INTO trading.trade_events (client_id, entity_type, entity_id, action, occurred_at, details)
