@@ -1,7 +1,9 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.Instrument;
-import com.neueda.leap.mapper.InstrumentMapper;
+import com.neueda.leap.repository.InstrumentRepository;
+import com.neueda.leap.validator.InstrumentValidator;
+import com.neueda.leap.validator.InstrumentValidationRequest;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
@@ -12,94 +14,98 @@ import java.util.UUID;
 @Service
 public class InstrumentService {
 
-    private final InstrumentMapper instrumentMapper;
+    private final InstrumentRepository instrumentRepository;
+    private final InstrumentValidator instrumentValidator;
 
-    public InstrumentService(InstrumentMapper instrumentMapper) {
-        this.instrumentMapper = instrumentMapper;
+    public InstrumentService(InstrumentRepository instrumentRepository, 
+                            InstrumentValidator instrumentValidator) {
+        this.instrumentRepository = instrumentRepository;
+        this.instrumentValidator = instrumentValidator;
     }
 
     /**
      * Get instrument by ID
      */
     public Instrument getInstrumentById(UUID instrumentId) {
-        return instrumentMapper.selectInstrumentById(instrumentId);
+        return instrumentRepository.findById(instrumentId);
     }
 
     /**
      * Get instrument by symbol
      */
     public Instrument getInstrumentBySymbol(String symbol) {
-        return instrumentMapper.selectInstrumentBySymbol(symbol);
+        return instrumentRepository.findBySymbol(symbol);
     }
 
     /**
      * List tradable instruments
      */
     public List<Instrument> listTradableInstruments(int limit, int offset) {
-        return instrumentMapper.selectTradableInstruments(limit, offset);
+        return instrumentRepository.findTradable(limit, offset);
     }
 
     /**
      * Count tradable instruments
      */
     public int countTradableInstruments() {
-        return instrumentMapper.countTradableInstruments();
+        return instrumentRepository.countTradable();
     }
 
     /**
      * List all instruments (including halted/inactive)
      */
     public List<Instrument> listAllInstruments(int limit, int offset) {
-        return instrumentMapper.selectAllInstruments(limit, offset);
+        return instrumentRepository.findAll(limit, offset);
     }
 
     /**
      * List all instruments without pagination
      */
     public List<Instrument> listAllInstruments() {
-        return instrumentMapper.selectAllInstruments(Integer.MAX_VALUE, 0);
+        return instrumentRepository.findAll(Integer.MAX_VALUE, 0);
     }
 
     /**
      * Count all instruments
      */
     public int countAllInstruments() {
-        return instrumentMapper.countAllInstruments();
+        return instrumentRepository.countAll();
     }
 
     /**
      * List instruments by status
      */
     public List<Instrument> listInstrumentsByStatus(String status, int limit, int offset) {
-        return instrumentMapper.selectInstrumentsByStatus(status, limit, offset);
+        return instrumentRepository.findByStatus(status, limit, offset);
     }
 
     /**
      * List instruments by status without pagination
      */
     public List<Instrument> listInstrumentsByStatus(String status) {
-        return instrumentMapper.selectInstrumentsByStatus(status, Integer.MAX_VALUE, 0);
+        return instrumentRepository.findByStatus(status, Integer.MAX_VALUE, 0);
     }
 
     /**
      * List instruments by asset class
      */
     public List<Instrument> listInstrumentsByAssetClass(String assetClass, int limit, int offset) {
-        return instrumentMapper.selectInstrumentsByAssetClass(assetClass, limit, offset);
+        return instrumentRepository.findByAssetClass(assetClass, limit, offset);
     }
 
     /**
      * Create a new instrument (admin-only)
      */
     public Instrument createInstrument(String symbol, String name, String assetClass) {
-        validateInstrumentInput(symbol, name, assetClass);
+        // Use injected validator
+        instrumentValidator.validate(new InstrumentValidationRequest(symbol, name, assetClass));
         
         // Check if symbol already exists
         if (getInstrumentBySymbol(symbol) != null) {
             throw new IllegalArgumentException("Instrument symbol already exists: " + symbol);
         }
 
-        instrumentMapper.insertInstrument(symbol.toUpperCase(), name, assetClass);
+        instrumentRepository.save(symbol.toUpperCase(), name, assetClass);
         
         // Return the newly created instrument
         return getInstrumentBySymbol(symbol.toUpperCase());
@@ -112,24 +118,9 @@ public class InstrumentService {
         if (status == null || (!status.equals("TRADABLE") && !status.equals("HALTED") && !status.equals("INACTIVE"))) {
             throw new IllegalArgumentException("Invalid instrument status");
         }
-        instrumentMapper.updateInstrumentStatus(instrumentId, status);
+        instrumentRepository.updateStatus(instrumentId, status);
         
         // Return the updated instrument
         return getInstrumentById(instrumentId);
-    }
-
-    /**
-     * Validate instrument input
-     */
-    private void validateInstrumentInput(String symbol, String name, String assetClass) {
-        if (symbol == null || symbol.trim().isEmpty() || symbol.length() > 40) {
-            throw new IllegalArgumentException("Symbol must be 1-40 characters");
-        }
-        if (name == null || name.trim().isEmpty() || name.length() > 160) {
-            throw new IllegalArgumentException("Name must be 1-160 characters");
-        }
-        if (assetClass == null || (!assetClass.equals("EQUITY") && !assetClass.equals("FX") && !assetClass.equals("CRYPTO"))) {
-            throw new IllegalArgumentException("Asset class must be EQUITY, FX, or CRYPTO");
-        }
     }
 }

@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef,
 import { CommonModule } from '@angular/common';
 import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
+import { OrderSuccessComponent } from '../order-success/order-success.component';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
@@ -17,7 +18,7 @@ interface Asset {
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule, TradingModalComponent],
+  imports: [CommonModule, TradingModalComponent, OrderSuccessComponent],
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
@@ -28,6 +29,17 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   isBalanceVisible: boolean = true;
   activeTab: string = 'news';
   platformStatus: string = 'Platform live status: Standard Trading Hours';
+  
+  // Trading modal state
+  isTradeModalOpen: boolean = false;
+  selectedAsset: Asset | null = null;
+
+  // Available assets
+  assets: Asset[] = [
+    { symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
+    { symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
+    { symbol: 'BTC', name: 'Bitcoin Vault Share', price: 67230.00, change: -0.45, holdings: 0.15 }
+  ];
 
   instruments: Instrument[] = [];
   instrumentQuotes: Map<string, QuoteResponse> = new Map();
@@ -56,8 +68,6 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   loadingCandles: boolean = false;
 
   // Trading modal state
-  isTradeModalOpen: boolean = false;
-  selectedAsset: Asset | null = null;
   tradingChartData: CandleResponse[] = [];
   selectedInstrumentId: string = '';
   selectedTimeframeForChart: string = '90'; // default 3M

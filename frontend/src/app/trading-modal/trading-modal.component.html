@@ -175,4 +175,29 @@
       </div>
     </div>
   </div>
+
+  <!-- Order Confirmation Modal -->
+  <app-order-confirmation
+    [isOpen]="isPreviewOpen"
+    [selectedAsset]="selectedAsset"
+    [orderType]="orderSide"
+    [quantity]="quantity"
+    [limitPrice]="limitPrice"
+    [duration]="duration"
+    [orderSide]="orderType"
+    (confirm)="confirmOrder()"
+    (editOrder)="editOrder()"
+    (close)="closePreview()">
+  </app-order-confirmation>
+
+  <!-- Order Success Modal -->
+  <app-order-success
+    [isOpen]="isSuccessOpen"
+    [selectedAsset]="selectedAsset"
+    [orderType]="orderSide"
+    [quantity]="quantity"
+    [filledPrice]="selectedAsset?.price || 0"
+    (returnToDashboard)="onReturnToDashboard()"
+    (viewActivity)="onViewActivity()">
+  </app-order-success>
 </div>

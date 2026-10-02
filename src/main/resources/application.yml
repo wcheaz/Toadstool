@@ -1,16 +1,16 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: trading-platform
 
   datasource:
-    # Uses environment variables or defaults to SSH tunnel (localhost:5432)
-    # Prerequisites: SSH tunnel must be running:
-    # ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
-    # Or set environment variables for other database endpoints:
-    # DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:toadstool_db}
-    username: ${DB_USERNAME:toadstool_user}
-    password: ${DB_PASSWORD:toadstool_password}
+    # Uses environment variables loaded from .env file
+    # Prerequisites: .env file must be present with DB credentials
+    # SSH tunnel (if needed): ssh -L 5435:localhost:5432 ec2-user@10.18.73.92
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5435}/${DB_NAME:toadstool_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -31,12 +31,12 @@ mybatis:
     map-underscore-to-camel-case: true
 
 fauxnance:
-  baseUrl: ${FAUXNANCE_BASE_URL:https://api.fauxnance.dev}
-  apiKey: ${FAUXNANCE_API_KEY:your-api-key-here}
+  baseUrl: ${FAUXNANCE_BASE_URL}
+  apiKey: ${FAUXNANCE_API_KEY}
   timeoutSeconds: ${FAUXNANCE_TIMEOUT_SECONDS:10}
 
 server:
-  port: 8080
+  port: 8081
 
 logging:
   level:
