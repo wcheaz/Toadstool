@@ -36,7 +36,7 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   agreedToTerms: boolean = false;
 
   selectedTimeframe: string = '3M';
-  loadingCandles: boolean = false;
+  loadingCandles: boolean = true;
 
   timeframes = [
     { label: '1D', days: 1 },
@@ -49,14 +49,23 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngAfterViewInit() {
+    console.log('ngAfterViewInit - candleData length:', this.candleData.length);
     if (this.candleData.length > 0) {
       setTimeout(() => this.renderChart(), 100);
     }
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['candleData'] && !changes['candleData'].firstChange) {
-      setTimeout(() => this.renderChart(), 100);
+    console.log('ngOnChanges detected:', {
+      candleData: changes['candleData']?.currentValue?.length || 0,
+      isFirstChange: changes['candleData']?.firstChange
+    });
+    if (changes['candleData']) {
+      const newData = changes['candleData'].currentValue as CandleResponse[];
+      if (newData && newData.length > 0) {
+        this.loadingCandles = false;
+        setTimeout(() => this.renderChart(), 100);
+      }
     }
   }
 
@@ -85,7 +94,8 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
     if (!this.chartContainer || this.candleData.length === 0) {
       console.log('Chart render blocked:', {
         hasContainer: !!this.chartContainer,
-        dataLength: this.candleData.length
+        dataLength: this.candleData.length,
+        containerRef: this.chartContainer?.nativeElement
       });
       return;
     }
@@ -93,15 +103,29 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
     console.log('Rendering chart with', this.candleData.length, 'candles');
 
     const container = this.chartContainer.nativeElement;
+
+    // Ensure container has dimensions
+    if (!container.clientWidth || !container.clientHeight) {
+      console.warn('Container has no dimensions:', {
+        width: container.clientWidth,
+        height: container.clientHeight
+      });
+    }
+
     container.innerHTML = '';
+
+    const width = container.clientWidth || 400;
+    const height = 300;
+
+    console.log('Chart dimensions:', { width, height });
 
     const chart = createChart(container, {
       layout: {
         background: { type: ColorType.Solid, color: '#1e1e1e' },
         textColor: '#d1d5db'
       },
-      width: container.clientWidth,
-      height: 300,
+      width: width,
+      height: height,
       timeScale: { timeVisible: true, secondsVisible: false }
     });
 
