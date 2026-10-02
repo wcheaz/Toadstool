@@ -191,8 +191,9 @@ public class FauxnanceService {
             JsonNode root = objectMapper.readTree(response.getBody());
             JsonNode data = root.get("data");
             List<CandleResponse> candles = new ArrayList<>();
-            if (data != null && data.isArray()) {
-                data.forEach(candle -> candles.add(new CandleResponse(
+            if (data != null && data.has("candles")) {
+                JsonNode candlesArray = data.get("candles");
+                candlesArray.forEach(candle -> candles.add(new CandleResponse(
                         candle.get("date").asText(),
                         candle.get("open").asDouble(),
                         candle.get("high").asDouble(),

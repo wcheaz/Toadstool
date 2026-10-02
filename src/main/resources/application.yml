@@ -7,8 +7,8 @@ spring:
   datasource:
     # Uses environment variables loaded from .env file
     # Prerequisites: .env file must be present with DB credentials
-    # SSH tunnel (if needed): ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:toadstool_db}
+    # SSH tunnel (if needed): ssh -L 5435:localhost:5432 ec2-user@10.18.73.92
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5435}/${DB_NAME:toadstool_db}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
