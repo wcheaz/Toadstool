@@ -24,6 +24,7 @@ versioned migrations that apply once each, in order.
 | `fills` | `fill_id` PK, `order_id` FK, `price`, `quantity`, `executed_at`; `UPDATE`/`DELETE` revoked from `PUBLIC` | Records the price a client traded at, for later up/down comparison |
 | `trade_events` | `trade_event_id` PK, `client_id` FK, `entity_type` (`ORDER`/`FILL`), `entity_id`, `action`, `occurred_at`, `details` JSONB; `UPDATE`/`DELETE` revoked from `PUBLIC` | W1-2 (BR-14/BR-15) |
 | `login_events` | `login_event_id` PK, `client_id` FK, `email_attempted`, `outcome` (`SUCCESS`/`FAILURE`), `occurred_at`, `details` JSONB; `UPDATE`/`DELETE` revoked from `PUBLIC` | W1-2 (BR-14), enabler for BR-03 |
+| `holdings` | `holding_id` PK, `account_id` FK, `instrument_id` FK, `quantity`, `updated_at`; UNIQUE (`account_id`, `instrument_id`) | Current holdings per instrument per account, cached from trade events |
 | `analytics.fact_daily_instrument_activity` | `activity_date` PK, `instrument_id` PK/FK, `order_count`, `filled_quantity`, `gross_amount`, `updated_at` | BR-16 (reporting reads off the live path) |
 | `analytics.fact_daily_platform_activity` | `activity_date` PK, `order_count`, `filled_quantity`, `gross_amount`, `updated_at` | BR-16/BR-17 (platform-wide business insight) |
 
@@ -31,10 +32,11 @@ versioned migrations that apply once each, in order.
 
 Tables split into two kinds:
 
-- **Current-state tables** (`clients`, `accounts`, `instruments`, `orders`, `admin_users`) are
-  ordinary mutable OLTP rows — a client's `status`, an order's `status`, etc. genuinely change in
-  place. Turning these into pure event logs would mean full event-sourcing (deriving current
-  state from a replayed stream), which is a bigger redesign than Week 1 needs.
+- **Current-state tables** (`clients`, `accounts`, `instruments`, `orders`, `admin_users`, `holdings`) are
+  ordinary mutable OLTP rows — a client's `status`, an order's `status`, a holding's `quantity`,
+  etc. genuinely change in place. Turning these into pure event logs would mean full
+  event-sourcing (deriving current state from a replayed stream), which is a bigger redesign than
+  Week 1 needs.
 - **Log tables** (`fills`, `trade_events`, `login_events`) are insert-only by design: a row is
   written once and never changes, so each has `REVOKE UPDATE, DELETE ON ... FROM PUBLIC`
   enforced at the database level, not just by convention.
@@ -71,6 +73,12 @@ Tables split into two kinds:
 - `login_events.client_id` is nullable because a failed login attempt (wrong email/unknown user)
   may never resolve to a real client; `email_attempted` is kept regardless so failed attempts are
   still reviewable.
+- `holdings` caches the current quantity of each instrument per account. While this can be derived
+  by replaying all `trade_events` for an account–instrument pair, denormalizing it into a
+  mutable table avoids the cost of that computation for every read (e.g., portfolio lookups, UI
+  displays). The `holdings` row for an account–instrument pair is updated whenever a fill
+  completes; the table includes a UNIQUE constraint on `(account_id, instrument_id)` to enforce
+  at most one row per pair.
 - `instruments.asset_class` (`EQUITY`/`FX`/`CRYPTO`) is added now since it's a static, load-bearing
   fact about an instrument — it doesn't depend on any pricing/quantity-scale work still deferred.
 - `analytics.fact_daily_instrument_activity` and `analytics.fact_daily_platform_activity` are the
