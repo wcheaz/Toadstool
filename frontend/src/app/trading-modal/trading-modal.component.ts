@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, CandleResponse } from '../api.service';
@@ -19,7 +19,7 @@ interface Asset {
   templateUrl: './trading-modal.component.html',
   styleUrl: './trading-modal.component.css'
 })
-export class TradingModalComponent implements AfterViewInit {
+export class TradingModalComponent implements AfterViewInit, OnChanges {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
   @Input() candleData: CandleResponse[] = [];
@@ -50,7 +50,13 @@ export class TradingModalComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     if (this.candleData.length > 0) {
-      this.renderChart();
+      setTimeout(() => this.renderChart(), 100);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['candleData'] && !changes['candleData'].firstChange) {
+      setTimeout(() => this.renderChart(), 100);
     }
   }
 
@@ -76,7 +82,15 @@ export class TradingModalComponent implements AfterViewInit {
   }
 
   renderChart() {
-    if (!this.chartContainer || this.candleData.length === 0) return;
+    if (!this.chartContainer || this.candleData.length === 0) {
+      console.log('Chart render blocked:', {
+        hasContainer: !!this.chartContainer,
+        dataLength: this.candleData.length
+      });
+      return;
+    }
+
+    console.log('Rendering chart with', this.candleData.length, 'candles');
 
     const container = this.chartContainer.nativeElement;
     container.innerHTML = '';
@@ -98,8 +112,10 @@ export class TradingModalComponent implements AfterViewInit {
       value: c.close
     }));
 
+    console.log('Chart data points:', chartData.length);
     lineSeries.setData(chartData);
     chart.timeScale().fitContent();
+    console.log('Chart rendered successfully');
   }
 
   selectTimeframe(timeframeLabel: string) {
