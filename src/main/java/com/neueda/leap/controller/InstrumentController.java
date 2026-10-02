@@ -222,6 +222,51 @@ public class InstrumentController {
     }
 
     /**
+     * GET /api/instruments/quotes/batch?instrumentIds=id1,id2,...
+     * Get batch quotes for multiple instruments (up to 25)
+     */
+    @GetMapping("/quotes/batch")
+    public ResponseEntity<java.util.Map<String, QuoteDto>> getBatchQuotes(
+            @RequestParam String instrumentIds) {
+        try {
+            String[] ids = instrumentIds.split(",");
+            if (ids.length > 25) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
+            for (String idStr : ids) {
+                try {
+                    UUID id = UUID.fromString(idStr.trim());
+                    Instrument instrument = instrumentService.getInstrumentById(id);
+                    if (instrument != null) {
+                        FauxnanceService.QuoteResponse quote = fauxnanceService.getQuote(instrument.getSymbol());
+                        if (quote != null) {
+                            QuoteDto response = new QuoteDto(
+                                    quote.getSymbol(),
+                                    quote.getPrice(),
+                                    quote.getBid(),
+                                    quote.getAsk(),
+                                    quote.getChange(),
+                                    quote.getChangePercent(),
+                                    quote.getAsOf()
+                            );
+                            quotes.put(id.toString(), response);
+                        }
+                    }
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid instrument ID format: {}", idStr);
+                }
+            }
+
+            return ResponseEntity.ok(quotes);
+        } catch (Exception e) {
+            logger.error("Error fetching batch quotes: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * GET /api/instruments/{instrumentId}/depth
      * Get market depth (Level 2) for instrument
      */

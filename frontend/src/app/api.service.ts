@@ -43,6 +43,16 @@ export class ApiService {
   }
 
   /**
+   * Get batch quotes for multiple instruments (up to 25)
+   */
+  getBatchQuotes(instrumentIds: string[]): Observable<{ [key: string]: QuoteResponse }> {
+    const params = instrumentIds.join(',');
+    return this.http.get<{ [key: string]: QuoteResponse }>(
+      `${this.apiUrl}/instruments/quotes/batch?instrumentIds=${params}`
+    );
+  }
+
+  /**
    * Get historical candles for a chart
    */
   getCandles(instrumentId: string, days: number = 30): Observable<CandleResponse[]> {
