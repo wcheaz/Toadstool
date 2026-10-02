@@ -221,6 +221,52 @@ public class InstrumentController {
     }
 
     /**
+     * GET /api/instruments/{instrumentId}/depth
+     * Get market depth (Level 2) for instrument
+     */
+    @GetMapping("/{instrumentId}/depth")
+    public ResponseEntity<List<DepthLevel>> getMarketDepth(@PathVariable UUID instrumentId) {
+        try {
+            Instrument instrument = instrumentService.getInstrumentById(instrumentId);
+            if (instrument == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            FauxnanceService.QuoteResponse quote = fauxnanceService.getQuote(instrument.getSymbol());
+            if (quote == null) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+            }
+
+            List<DepthLevel> depth = generateDepthLevels(quote);
+            return ResponseEntity.ok(depth);
+        } catch (Exception e) {
+            logger.error("Error fetching market depth for instrument {}: {}", instrumentId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private List<DepthLevel> generateDepthLevels(FauxnanceService.QuoteResponse quote) {
+        List<DepthLevel> levels = new ArrayList<>();
+        double mid = quote.getPrice();
+
+        // Generate 5 bid levels below mid price
+        for (int i = 5; i >= 1; i--) {
+            double price = mid - (i * 0.02);
+            long volume = 1000 + (i * 400L);
+            levels.add(new DepthLevel(volume, price, "BID"));
+        }
+
+        // Generate 5 ask levels above mid price
+        for (int i = 1; i <= 5; i++) {
+            double price = mid + (i * 0.02);
+            long volume = 1000 + (i * 400L);
+            levels.add(new DepthLevel(volume, price, "ASK"));
+        }
+
+        return levels;
+    }
+
+    /**
      * Map Instrument domain object to InstrumentDto
      */
     private InstrumentDto mapToInstrumentDto(Instrument instrument) {
@@ -319,5 +365,24 @@ public class InstrumentController {
         public double getChange() { return change; }
         public double getChangePercent() { return changePercent; }
         public String getAsOf() { return asOf; }
+    }
+
+    /**
+     * DTO for Market Depth Level
+     */
+    public static class DepthLevel {
+        private long volume;
+        private double price;
+        private String side;
+
+        public DepthLevel(long volume, double price, String side) {
+            this.volume = volume;
+            this.price = price;
+            this.side = side;
+        }
+
+        public long getVolume() { return volume; }
+        public double getPrice() { return price; }
+        public String getSide() { return side; }
     }
 }

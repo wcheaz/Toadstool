@@ -55,46 +55,25 @@
         <div class="market-depth">
           <div class="depth-header">Market depth <span class="level-badge">LEVEL 2</span></div>
           <div class="depth-table">
-            <div class="depth-row">
-              <div class="depth-price">1,660</div>
-              <div class="depth-volume depth-bar" style="width: 30%;">142.10</div>
-              <div class="depth-type">142.10</div>
-            </div>
-            <div class="depth-row">
-              <div class="depth-price">2,400</div>
-              <div class="depth-volume depth-bar" style="width: 50%;">142.09</div>
-              <div class="depth-type">142.09</div>
-            </div>
-            <div class="depth-row">
-              <div class="depth-price">950</div>
-              <div class="depth-volume depth-bar" style="width: 20%;">142.08</div>
-              <div class="depth-type">142.08</div>
-            </div>
+            <ng-container *ngFor="let level of depthLevels">
+              <div class="depth-row" *ngIf="level.side === 'BID'">
+                <div class="depth-price">{{ level.volume.toLocaleString() }}</div>
+                <div class="depth-volume depth-bar" [style.width.%]="(level.volume % 4000) / 40">{{ level.price.toFixed(2) }}</div>
+                <div class="depth-type">{{ level.price.toFixed(2) }}</div>
+              </div>
+            </ng-container>
             <div class="depth-row separator"></div>
-            <div class="depth-row">
-              <div class="depth-price">3,180</div>
-              <div class="depth-volume depth-bar" style="width: 60%;">142.12</div>
-              <div class="depth-type">142.12</div>
-            </div>
-            <div class="depth-row">
-              <div class="depth-price">1,440</div>
-              <div class="depth-volume depth-bar" style="width: 25%;">142.13</div>
-              <div class="depth-type">142.13</div>
-            </div>
-            <div class="depth-row">
-              <div class="depth-price">2,760</div>
-              <div class="depth-volume depth-bar" style="width: 55%;">142.14</div>
-              <div class="depth-type">142.14</div>
-            </div>
-            <div class="depth-row">
-              <div class="depth-price">1,330</div>
-              <div class="depth-volume depth-bar" style="width: 23%;">142.15</div>
-              <div class="depth-type">142.15</div>
-            </div>
+            <ng-container *ngFor="let level of depthLevels">
+              <div class="depth-row" *ngIf="level.side === 'ASK'">
+                <div class="depth-price">{{ level.volume.toLocaleString() }}</div>
+                <div class="depth-volume depth-bar" [style.width.%]="(level.volume % 4000) / 40">{{ level.price.toFixed(2) }}</div>
+                <div class="depth-type">{{ level.price.toFixed(2) }}</div>
+              </div>
+            </ng-container>
           </div>
           <div class="depth-footer">
-            <div>BID 10.2K</div>
-            <div>ASK 14.2K</div>
+            <div>BID {{ (depthLevels.filter(l => l.side === 'BID').reduce((sum, l) => sum + l.volume, 0) / 1000).toFixed(1) }}K</div>
+            <div>ASK {{ (depthLevels.filter(l => l.side === 'ASK').reduce((sum, l) => sum + l.volume, 0) / 1000).toFixed(1) }}K</div>
           </div>
         </div>
       </div>

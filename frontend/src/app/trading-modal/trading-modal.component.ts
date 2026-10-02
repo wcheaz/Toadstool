@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CandleResponse } from '../api.service';
+import { ApiService, CandleResponse, DepthLevel } from '../api.service';
 import { createChart, ColorType, CandlestickSeries, UTCTimestamp } from 'lightweight-charts';
 
 interface Asset {
@@ -38,6 +38,8 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   selectedTimeframe: string = '3M';
   loadingCandles: boolean = true;
 
+  depthLevels: DepthLevel[] = [];
+
   timeframes = [
     { label: '1D', days: 1 },
     { label: '1W', days: 7 },
@@ -67,6 +69,20 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
         setTimeout(() => this.renderChart(), 100);
       }
     }
+    if (changes['instrumentId'] && this.instrumentId) {
+      this.loadMarketDepth();
+    }
+  }
+
+  loadMarketDepth() {
+    this.apiService.getMarketDepth(this.instrumentId).subscribe({
+      next: (depth) => {
+        this.depthLevels = depth;
+        this.cdr.detectChanges();
+        console.log('Market depth loaded:', depth.length, 'levels');
+      },
+      error: (e) => console.error('Failed to load market depth:', e)
+    });
   }
 
   loadCandles(timeframeLabel: string) {
