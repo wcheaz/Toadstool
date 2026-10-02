@@ -63,7 +63,6 @@ export class TradingModalComponent {
       alert('Please agree to market conditions before placing an order');
       return;
     }
-<<<<<<< HEAD
     this.isSuccessOpen = true;
   }
 
@@ -97,19 +96,5 @@ export class TradingModalComponent {
     // Navigate to activity or show activity view
     console.log('View activity clicked');
     this.onSuccessClose();
-=======
-    alert(`${this.orderSide.toUpperCase()} order for ${this.quantity} units of ${this.selectedAsset?.symbol} placed!`);
-    this.closeModal();
-  }
-
-  previewOrder() {
-    alert('Order preview: ' + JSON.stringify({
-      side: this.orderSide,
-      symbol: this.selectedAsset?.symbol,
-      quantity: this.quantity,
-      orderType: this.orderType,
-      total: this.orderTotal
-    }));
->>>>>>> 440dce48a64d5b77d4f401a3a280457ecef52de6
   }
 }
