@@ -58,6 +58,9 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   // Trading modal state
   isTradeModalOpen: boolean = false;
   selectedAsset: Asset | null = null;
+  tradingChartData: CandleResponse[] = [];
+  selectedInstrumentId: string = '';
+  selectedTimeframeForChart: string = '90'; // default 3M
 
   private destroy$ = new Subject<void>();
 
@@ -250,7 +253,18 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
       change: quote.changePercent,
       holdings: 0
     };
+    this.selectedInstrumentId = instrument.instrumentId;
+    this.selectedTimeframeForChart = '90'; // default to 3M
     this.isTradeModalOpen = true;
+
+    // Fetch chart data for the default timeframe
+    this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
+      next: (candles) => {
+        this.tradingChartData = candles;
+        this.cdr.detectChanges();
+      },
+      error: (e) => console.error('Failed to load chart data:', e)
+    });
   }
 
   closeTradeModal() {

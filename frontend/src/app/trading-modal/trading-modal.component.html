@@ -37,28 +37,18 @@
           </div>
         </div>
 
-        <!-- Chart Placeholder -->
+        <!-- Chart Section -->
         <div class="chart-container">
           <div class="time-period-selector">
-            <button class="period-btn">1D</button>
-            <button class="period-btn">1W</button>
-            <button class="period-btn">1M</button>
-            <button class="period-btn active">3M</button>
-            <button class="period-btn">1Y</button>
+            <button *ngFor="let tf of timeframes"
+              class="period-btn"
+              [class.active]="selectedTimeframe === tf.label"
+              (click)="selectTimeframe(tf.label)">
+              {{ tf.label }}
+            </button>
           </div>
-          <div class="chart-placeholder">
-            <div class="chart-bar bar1"></div>
-            <div class="chart-bar bar2"></div>
-            <div class="chart-bar bar3"></div>
-            <div class="chart-bar bar4"></div>
-            <div class="chart-bar bar5"></div>
-            <div class="chart-bar bar6"></div>
-            <div class="chart-bar bar7"></div>
-            <div class="chart-bar bar8"></div>
-            <div class="chart-bar bar9"></div>
-            <div class="chart-bar bar10"></div>
-          </div>
-          <div class="chart-axis">0 -</div>
+          <div *ngIf="loadingCandles" style="color: #999; padding: 20px;">Loading chart...</div>
+          <div #chartContainer [style.display]="loadingCandles ? 'none' : 'block'"></div>
         </div>
 
         <!-- Market Depth Section -->

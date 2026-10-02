@@ -292,6 +292,8 @@
   <app-trading-modal
     [isOpen]="isTradeModalOpen"
     [selectedAsset]="selectedAsset"
+    [candleData]="tradingChartData"
+    [instrumentId]="selectedInstrumentId"
     (close)="closeTradeModal()">
   </app-trading-modal>
 </div>
