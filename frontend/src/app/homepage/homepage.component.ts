@@ -81,6 +81,10 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.loadInstruments();
+    // Auto-refresh quotes every 5 seconds
+    interval(5000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.refreshQuotes());
   }
 
   ngAfterViewInit() {
@@ -96,7 +100,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   loadInstruments() {
     this.loadingInstruments = true;
-    this.apiService.getInstruments(1, 0).subscribe({
+    this.apiService.getInstruments(25, 0).subscribe({
       next: (response) => {
         console.log('Instruments loaded:', response.items);
         this.instruments = response.items;
@@ -127,18 +131,20 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   refreshQuotes() {
-    this.instruments.forEach(instrument => {
-      this.apiService.getInstrumentQuote(instrument.instrumentId).subscribe({
-        next: (quote) => {
-          this.instrumentQuotes.set(instrument.instrumentId, quote);
-          this.loadingInstruments = false;
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error(`Failed to load quote for ${instrument.symbol}:`, error);
-          this.loadingInstruments = false;
-        }
-      });
+    if (this.instruments.length === 0) return;
+
+    const instrumentIds = this.instruments.map(i => i.instrumentId);
+    this.apiService.getBatchQuotes(instrumentIds).subscribe({
+      next: (quotes) => {
+        this.instrumentQuotes = new Map(Object.entries(quotes));
+        this.loadingInstruments = false;
+        this.cdr.detectChanges();
+        console.log('Batch quotes refreshed for', this.instruments.length, 'instruments');
+      },
+      error: (error) => {
+        console.error('Failed to load batch quotes:', error);
+        this.loadingInstruments = false;
+      }
     });
   }
 
