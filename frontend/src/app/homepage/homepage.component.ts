@@ -136,10 +136,13 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     const instrumentIds = this.instruments.map(i => i.instrumentId);
     this.apiService.getBatchQuotes(instrumentIds).subscribe({
       next: (quotes) => {
+        console.log('Batch response keys:', Object.keys(quotes));
+        console.log('Sample quote:', Object.values(quotes)[0]);
         this.instrumentQuotes = new Map(Object.entries(quotes));
         this.loadingInstruments = false;
         this.cdr.detectChanges();
         console.log('Batch quotes refreshed for', this.instruments.length, 'instruments');
+        console.log('Map size:', this.instrumentQuotes.size);
       },
       error: (error) => {
         console.error('Failed to load batch quotes:', error);
