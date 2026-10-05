@@ -2,6 +2,8 @@ package com.neueda.leap.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
 
 /**
  * Response DTO for fill data (executed trade)
@@ -12,6 +14,7 @@ public class FillResponse {
     private String price;
     private String quantity;
     private String status;
+    @JsonSerialize(using = OffsetDateTimeSerializer.class)
     private OffsetDateTime executedAt;
 
     public FillResponse() {

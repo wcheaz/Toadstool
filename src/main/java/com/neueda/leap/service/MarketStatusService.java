@@ -72,31 +72,19 @@ public class MarketStatusService {
     private boolean isTestEnvironment() {
         // Check Spring active profiles
         String[] activeProfiles = environment.getActiveProfiles();
+        
+        // Check for test, dev, or development profiles
         for (String profile : activeProfiles) {
-            if (profile.contains("test")) {
+            String lowerProfile = profile.toLowerCase();
+            if (lowerProfile.contains("test") || lowerProfile.contains("dev") || lowerProfile.contains("local")) {
                 return true;
             }
         }
 
-        // If no active profile is set, we're likely in a test context
-        // (Spring Boot tests use default profile when none are specified)
+        // If no active profile is set, assume development/testing environment
+        // This allows local testing to proceed outside market hours
         if (activeProfiles.length == 0) {
-            // Additional check: if running within a test class context
-            // This is a heuristic - we'll check if the call stack contains test framework classes
-            try {
-                Class.forName("org.junit.jupiter.api.Test");
-                // If we can load the test class, we're likely running in test environment
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                for (StackTraceElement element : stackTrace) {
-                    if (element.getClassName().contains("springframework.boot.test") ||
-                        element.getClassName().contains("org.junit") ||
-                        element.getClassName().contains("org.mockito")) {
-                        return true;
-                    }
-                }
-            } catch (ClassNotFoundException e) {
-                // JUnit not available, not in test context
-            }
+            return true;
         }
 
         return false;

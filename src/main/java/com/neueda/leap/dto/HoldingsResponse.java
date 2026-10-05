@@ -3,6 +3,8 @@ package com.neueda.leap.dto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
 
 /**
  * Response DTO for holdings data (positions and cash)
@@ -11,6 +13,7 @@ public class HoldingsResponse {
     private UUID accountId;
     private List<HoldingItem> holdings;
     private CashBalance cash;
+    @JsonSerialize(using = OffsetDateTimeSerializer.class)
     private OffsetDateTime asOfTimestamp;
 
     public HoldingsResponse() {

@@ -76,8 +76,12 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToOrderResponse(order));
 
         } catch (IllegalArgumentException e) {
+            System.err.println("[OrderController] IllegalArgumentException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
         } catch (Exception e) {
+            System.err.println("[OrderController] Exception: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

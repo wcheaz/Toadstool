@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -83,6 +84,51 @@ export class ApiService {
       `${this.apiUrl}/accounts/${accountId}/quote-preview?instrumentId=${instrumentId}&side=${side}&quantity=${quantity}`
     );
   }
+
+  /**
+   * Get the first account for a client
+   */
+  getAccountByClientId(clientId: string): Observable<AccountResponse> {
+    return this.http.get<AccountResponse>(
+      `${this.apiUrl}/clients/${clientId}/accounts?limit=1&offset=0`
+    ).pipe(
+      // Map the paginated response to just the first account
+      map((response: any) => {
+        if (response.items && response.items.length > 0) {
+          return response.items[0];
+        }
+        throw new Error('No account found for client');
+      })
+    );
+  }
+
+  /**
+   * Place a new buy/sell order
+   */
+  placeOrder(
+    accountId: string,
+    instrumentId: string,
+    side: string,
+    quantity: string,
+    idempotencyKey?: string
+  ): Observable<OrderResponse> {
+    const headers: any = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    
+    const body = {
+      instrumentId: instrumentId,
+      side: side,
+      quantity: quantity
+    };
+    
+    return this.http.post<OrderResponse>(
+      `${this.apiUrl}/accounts/${accountId}/orders`,
+      body,
+      { headers }
+    );
+  }
 }
 
 export interface LoginResponse {
@@ -147,6 +193,23 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface AccountResponse {
+  accountId: string;
+  clientId: string;
+  status: string;
+  openedAt: string;
+}
+
+export interface OrderResponse {
+  orderId: string;
+  accountId: string;
+  instrumentId: string;
+  side: string;
+  quantity: string;
+  idempotencyKey: string;
+  status: string;
+  submittedAt: string;
+}
 export interface DepthLevel {
   volume: number;
   price: number;

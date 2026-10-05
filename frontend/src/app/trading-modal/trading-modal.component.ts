@@ -5,8 +5,10 @@ import { ApiService, CandleResponse, DepthLevel } from '../api.service';
 import { createChart, ColorType, CandlestickSeries, UTCTimestamp } from 'lightweight-charts';
 import { OrderConfirmationComponent } from '../order-confirmation/order-confirmation.component';
 import { OrderSuccessComponent } from '../order-success/order-success.component';
+import { ErrorModalComponent } from '../error-modal/error-modal.component';
 
 interface Asset {
+  instrumentId: string;
   symbol: string;
   name: string;
   price: number;
@@ -17,13 +19,14 @@ interface Asset {
 @Component({
   selector: 'app-trading-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderConfirmationComponent, OrderSuccessComponent],
+  imports: [CommonModule, FormsModule, OrderConfirmationComponent, OrderSuccessComponent, ErrorModalComponent],
   templateUrl: './trading-modal.component.html',
   styleUrl: './trading-modal.component.css'
 })
 export class TradingModalComponent implements AfterViewInit, OnChanges {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
+  @Input() accountId: string = '';
   @Input() candleData: CandleResponse[] = [];
   @Input() instrumentId: string = '';
   @Output() close = new EventEmitter<void>();
@@ -176,6 +179,11 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
     this.loadCandles(timeframeLabel);
   }
 
+  isErrorOpen: boolean = false;
+  errorMessage: string = '';
+  errorDetails: string = '';
+  isSubmitting: boolean = false;
+
   get estimatedValue(): number {
     if (!this.selectedAsset) return 0;
     return this.quantity * this.selectedAsset.price;
@@ -206,7 +214,7 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
       alert('Please agree to market conditions before placing an order');
       return;
     }
-    this.isSuccessOpen = true;
+    this.previewOrder();
   }
 
   previewOrder() {
@@ -222,8 +230,69 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   }
 
   confirmOrder() {
+    if (!this.agreedToTerms) {
+      this.errorMessage = 'Please agree to market conditions before placing an order';
+      this.isErrorOpen = true;
+      return;
+    }
+
+    if (!this.selectedAsset) {
+      this.errorMessage = 'No asset selected';
+      this.isErrorOpen = true;
+      return;
+    }
+
+    if (!this.accountId) {
+      this.errorMessage = 'Account ID not found. Please log in again.';
+      this.isErrorOpen = true;
+      return;
+    }
+
+    // TODO (W3-8): Fix confirmation modal display - should show before order submission
+    // Currently the modal closes immediately. Need to investigate why it's not displaying.
+    // Close the preview modal immediately
     this.isPreviewOpen = false;
-    this.isSuccessOpen = true;
+    this.isSubmitting = true;
+
+    // Call the backend to place the order
+    this.apiService.placeOrder(
+      this.accountId,
+      this.selectedAsset.instrumentId,
+      this.orderSide.toUpperCase(),
+      this.quantity.toString()
+    ).subscribe({
+      next: (response: OrderResponse) => {
+        this.isSubmitting = false;
+        console.log('Order placed successfully:', response);
+        this.isSuccessOpen = true;
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('Order placement failed:', error);
+        
+        // Extract error message
+        if (error.error && error.error.message) {
+          this.errorMessage = error.error.message;
+        } else if (error.status === 422) {
+          this.errorMessage = 'Order validation failed. Please check your inputs.';
+        } else if (error.status === 409) {
+          this.errorMessage = 'This order already exists. Please try again with different details.';
+        } else if (error.status === 404) {
+          this.errorMessage = 'Account or instrument not found.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'Server error. Please try again later.';
+        } else {
+          this.errorMessage = 'Failed to place order. Please try again.';
+        }
+
+        this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
+        this.isErrorOpen = true;
+      }
+    });
+  }
+
+  closeErrorModal() {
+    this.isErrorOpen = false;
   }
 
   onSuccessClose() {

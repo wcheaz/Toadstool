@@ -1,16 +1,14 @@
 spring:
-  config:
-    import: optional:file:.env[.properties]
   application:
     name: trading-platform
 
   datasource:
-    # Uses environment variables loaded from .env file
-    # Prerequisites: .env file must be present with DB credentials
-    # SSH tunnel (if needed): ssh -L 5435:localhost:5432 ec2-user@10.18.73.92
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5435}/${DB_NAME:toadstool_db}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    # Connects to shared VM database via SSH tunnel
+    # Prerequisites: SSH tunnel must be running:
+    # ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
+    url: jdbc:postgresql://localhost:5432/toadstool_db
+    username: toadstool_user
+    password: toadstool_password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -31,11 +29,6 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
-fauxnance:
-  baseUrl: ${FAUXNANCE_BASE_URL}
-  apiKey: ${FAUXNANCE_API_KEY}
-  timeoutSeconds: ${FAUXNANCE_TIMEOUT_SECONDS:10}
-
 server:
   port: 8081
 
@@ -43,4 +36,5 @@ logging:
   level:
     root: INFO
     com.neueda.leap: DEBUG
+    com.neueda.leap.mapper: INFO
     org.springframework.web: DEBUG

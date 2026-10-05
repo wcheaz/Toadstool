@@ -202,3 +202,28 @@ Example successful test run output:
 - Ensure SSH tunnel is established before running tests
 - Check that `.env` variables are set correctly
 - Verify network connectivity to your VM
+
+# Spring Profiles and Market Hours
+
+## Development Mode (Default)
+
+When running the application without a specific Spring profile (default behavior), the MarketStatusService bypasses market hours validation. This allows testing and development to proceed at any time.
+
+**Running in development mode:**
+```bash
+java -jar target/leap-0.0.1-SNAPSHOT.jar
+```
+
+## Production Mode
+
+To enforce real US market hours (9:30 AM - 4:00 PM EST, Monday-Friday), deploy with the `prod` profile:
+
+```bash
+java -jar target/leap-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+```
+
+**Important for Production Deployment:**
+- Before going live, ensure the deployment configuration sets `--spring.profiles.active=prod`
+- Orders placed outside market hours will be rejected with 422 UNPROCESSABLE_ENTITY and error message "Cannot place order: Market is closed"
+- This enforces regulatory compliance with real market hours
+- Test the `prod` profile thoroughly before production release

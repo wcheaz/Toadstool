@@ -2,6 +2,8 @@ package com.neueda.leap.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
 
 /**
  * Response DTO for order data
@@ -14,6 +16,7 @@ public class OrderResponse {
     private String quantity;
     private String idempotencyKey;
     private String status;
+    @JsonSerialize(using = OffsetDateTimeSerializer.class)
     private OffsetDateTime submittedAt;
 
     public OrderResponse() {
