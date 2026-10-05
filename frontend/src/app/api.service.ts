@@ -44,11 +44,30 @@ export class ApiService {
   }
 
   /**
+   * Get batch quotes for multiple instruments (up to 25)
+   */
+  getBatchQuotes(instrumentIds: string[]): Observable<{ [key: string]: QuoteResponse }> {
+    const params = instrumentIds.join(',');
+    return this.http.get<{ [key: string]: QuoteResponse }>(
+      `${this.apiUrl}/instruments/quotes/batch?instrumentIds=${params}`
+    );
+  }
+
+  /**
    * Get historical candles for a chart
    */
   getCandles(instrumentId: string, days: number = 30): Observable<CandleResponse[]> {
     return this.http.get<CandleResponse[]>(
       `${this.apiUrl}/instruments/${instrumentId}/candles?days=${days}`
+    );
+  }
+
+  /**
+   * Get market depth (Level 2) for an instrument
+   */
+  getMarketDepth(instrumentId: string): Observable<DepthLevel[]> {
+    return this.http.get<DepthLevel[]>(
+      `${this.apiUrl}/instruments/${instrumentId}/depth`
     );
   }
 
@@ -190,4 +209,9 @@ export interface OrderResponse {
   idempotencyKey: string;
   status: string;
   submittedAt: string;
+}
+export interface DepthLevel {
+  volume: number;
+  price: number;
+  side: string;
 }

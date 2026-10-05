@@ -68,6 +68,11 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   candles: CandleResponse[] = [];
   loadingCandles: boolean = false;
 
+  // Trading modal state
+  tradingChartData: CandleResponse[] = [];
+  selectedInstrumentId: string = '';
+  selectedTimeframeForChart: string = '90'; // default 3M
+
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
@@ -78,6 +83,10 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.loadInstruments();
+    // Auto-refresh quotes every 5 seconds
+    interval(5000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.refreshQuotes());
   }
 
   ngAfterViewInit() {
@@ -93,7 +102,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   loadInstruments() {
     this.loadingInstruments = true;
-    this.apiService.getInstruments(1, 0).subscribe({
+    this.apiService.getInstruments(25, 0).subscribe({
       next: (response) => {
         console.log('Instruments loaded:', response.items);
         this.instruments = response.items;
@@ -124,18 +133,23 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   refreshQuotes() {
-    this.instruments.forEach(instrument => {
-      this.apiService.getInstrumentQuote(instrument.instrumentId).subscribe({
-        next: (quote) => {
-          this.instrumentQuotes.set(instrument.instrumentId, quote);
-          this.loadingInstruments = false;
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error(`Failed to load quote for ${instrument.symbol}:`, error);
-          this.loadingInstruments = false;
-        }
-      });
+    if (this.instruments.length === 0) return;
+
+    const instrumentIds = this.instruments.map(i => i.instrumentId);
+    this.apiService.getBatchQuotes(instrumentIds).subscribe({
+      next: (quotes) => {
+        console.log('Batch response keys:', Object.keys(quotes));
+        console.log('Sample quote:', Object.values(quotes)[0]);
+        this.instrumentQuotes = new Map(Object.entries(quotes));
+        this.loadingInstruments = false;
+        this.cdr.detectChanges();
+        console.log('Batch quotes refreshed for', this.instruments.length, 'instruments');
+        console.log('Map size:', this.instrumentQuotes.size);
+      },
+      error: (error) => {
+        console.error('Failed to load batch quotes:', error);
+        this.loadingInstruments = false;
+      }
     });
   }
 
@@ -253,6 +267,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
     if (!quote) return;
+    console.log('Opening trade modal for:', instrument.symbol);
     this.selectedAsset = {
       instrumentId: instrument.instrumentId,
       symbol: instrument.symbol,
@@ -261,7 +276,25 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
       change: quote.changePercent,
       holdings: 0
     };
+    this.selectedInstrumentId = instrument.instrumentId;
+    this.selectedTimeframeForChart = '90'; // default to 3M
     this.isTradeModalOpen = true;
+
+    // Fetch chart data for the default timeframe
+    console.log('Fetching candles for:', instrument.instrumentId);
+    this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
+      next: (candles) => {
+        console.log('Candles received:', candles.length, 'items');
+        this.tradingChartData = candles;
+        console.log('tradingChartData set to:', this.tradingChartData.length, 'items');
+        this.cdr.detectChanges();
+        console.log('detectChanges called');
+      },
+      error: (e) => {
+        console.error('Failed to load chart data:', e);
+        console.error('Error details:', e.status, e.statusText, e.message);
+      }
+    });
   }
 
   closeTradeModal() {
