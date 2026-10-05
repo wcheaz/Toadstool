@@ -231,4 +231,12 @@
     (returnToDashboard)="onReturnToDashboard()"
     (viewActivity)="onViewActivity()">
   </app-order-success>
+
+  <!-- Error Modal -->
+  <app-error-modal
+    [isOpen]="isErrorOpen"
+    [errorMessage]="errorMessage"
+    [errorDetails]="errorDetails"
+    (close)="closeErrorModal()">
+  </app-error-modal>
 </div>

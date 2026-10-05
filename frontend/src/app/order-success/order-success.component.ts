@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface Asset {
+  instrumentId: string;
   symbol: string;
   name: string;
   price: number;

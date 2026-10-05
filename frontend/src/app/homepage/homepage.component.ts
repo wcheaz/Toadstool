@@ -2,12 +2,12 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef,
 import { CommonModule } from '@angular/common';
 import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
-import { OrderSuccessComponent } from '../order-success/order-success.component';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
 
 interface Asset {
+  instrumentId: string;
   symbol: string;
   name: string;
   price: number;
@@ -18,12 +18,13 @@ interface Asset {
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule, TradingModalComponent, OrderSuccessComponent],
+  imports: [CommonModule, TradingModalComponent],
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
 export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   clientName: string = '';
+  accountId: string = '';
   currentBalance: number = 142384.50;
   availableForTrading: number = 12450.00;
   isBalanceVisible: boolean = true;
@@ -36,9 +37,9 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Available assets
   assets: Asset[] = [
-    { symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
-    { symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
-    { symbol: 'BTC', name: 'Bitcoin Vault Share', price: 67230.00, change: -0.45, holdings: 0.15 }
+    { instrumentId: '11111111-1111-1111-1111-111111111111', symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
+    { instrumentId: '22222222-2222-2222-2222-222222222222', symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
+    { instrumentId: '33333333-3333-3333-3333-333333333333', symbol: 'BTC', name: 'Bitcoin Vault Share', price: 67230.00, change: -0.45, holdings: 0.15 }
   ];
 
   instruments: Instrument[] = [];
@@ -70,8 +71,9 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
-    // Get client name from session/localStorage
+    // Get client info from localStorage
     this.clientName = localStorage.getItem('clientName') || 'User';
+    this.accountId = localStorage.getItem('accountId') || '';
   }
 
   ngOnInit() {
@@ -252,6 +254,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
     if (!quote) return;
     this.selectedAsset = {
+      instrumentId: instrument.instrumentId,
       symbol: instrument.symbol,
       name: instrument.name,
       price: quote.price,

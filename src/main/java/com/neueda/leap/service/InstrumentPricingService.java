@@ -1,47 +1,39 @@
 package com.neueda.leap.service;
 
+import com.neueda.leap.Instrument;
 import com.neueda.leap.enums.AssetClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Random;
 import java.util.UUID;
 
 /**
- * Service for fetching instrument prices
+ * Service for fetching instrument prices via the Fauxnance API
  * 
- * TEMPORARY IMPLEMENTATION: This service currently generates random prices for testing purposes.
- * 
- * ⚠️ IMPORTANT: This is a placeholder implementation and MUST be replaced with an actual trading API call.
- * 
- * LINES TO REPLACE WITH TRADING API:
- * - Lines 40-68 (entire getPrice method implementation)
- * 
- * Future implementation should:
- * - Call actual trading API (e.g., Alpha Vantage, IEX Cloud, etc.)
- * - Cache prices for performance
- * - Handle API errors and timeouts
- * - Support both current and historical price lookups
- * 
- * @see <a href="https://www.alphavantage.co/">Alpha Vantage API</a>
- * @see <a href="https://iexcloud.io/">IEX Cloud API</a>
+ * Replaces random price generation with live data from FauxnanceService.
+ * Falls back to a default fallback price if the API is unavailable.
  */
 @Service
 public class InstrumentPricingService {
 
-    private static final Random RANDOM = new Random();
+    private static final Logger logger = LoggerFactory.getLogger(InstrumentPricingService.class);
+    private final FauxnanceService fauxnanceService;
+    private final InstrumentService instrumentService;
+    private static final BigDecimal FALLBACK_PRICE = new BigDecimal("100.00");
+
+    public InstrumentPricingService(FauxnanceService fauxnanceService, InstrumentService instrumentService) {
+        this.fauxnanceService = fauxnanceService;
+        this.instrumentService = instrumentService;
+    }
 
     /**
-     * Gets the current price for an instrument
+     * Gets the current price for an instrument from the Fauxnance API
      * 
-     * TEMPORARY: Returns a randomly generated price within realistic bounds for the asset class.
-     * This is for testing purposes only.
-     * 
-     * FUTURE: This method should call the trading API to fetch real prices.
-     * 
-     * @param assetClass The asset class of the instrument
-     * @param instrumentId The ID of the instrument (currently unused in temporary implementation)
-     * @return The price as BigDecimal with at most 5 decimal places
+     * @param assetClass The asset class of the instrument (used for fallback/logging)
+     * @param instrumentId The ID of the instrument
+     * @return The price as BigDecimal with at most 5 decimal places, or fallback price if API unavailable
      * @throws IllegalArgumentException if assetClass is null
      */
     public BigDecimal getPrice(AssetClass assetClass, UUID instrumentId) {
@@ -49,47 +41,28 @@ public class InstrumentPricingService {
             throw new IllegalArgumentException("Asset class cannot be null");
         }
 
-        // TEMPORARY: Generate random prices within realistic bounds
-        // TODO: REMOVE THIS ENTIRE SECTION AND REPLACE WITH TRADING API CALL
-        // BEGIN TEMPORARY RANDOM PRICE GENERATION (Lines 48-68)
-        BigDecimal price;
-        
-        switch (assetClass) {
-            case EQUITY:
-                // EQUITY: Random price between $10 and $500
-                price = generateRandomPrice(new BigDecimal("10"), new BigDecimal("500"));
-                break;
-            case CRYPTO:
-                // CRYPTO: Random price between $100 and $50,000
-                price = generateRandomPrice(new BigDecimal("100"), new BigDecimal("50000"));
-                break;
-            case FX:
-                // FX: Random price between $0.50 and $2.00
-                price = generateRandomPrice(new BigDecimal("0.50"), new BigDecimal("2.00"));
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported asset class: " + assetClass);
-        }
-        
-        return price.setScale(5, RoundingMode.HALF_UP);
-        // END TEMPORARY RANDOM PRICE GENERATION
-    }
+        try {
+            // Get the instrument to retrieve its symbol
+            Instrument instrument = instrumentService.getInstrumentById(instrumentId);
+            if (instrument == null) {
+                logger.warn("Instrument not found for ID: {}", instrumentId);
+                return FALLBACK_PRICE.setScale(5, RoundingMode.HALF_UP);
+            }
 
-    /**
-     * Generates a random price between min and max (TEMPORARY FOR TESTING)
-     * 
-     * DO NOT USE IN PRODUCTION - This is a placeholder function
-     * 
-     * @param min The minimum price
-     * @param max The maximum price
-     * @return A random price between min and max
-     */
-    private BigDecimal generateRandomPrice(BigDecimal min, BigDecimal max) {
-        // Generate random decimal between 0 and 1
-        BigDecimal randomBigDecimal = new BigDecimal(RANDOM.nextDouble());
-        
-        // Scale to range [min, max]
-        BigDecimal range = max.subtract(min);
-        return min.add(range.multiply(randomBigDecimal));
+            // Fetch the price from Fauxnance API using the instrument symbol
+            FauxnanceService.QuoteResponse quote = fauxnanceService.getQuote(instrument.getSymbol());
+            if (quote == null) {
+                logger.warn("Failed to fetch price from Fauxnance for symbol: {}", instrument.getSymbol());
+                return FALLBACK_PRICE.setScale(5, RoundingMode.HALF_UP);
+            }
+
+            // Convert the double price to BigDecimal and return with proper scale
+            BigDecimal price = new BigDecimal(quote.getPrice());
+            return price.setScale(5, RoundingMode.HALF_UP);
+
+        } catch (Exception e) {
+            logger.error("Error fetching price for instrument {}: {}", instrumentId, e.getMessage(), e);
+            return FALLBACK_PRICE.setScale(5, RoundingMode.HALF_UP);
+        }
     }
 }

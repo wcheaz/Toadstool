@@ -1,10 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ApiService, OrderResponse } from '../api.service';
 import { OrderConfirmationComponent } from '../order-confirmation/order-confirmation.component';
 import { OrderSuccessComponent } from '../order-success/order-success.component';
+import { ErrorModalComponent } from '../error-modal/error-modal.component';
 
 interface Asset {
+  instrumentId: string;
   symbol: string;
   name: string;
   price: number;
@@ -15,13 +18,14 @@ interface Asset {
 @Component({
   selector: 'app-trading-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderConfirmationComponent, OrderSuccessComponent],
+  imports: [CommonModule, FormsModule, OrderConfirmationComponent, OrderSuccessComponent, ErrorModalComponent],
   templateUrl: './trading-modal.component.html',
   styleUrl: './trading-modal.component.css'
 })
 export class TradingModalComponent {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
+  @Input() accountId: string = '';
   @Output() close = new EventEmitter<void>();
 
   orderType: 'market' | 'limit' = 'market';
@@ -32,6 +36,10 @@ export class TradingModalComponent {
   agreedToTerms: boolean = false;
   isPreviewOpen: boolean = false;
   isSuccessOpen: boolean = false;
+  isErrorOpen: boolean = false;
+  errorMessage: string = '';
+  errorDetails: string = '';
+  isSubmitting: boolean = false;
 
   get estimatedValue(): number {
     if (!this.selectedAsset) return 0;
@@ -54,6 +62,8 @@ export class TradingModalComponent {
     return `$${this.selectedAsset.price.toFixed(2)}`;
   }
 
+  constructor(private apiService: ApiService) {}
+
   closeModal() {
     this.close.emit();
   }
@@ -63,7 +73,7 @@ export class TradingModalComponent {
       alert('Please agree to market conditions before placing an order');
       return;
     }
-    this.isSuccessOpen = true;
+    this.previewOrder();
   }
 
   previewOrder() {
@@ -79,8 +89,66 @@ export class TradingModalComponent {
   }
 
   confirmOrder() {
-    this.isPreviewOpen = false;
-    this.isSuccessOpen = true;
+    if (!this.agreedToTerms) {
+      this.errorMessage = 'Please agree to market conditions before placing an order';
+      this.isErrorOpen = true;
+      return;
+    }
+
+    if (!this.selectedAsset) {
+      this.errorMessage = 'No asset selected';
+      this.isErrorOpen = true;
+      return;
+    }
+
+    if (!this.accountId) {
+      this.errorMessage = 'Account ID not found. Please log in again.';
+      this.isErrorOpen = true;
+      return;
+    }
+
+    this.isSubmitting = true;
+
+    // Call the backend to place the order
+    this.apiService.placeOrder(
+      this.accountId,
+      this.selectedAsset.instrumentId,
+      this.orderSide.toUpperCase(),
+      this.quantity.toString()
+    ).subscribe({
+      next: (response: OrderResponse) => {
+        this.isSubmitting = false;
+        this.isPreviewOpen = false;
+        console.log('Order placed successfully:', response);
+        this.isSuccessOpen = true;
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('Order placement failed:', error);
+        
+        // Extract error message
+        if (error.error && error.error.message) {
+          this.errorMessage = error.error.message;
+        } else if (error.status === 422) {
+          this.errorMessage = 'Order validation failed. Please check your inputs.';
+        } else if (error.status === 409) {
+          this.errorMessage = 'This order already exists. Please try again with different details.';
+        } else if (error.status === 404) {
+          this.errorMessage = 'Account or instrument not found.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'Server error. Please try again later.';
+        } else {
+          this.errorMessage = 'Failed to place order. Please try again.';
+        }
+
+        this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
+        this.isErrorOpen = true;
+      }
+    });
+  }
+
+  closeErrorModal() {
+    this.isErrorOpen = false;
   }
 
   onSuccessClose() {
