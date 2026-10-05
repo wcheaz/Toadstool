@@ -107,6 +107,10 @@ export class TradingModalComponent {
       return;
     }
 
+    // TODO (W3-8): Fix confirmation modal display - should show before order submission
+    // Currently the modal closes immediately. Need to investigate why it's not displaying.
+    // Close the preview modal immediately
+    this.isPreviewOpen = false;
     this.isSubmitting = true;
 
     // Call the backend to place the order
@@ -118,7 +122,6 @@ export class TradingModalComponent {
     ).subscribe({
       next: (response: OrderResponse) => {
         this.isSubmitting = false;
-        this.isPreviewOpen = false;
         console.log('Order placed successfully:', response);
         this.isSuccessOpen = true;
       },
