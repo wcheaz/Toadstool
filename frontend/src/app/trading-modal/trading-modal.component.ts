@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CandleResponse, DepthLevel } from '../api.service';
+import { ApiService, CandleResponse, DepthLevel, OrderResponse } from '../api.service';
 import { createChart, ColorType, CandlestickSeries, UTCTimestamp } from 'lightweight-charts';
 import { OrderConfirmationComponent } from '../order-confirmation/order-confirmation.component';
 import { OrderSuccessComponent } from '../order-success/order-success.component';
@@ -83,12 +83,12 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
 
   loadMarketDepth() {
     this.apiService.getMarketDepth(this.instrumentId).subscribe({
-      next: (depth) => {
+      next: (depth: DepthLevel[]) => {
         this.depthLevels = depth;
         this.cdr.detectChanges();
         console.log('Market depth loaded:', depth.length, 'levels');
       },
-      error: (e) => console.error('Failed to load market depth:', e)
+      error: (e: any) => console.error('Failed to load market depth:', e)
     });
   }
 
@@ -100,13 +100,13 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
     this.selectedTimeframe = timeframeLabel;
 
     this.apiService.getCandles(this.instrumentId, timeframe.days).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
         this.candleData = candles;
         this.loadingCandles = false;
         this.renderChart();
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load candles:', e);
         this.loadingCandles = false;
       }
@@ -161,7 +161,7 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
       wickDownColor: '#ef5350'
     });
 
-    const chartData = this.candleData.map(c => ({
+    const chartData = this.candleData.map((c: CandleResponse) => ({
       time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
       open: c.open,
       high: c.high,
@@ -266,7 +266,7 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
         console.log('Order placed successfully:', response);
         this.isSuccessOpen = true;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isSubmitting = false;
         console.error('Order placement failed:', error);
         

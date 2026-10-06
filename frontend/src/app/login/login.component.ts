@@ -15,6 +15,7 @@ import { storeAuthSession } from '../auth-storage';
 export class LoginComponent {
   username: string = '';
   password: string = '';
+  rememberMe: boolean = false;
   submitted: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
