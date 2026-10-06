@@ -2,6 +2,8 @@ package com.neueda.leap.dto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
 
 /**
  * Standard API response envelope for all endpoints
@@ -125,6 +127,7 @@ public class ApiResponse<T> {
     // Inner class for response metadata
     public static class ResponseMeta {
         private String requestId;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
         private OffsetDateTime timestamp;
         private String version;
         private Integer page;

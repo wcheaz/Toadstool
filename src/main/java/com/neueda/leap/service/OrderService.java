@@ -4,11 +4,12 @@ import com.neueda.leap.Account;
 import com.neueda.leap.Instrument;
 import com.neueda.leap.Order;
 import com.neueda.leap.enums.AccountStatus;
-import com.neueda.leap.enums.AssetClassFeeStructure;
 import com.neueda.leap.enums.InstrumentStatus;
-import com.neueda.leap.mapper.OrderMapper;
-import com.neueda.leap.security.AuthenticatedUser;
-import com.neueda.leap.security.SecurityAccess;
+import com.neueda.leap.repository.OrderRepository;
+import com.neueda.leap.validator.OrderValidator;
+import com.neueda.leap.validator.OrderValidationRequest;
+import com.neueda.leap.pricing.FeeStrategy;
+import com.neueda.leap.pricing.FeeStrategyFactory;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -22,53 +23,61 @@ import java.util.UUID;
 @Service
 public class OrderService {
 
-    private final OrderMapper orderMapper;
+    private final OrderRepository orderRepository;
     private final InstrumentPricingService pricingService;
     private final MarketStatusService marketStatusService;
     private final AccountService accountService;
     private final InstrumentService instrumentService;
-    private final TradeEventService tradeEventService;
+    private final OrderValidator orderValidator;
+    private final FeeStrategyFactory feeStrategyFactory;
 
-    public OrderService(OrderMapper orderMapper, 
+    public OrderService(OrderRepository orderRepository, 
                        InstrumentPricingService pricingService,
                        MarketStatusService marketStatusService,
                        AccountService accountService,
                        InstrumentService instrumentService,
-                       TradeEventService tradeEventService) {
-        this.orderMapper = orderMapper;
+                       OrderValidator orderValidator,
+                       FeeStrategyFactory feeStrategyFactory) {
+        this.orderRepository = orderRepository;
+=======
+                       OrderValidator orderValidator,
+                       FeeStrategyFactory feeStrategyFactory) {
+        this.orderRepository = orderRepository;
+>>>>>>> 090d9686c55a043137e0d0ebb943a43a220c24b1
         this.pricingService = pricingService;
         this.marketStatusService = marketStatusService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
-        this.tradeEventService = tradeEventService;
+        this.orderValidator = orderValidator;
+        this.feeStrategyFactory = feeStrategyFactory;
     }
 
     /**
      * Retrieve a single order by ID
      */
     public Order getOrderById(UUID orderId) {
-        return orderMapper.selectOrderById(orderId);
+        return orderRepository.findById(orderId);
     }
 
     /**
      * List orders for an account with pagination
      */
     public List<Order> listOrdersByAccount(UUID accountId, int limit, int offset) {
-        return orderMapper.selectOrdersByAccountId(accountId, limit, offset);
+        return orderRepository.findByAccountId(accountId, limit, offset);
     }
 
     /**
      * Get total count of orders for an account
      */
     public int countOrdersByAccount(UUID accountId) {
-        return orderMapper.countOrdersByAccountId(accountId);
+        return orderRepository.countByAccountId(accountId);
     }
 
     /**
      * Check if an order with the given idempotency key already exists for the account
      */
     public Order getOrderByIdempotencyKey(UUID accountId, String idempotencyKey) {
-        return orderMapper.selectOrderByIdempotencyKey(accountId, idempotencyKey);
+        return orderRepository.findByIdempotencyKey(accountId, idempotencyKey);
     }
 
     /**
@@ -95,8 +104,8 @@ public class OrderService {
      * @throws RuntimeException if account or instrument not found
      */
     public Order createOrder(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey) {
-        // Step 1: Validate order input
-        validateOrderInput(side, quantity);
+        // Step 1: Validate order input using validator
+        orderValidator.validate(new OrderValidationRequest(side, quantity));
 
         // Step 2: Validate market is open
         if (!marketStatusService.isMarketOpen()) {
@@ -133,15 +142,15 @@ public class OrderService {
         BigDecimal orderQuantity = new BigDecimal(quantity);
         BigDecimal orderValue = instrumentPrice.multiply(orderQuantity);
 
-        // Step 7: Calculate fee based on instrument asset class
-        AssetClassFeeStructure feeStructure = AssetClassFeeStructure.fromAssetClass(instrument.getAssetClass());
-        BigDecimal fee = feeStructure.calculateFee(orderValue);
+        // Step 7: Calculate fee using strategy pattern
+        FeeStrategy feeStrategy = feeStrategyFactory.getStrategy(instrument.getAssetClass());
+        BigDecimal fee = feeStrategy.calculateFee(orderValue);
 
         // Step 8: Calculate total order price
         BigDecimal totalPrice = orderValue.add(fee).setScale(5, RoundingMode.HALF_UP);
 
         // Step 9: Insert order into database
-        orderMapper.insertOrder(accountId, instrumentId, side, quantity, idempotencyKey);
+        orderRepository.save(accountId, instrumentId, side, quantity, idempotencyKey);
 
         // Step 10: Retrieve and return the created order
         Order order = getOrderByIdempotencyKey(accountId, idempotencyKey);
@@ -164,28 +173,10 @@ public class OrderService {
     }
 
     /**
-     * Validate order input
-     */
-    private void validateOrderInput(String side, String quantity) {
-        if (side == null || (!side.equals("BUY") && !side.equals("SELL"))) {
-            throw new IllegalArgumentException("Invalid order side. Must be BUY or SELL.");
-        }
-
-        try {
-            java.math.BigDecimal qty = new java.math.BigDecimal(quantity);
-            if (qty.compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Quantity must be greater than 0");
-            }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Quantity must be a valid decimal number");
-        }
-    }
-
-    /**
      * Update order status (used internally for state transitions)
      */
     public void updateOrderStatus(UUID orderId, String status) {
-        orderMapper.updateOrderStatus(orderId, status);
+        orderRepository.updateStatus(orderId, status);
     }
 
     private String buildOrderEventDetails(UUID ownerClientId, UUID accountId, UUID instrumentId,

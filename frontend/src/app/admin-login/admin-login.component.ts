@@ -11,32 +11,45 @@ import { RouterLink } from '@angular/router';
   styleUrl: './admin-login.component.css'
 })
 export class AdminLoginComponent {
-  username: string = '';
+  email: string = '';
   password: string = '';
+  rememberMe: boolean = false;
   submitted: boolean = false;
   errorMessage: string = '';
+  isLoading: boolean = false;
 
   onSubmit() {
     this.submitted = true;
     this.errorMessage = '';
+    this.isLoading = true;
 
-    if (!this.username || !this.password) {
-      this.errorMessage = 'Please enter both username and password';
+    if (!this.email || this.email.trim() === '') {
+      this.errorMessage = 'Please enter your email';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.password || this.password.trim() === '') {
+      this.errorMessage = 'Please enter your password';
+      this.isLoading = false;
       return;
     }
 
     // TODO: Replace with actual admin authentication service
-    console.log('Admin login attempt for user:', this.username);
+    console.log('Admin login attempt for user:', this.email);
     
     // Simulated successful login
-    alert(`Welcome, Admin ${this.username}!`);
+    alert(`Welcome, Admin ${this.email}!`);
     this.resetForm();
+    this.isLoading = false;
   }
 
   resetForm() {
-    this.username = '';
+    this.email = '';
     this.password = '';
+    this.rememberMe = false;
     this.submitted = false;
     this.errorMessage = '';
+    this.isLoading = false;
   }
 }

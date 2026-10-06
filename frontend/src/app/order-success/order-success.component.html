@@ -1,0 +1,142 @@
+<div class="order-success-overlay" *ngIf="isOpen" (click)="onReturnToDashboard()">
+  <div class="order-success-modal" (click)="$event.stopPropagation()">
+    <!-- Close Button -->
+    <button class="close-btn" (click)="onReturnToDashboard()" title="Return to dashboard">
+      ✕
+    </button>
+
+    <!-- Success Header -->
+    <div class="success-header">
+      <div class="status-message">Order submitted confirmation</div>
+      <h1 class="success-title">Your {{ orderType }} order is complete</h1>
+    </div>
+
+    <!-- Success Checkmark -->
+    <div class="success-checkmark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="order-summary" *ngIf="selectedAsset">
+      <p class="summary-text">{{ quantity }} shares of {{ selectedAsset.symbol }} were filled</p>
+      <p class="summary-subtext">Your market {{ orderType }} executed immediately and has been added to your portfolio.</p>
+
+      <!-- Asset Card -->
+      <div class="asset-card">
+        <div class="asset-icon">{{ selectedAsset.symbol.substring(0, 2) }}</div>
+        <div class="asset-info">
+          <h3>{{ selectedAsset.symbol }}</h3>
+          <p>{{ selectedAsset.name }}</p>
+        </div>
+        <div class="filled-badge">✓ FILLED</div>
+      </div>
+    </div>
+
+    <!-- Confirmation Details -->
+    <div class="confirmation-details">
+      <div class="detail-row">
+        <span>Confirmation #</span>
+        <span class="mono">{{ confirmationNumber }}</span>
+      </div>
+      <div class="detail-row">
+        <span>Date & Time</span>
+        <span>{{ currentDate }} • {{ currentTime }} ET</span>
+      </div>
+    </div>
+
+    <!-- Execution Details Section -->
+    <div class="execution-section">
+      <div class="section-header">
+        <span class="section-title">EXECUTION DETAILS</span>
+        <span class="order-type-badge" [ngClass]="orderType">{{ orderType.toUpperCase() }}</span>
+      </div>
+
+      <div class="execution-grid">
+        <div class="detail-column">
+          <div class="detail-item">
+            <span class="detail-label">Symbol</span>
+            <span class="detail-value">{{ selectedAsset?.symbol }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Quantity</span>
+            <span class="detail-value">{{ quantity }} shares</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Order type</span>
+            <span class="detail-value">Market</span>
+          </div>
+        </div>
+        <div class="detail-column">
+          <div class="detail-item">
+            <span class="detail-label">Duration</span>
+            <span class="detail-value">Day</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Filled price</span>
+            <span class="detail-value">${{ filledPrice.toFixed(2) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Status</span>
+            <span class="detail-value status-filled">Filled</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Values -->
+    <div class="summary-values">
+      <div class="value-row">
+        <span>Filled value</span>
+        <span class="mono">${{ estimatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="value-row">
+        <span>Fees</span>
+        <span class="mono">${{ estimatedFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="value-row divider">
+        <span>Total</span>
+        <span class="mono total">${{ orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="value-row buying-power">
+        <span>Updated buying power</span>
+        <span class="mono">${{ updatedBuyingPower.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+    </div>
+
+    <!-- Activity Note -->
+    <div class="activity-note">
+      <svg class="note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span>Track this fill in Activity. Your positions and buying power are now up to date.</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-group">
+      <button class="btn-activity" (click)="onViewActivity()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        View Activity
+      </button>
+      <button class="btn-return" (click)="onReturnToDashboard()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+          <path d="M21 3v5h-5"></path>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+          <path d="M3 21v-5h5"></path>
+        </svg>
+        Return to Dashboard
+      </button>
+    </div>
+
+    <!-- Footer Note -->
+    <p class="footer-note">
+      A trade confirmation receipt is available in Activity
+    </p>
+  </div>
+</div>

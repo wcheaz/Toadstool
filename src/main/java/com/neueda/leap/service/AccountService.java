@@ -1,7 +1,7 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.Account;
-import com.neueda.leap.mapper.AccountMapper;
+import com.neueda.leap.repository.AccountRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
@@ -12,40 +12,40 @@ import java.util.UUID;
 @Service
 public class AccountService {
 
-    private final AccountMapper accountMapper;
+    private final AccountRepository accountRepository;
 
-    public AccountService(AccountMapper accountMapper) {
-        this.accountMapper = accountMapper;
+    public AccountService(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
     }
 
     /**
      * Get account by ID
      */
     public Account getAccountById(UUID accountId) {
-        return accountMapper.selectAccountById(accountId);
+        return accountRepository.findById(accountId);
     }
 
     /**
      * List accounts for a client with pagination
      */
     public List<Account> listAccountsByClient(UUID clientId, int limit, int offset) {
-        return accountMapper.selectAccountsByClientId(clientId, limit, offset);
+        return accountRepository.findByClientId(clientId, limit, offset);
     }
 
     /**
      * Count accounts for a client
      */
     public int countAccountsByClient(UUID clientId) {
-        return accountMapper.countAccountsByClientId(clientId);
+        return accountRepository.countByClientId(clientId);
     }
 
     /**
      * Create a new account for a client
      */
     public Account createAccount(UUID clientId) {
-        accountMapper.insertAccount(clientId, "ACTIVE");
+        accountRepository.save(clientId, "ACTIVE");
         // Retrieve the most recent account for this client
-        List<Account> accounts = accountMapper.selectAccountsByClientId(clientId, 1, 0);
+        List<Account> accounts = accountRepository.findByClientId(clientId, 1, 0);
         return accounts.isEmpty() ? null : accounts.get(0);
     }
 

@@ -1,6 +1,12 @@
 <div class="admin-login-container">
   <div class="admin-login-card">
-    <h1 class="admin-login-title">Admin Login</h1>
+    <div class="logo-section">
+      <div class="logo-icon">T</div>
+      <h1 class="brand-title">Toadstool Trader</h1>
+    </div>
+
+    <h2 class="welcome-title">Welcome back</h2>
+    <p class="welcome-subtitle">Enter your credentials to access your admin portal</p>
     
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
@@ -8,38 +14,57 @@
 
     <form (ngSubmit)="onSubmit()" #adminLoginForm="ngForm">
       <div class="form-group">
-        <label for="username">Admin Username</label>
+        <label for="email">Admin email</label>
         <input
-          type="text"
-          id="username"
+          type="email"
+          id="email"
           class="form-control"
-          [(ngModel)]="username"
-          name="username"
-          placeholder="Enter your admin username"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="you@example.com"
+          [disabled]="isLoading"
           required
         />
       </div>
 
       <div class="form-group">
-        <label for="password">Admin Password</label>
+        <label for="password">Password</label>
         <input
           type="password"
           id="password"
           class="form-control"
           [(ngModel)]="password"
           name="password"
-          placeholder="Enter your admin password"
+          placeholder="Enter your password"
+          [disabled]="isLoading"
           required
         />
       </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Login</button>
-        <button type="button" class="btn btn-secondary" (click)="resetForm()">Clear</button>
+      <div class="form-options">
+        <div class="checkbox-group">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            [(ngModel)]="rememberMe"
+            name="rememberMe"
+            [disabled]="isLoading"
+          />
+          <label for="rememberMe" class="checkbox-label">Remember Me</label>
+        </div>
+        <a href="#" class="forgot-password">Forgot Password?</a>
       </div>
 
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Logging in...' : 'Log In' }}
+      </button>
+
       <div class="form-footer">
-        <p><a routerLink="/login" class="user-link">Back to User Login</a></p>
+        <p><a routerLink="/login" class="client-link">Back to Client Login</a></p>
       </div>
     </form>
   </div>

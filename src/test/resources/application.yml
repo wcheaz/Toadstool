@@ -6,10 +6,9 @@ spring:
     # Connects to shared VM database via SSH tunnel
     # Prerequisites: SSH tunnel must be running:
     # ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
-    # Note: ec2-user is the SSH user, not the database user
     url: jdbc:postgresql://localhost:5432/toadstool_db
     username: toadstool_user
-    password: your_secure_password_here
+    password: toadstool_password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -19,8 +18,9 @@ spring:
 
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migrations
     table: flyway_schema_history
+    validateOnMigrate: false
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -36,4 +36,14 @@ logging:
   level:
     root: INFO
     com.neueda.leap: DEBUG
+    com.neueda.leap.mapper: INFO
     org.springframework.web: DEBUG
+
+auth:
+  jwt:
+    public-key: ${AUTH_JWT_PUBLIC_KEY:BASE64_X509_PUBLIC_KEY}
+    private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
+    issuer: toadstool
+    access-token-ttl-minutes: 15
+    enabled: true
+    require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

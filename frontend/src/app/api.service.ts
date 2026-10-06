@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -24,6 +25,118 @@ export class ApiService {
 
   validateToken(token: string): Observable<TokenValidationResponse> {
     return this.http.post<TokenValidationResponse>(`${this.apiUrl}/auth/validate`, { token });
+  }
+
+  /**
+   * Register a new client account
+   */
+  register(data: RegisterRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/register`, data);
+  }
+
+  /**
+   * Get all instruments (without live prices)
+   */
+  getInstruments(limit: number = 50, offset: number = 0): Observable<PaginatedResponse<Instrument>> {
+    return this.http.get<PaginatedResponse<Instrument>>(
+      `${this.apiUrl}/instruments?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  /**
+   * Get live quote for an instrument
+   */
+  getInstrumentQuote(instrumentId: string): Observable<QuoteResponse> {
+    return this.http.get<QuoteResponse>(
+      `${this.apiUrl}/instruments/${instrumentId}/quote`
+    );
+  }
+
+  /**
+   * Get batch quotes for multiple instruments (up to 25)
+   */
+  getBatchQuotes(instrumentIds: string[]): Observable<{ [key: string]: QuoteResponse }> {
+    const params = instrumentIds.join(',');
+    return this.http.get<{ [key: string]: QuoteResponse }>(
+      `${this.apiUrl}/instruments/quotes/batch?instrumentIds=${params}`
+    );
+  }
+
+  /**
+   * Get historical candles for a chart
+   */
+  getCandles(instrumentId: string, days: number = 30): Observable<CandleResponse[]> {
+    return this.http.get<CandleResponse[]>(
+      `${this.apiUrl}/instruments/${instrumentId}/candles?days=${days}`
+    );
+  }
+
+  /**
+   * Get market depth (Level 2) for an instrument
+   */
+  getMarketDepth(instrumentId: string): Observable<DepthLevel[]> {
+    return this.http.get<DepthLevel[]>(
+      `${this.apiUrl}/instruments/${instrumentId}/depth`
+    );
+  }
+
+  /**
+   * Get quote preview before placing order
+   */
+  getQuotePreview(
+    accountId: string,
+    instrumentId: string,
+    side: string,
+    quantity: string
+  ): Observable<QuotePreviewResponse> {
+    return this.http.get<QuotePreviewResponse>(
+      `${this.apiUrl}/accounts/${accountId}/quote-preview?instrumentId=${instrumentId}&side=${side}&quantity=${quantity}`
+    );
+  }
+
+  /**
+   * Get the first account for a client
+   */
+  getAccountByClientId(clientId: string): Observable<AccountResponse> {
+    return this.http.get<AccountResponse>(
+      `${this.apiUrl}/clients/${clientId}/accounts?limit=1&offset=0`
+    ).pipe(
+      // Map the paginated response to just the first account
+      map((response: any) => {
+        if (response.items && response.items.length > 0) {
+          return response.items[0];
+        }
+        throw new Error('No account found for client');
+      })
+    );
+  }
+
+  /**
+   * Place a new buy/sell order
+   */
+  placeOrder(
+    accountId: string,
+    instrumentId: string,
+    side: string,
+    quantity: string,
+    idempotencyKey?: string
+  ): Observable<OrderResponse> {
+    const headers: any = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    
+    const body = {
+      instrumentId: instrumentId,
+      side: side,
+      quantity: quantity
+    };
+    
+    return this.http.post<OrderResponse>(
+      `${this.apiUrl}/accounts/${accountId}/orders`,
+      body,
+      { headers }
+    );
   }
 }
 
@@ -61,4 +174,81 @@ export interface TokenValidationResponse {
   clientId: string;
   accountId: string;
   issuedAt: string;
+}
+
+export interface RegisterRequest {
+  displayName: string;
+  email: string;
+  password: string;
+}
+
+export interface Instrument {
+  instrumentId: string;
+  symbol: string;
+  name: string;
+  assetClass: string;
+  status: string;
+}
+
+export interface QuoteResponse {
+  symbol: string;
+  price: number;
+  bid: number;
+  ask: number;
+  change: number;
+  changePercent: number;
+  asOf: string;
+}
+
+export interface CandleResponse {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface QuotePreviewResponse {
+  instrumentId: string;
+  symbol: string;
+  side: string;
+  quantity: string;
+  indicativePrice: string;
+  estimatedTotal: string;
+  timestamp: string;
+  notes: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: {
+    limit: number;
+    offset: number;
+    totalCount: number;
+    hasMore: boolean;
+  };
+}
+
+export interface AccountResponse {
+  accountId: string;
+  clientId: string;
+  status: string;
+  openedAt: string;
+}
+
+export interface OrderResponse {
+  orderId: string;
+  accountId: string;
+  instrumentId: string;
+  side: string;
+  quantity: string;
+  idempotencyKey: string;
+  status: string;
+  submittedAt: string;
+}
+export interface DepthLevel {
+  volume: number;
+  price: number;
+  side: string;
 }

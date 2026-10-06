@@ -1,24 +1,228 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { clearAuthSession, getClientDisplayName } from '../auth-storage';
+import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
+import { TradingModalComponent } from '../trading-modal/trading-modal.component';
+import { Subject, interval } from 'rxjs';
+import { takeUntil, switchMap } from 'rxjs/operators';
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
+
+interface Asset {
+  instrumentId: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  holdings: number;
+}
 
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TradingModalComponent],
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
-export class HomepageComponent {
+export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   clientName: string = '';
+  accountId: string = '';
   currentBalance: number = 142384.50;
   availableForTrading: number = 12450.00;
-  isBalanceVisible: boolean = true;
-  activeTab: string = 'news';
+  // Trading modal state
+  isTradeModalOpen: boolean = false;
+  selectedAsset: Asset | null = null;
 
-  constructor(private readonly router: Router) {
-    this.clientName = getClientDisplayName() || 'User';
+  // Available assets
+  assets: Asset[] = [
+    { instrumentId: '11111111-1111-1111-1111-111111111111', symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
+    { instrumentId: '22222222-2222-2222-2222-222222222222', symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
+    { instrumentId: '33333333-3333-3333-3333-333333333333', symbol: 'BTC', name: 'Bitcoin Vault Share', price: 67230.00, change: -0.45, holdings: 0.15 }
+  ];
+
+  instruments: Instrument[] = [];
+  instrumentQuotes: Map<string, QuoteResponse> = new Map();
+  loadingInstruments: boolean = false;
+
+  // Test: display first instrument price
+  testInstrument: Instrument | null = null;
+  testPrice: number | null = null;
+
+  // Charting
+  @ViewChild('chartContainer') chartContainer: ElementRef | null = null;
+  selectedTimeframe: string = '1day';
+  timeframes = [
+    { label: '1m', days: 0.0007 },
+    { label: '15m', days: 0.01 },
+    { label: '30m', days: 0.02 },
+    { label: '1h', days: 0.042 },
+    { label: '1d', days: 1 },
+    { label: '7d', days: 7 },
+    { label: '1mo', days: 30 },
+    { label: '6mo', days: 180 },
+    { label: '1y', days: 365 },
+    { label: 'all', days: 1825 }
+  ];
+  candles: CandleResponse[] = [];
+  loadingCandles: boolean = false;
+
+  // Trading modal state
+  tradingChartData: CandleResponse[] = [];
+  selectedInstrumentId: string = '';
+  selectedTimeframeForChart: string = '90'; // default 3M
+
+  private destroy$ = new Subject<void>();
+
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
+    // Get client info from localStorage
+    this.clientName = localStorage.getItem('clientName') || 'User';
+    this.accountId = localStorage.getItem('accountId') || '';
+  }
+    interval(5000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.refreshQuotes());
+  }
+
+  ngAfterViewInit() {
+    if (this.testInstrument) {
+      this.loadCandles(this.selectedTimeframe);
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadInstruments() {
+    this.loadingInstruments = true;
+    this.apiService.getInstruments(25, 0).subscribe({
+      next: (response) => {
+        console.log('Instruments loaded:', response.items);
+        this.instruments = response.items;
+        this.cdr.detectChanges();
+
+        // TEST: Load first instrument
+        if (response.items.length > 0) {
+          this.testInstrument = response.items[0];
+          this.cdr.detectChanges();
+          this.loadCandles(this.selectedTimeframe);
+          this.apiService.getInstrumentQuote(this.testInstrument.instrumentId).subscribe({
+            next: (quote) => {
+              this.testPrice = quote.price;
+              console.log('Test price loaded:', this.testPrice);
+              this.cdr.detectChanges();
+            },
+            error: (e) => console.error('Test price error:', e)
+          });
+        }
+
+        this.refreshQuotes();
+      },
+      error: (error) => {
+        console.error('Failed to load instruments:', error);
+        this.loadingInstruments = false;
+      }
+    });
+  }
+
+  refreshQuotes() {
+    if (this.instruments.length === 0) return;
+
+    const instrumentIds = this.instruments.map(i => i.instrumentId);
+    this.apiService.getBatchQuotes(instrumentIds).subscribe({
+      next: (quotes) => {
+        console.log('Batch response keys:', Object.keys(quotes));
+        console.log('Sample quote:', Object.values(quotes)[0]);
+        this.instrumentQuotes = new Map(Object.entries(quotes));
+        this.loadingInstruments = false;
+        this.cdr.detectChanges();
+        console.log('Batch quotes refreshed for', this.instruments.length, 'instruments');
+        console.log('Map size:', this.instrumentQuotes.size);
+      },
+      error: (error) => {
+        console.error('Failed to load batch quotes:', error);
+        this.loadingInstruments = false;
+      }
+    });
+  }
+
+  selectTimeframe(timeframe: string) {
+    this.selectedTimeframe = timeframe;
+    if (this.testInstrument) {
+      this.loadCandles(timeframe);
+    }
+  }
+
+  loadCandles(timeframe: string) {
+    if (!this.testInstrument) return;
+
+    this.loadingCandles = true;
+    const timeframeObj = this.timeframes.find(tf => tf.label === timeframe);
+    if (!timeframeObj) {
+      this.loadingCandles = false;
+      return;
+    }
+
+    const days = Math.max(1, Math.ceil(timeframeObj.days));
+    this.apiService.getCandles(this.testInstrument.instrumentId, days).subscribe({
+      next: (candles) => {
+        this.candles = candles;
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+        setTimeout(() => this.renderChart(), 0);
+      },
+      error: (error) => {
+        console.error('Failed to load candles:', error);
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  renderChart() {
+    if (!this.chartContainer || this.candles.length === 0) return;
+
+    const container = this.chartContainer.nativeElement;
+    container.innerHTML = '';
+
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#1e1e1e' },
+        textColor: '#d1d5db'
+      },
+      width: container.clientWidth,
+      height: 400,
+      timeScale: { timeVisible: true, secondsVisible: true }
+    });
+
+    const candlestickSeries = chart.addSeries(CandlestickSeries, { upColor: '#26a69a', downColor: '#ef5350' });
+    const volumeSeries = chart.addSeries(HistogramSeries, { color: '#1f77b4' });
+
+    const candleData = this.candles.map(c => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close
+    }));
+
+    const volumeData = this.candles.map(c => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
+      value: c.volume,
+      color: c.close >= c.open ? '#26a69a' : '#ef5350'
+    }));
+
+    candlestickSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+    chart.timeScale().fitContent();
+  }
+
+  getQuote(instrumentId: string): QuoteResponse | undefined {
+    return this.instrumentQuotes.get(instrumentId);
+  }
+
+  getPriceChangeClass(changePercent: number | undefined): string {
+    if (!changePercent) return '';
+    return changePercent >= 0 ? 'price-up' : 'price-down';
   }
 
   toggleBalanceVisibility() {
@@ -53,8 +257,40 @@ export class HomepageComponent {
     alert('Notifications settings coming soon');
   }
 
-  logout() {
-    clearAuthSession();
-    this.router.navigate(['/login']);
+  openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
+    if (!quote) return;
+    console.log('Opening trade modal for:', instrument.symbol);
+    this.selectedAsset = {
+      instrumentId: instrument.instrumentId,
+      symbol: instrument.symbol,
+      name: instrument.name,
+      price: quote.price,
+      change: quote.changePercent,
+      holdings: 0
+    };
+    this.selectedInstrumentId = instrument.instrumentId;
+    this.selectedTimeframeForChart = '90'; // default to 3M
+    this.isTradeModalOpen = true;
+
+    // Fetch chart data for the default timeframe
+    console.log('Fetching candles for:', instrument.instrumentId);
+    this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
+      next: (candles) => {
+        console.log('Candles received:', candles.length, 'items');
+        this.tradingChartData = candles;
+        console.log('tradingChartData set to:', this.tradingChartData.length, 'items');
+        this.cdr.detectChanges();
+        console.log('detectChanges called');
+      },
+      error: (e) => {
+        console.error('Failed to load chart data:', e);
+        console.error('Error details:', e.status, e.statusText, e.message);
+      }
+    });
+  }
+
+  closeTradeModal() {
+    this.isTradeModalOpen = false;
+    this.selectedAsset = null;
   }
 }

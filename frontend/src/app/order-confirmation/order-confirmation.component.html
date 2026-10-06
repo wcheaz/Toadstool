@@ -1,0 +1,116 @@
+<div class="order-confirmation-overlay" *ngIf="isOpen" (click)="closeModal()">
+  <div class="order-confirmation-modal" (click)="$event.stopPropagation()">
+    <!-- Close Button -->
+    <button class="close-btn" (click)="closeModal()" title="Close order confirmation">
+      ✕
+    </button>
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="order-badge">● ORDER PREVIEW</div>
+      <h2 class="modal-title">Review your {{ orderType }} order</h2>
+    </div>
+
+    <!-- Asset Summary -->
+    <div class="asset-summary" *ngIf="selectedAsset">
+      <div class="asset-info">
+        <div class="asset-icon">{{ selectedAsset.symbol.substring(0, 2) }}</div>
+        <div class="asset-details">
+          <h3>{{ selectedAsset.symbol }}</h3>
+          <p>{{ selectedAsset.name }}</p>
+        </div>
+      </div>
+      <div class="order-side-badge" [ngClass]="orderType">
+        ↓ {{ orderType.toUpperCase() }}
+      </div>
+    </div>
+
+    <!-- Order Details Section -->
+    <div class="order-section">
+      <div class="section-header">
+        <span class="section-title">ORDER DETAILS</span>
+        <span class="live-quote">LIVE QUOTE</span>
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-row">
+          <span class="detail-label">Quantity</span>
+          <span class="detail-value">{{ quantity }} shares</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Order type</span>
+          <span class="detail-value">{{ orderSide === 'market' ? 'Market' : 'Limit' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Duration</span>
+          <span class="detail-value">{{ durationLabel }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Estimated execution price</span>
+          <div class="price-info">
+            <span class="detail-value">{{ estExecutionPrice }}</span>
+            <span class="price-timestamp">Current ask • 10:42:18 ET</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="summary-section">
+      <div class="summary-row">
+        <span class="summary-label">Estimated value</span>
+        <span class="summary-value">${{ estimatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Estimated fees</span>
+        <span class="summary-value">${{ estimatedFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="summary-row divider">
+        <span class="summary-label">Final estimated total</span>
+        <span class="summary-value total">${{ orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="summary-row buying-power">
+        <span class="summary-label">Buying power remaining</span>
+        <span class="summary-value">${{ buyingPowerRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+    </div>
+
+    <!-- Warning Message -->
+    <div class="warning-section">
+      <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      <p class="warning-text">
+        Market orders execute at the best available price. Your final execution price and total may differ from this estimate.
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-group">
+      <button class="btn-edit" (click)="editOrderClick()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Edit Order
+      </button>
+      <button class="btn-confirm" [ngClass]="orderType" (click)="confirmOrder()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Confirm {{ orderType === 'buy' ? 'Buy' : 'Sell' }}
+      </button>
+    </div>
+
+    <!-- Confirmation Note -->
+    <p class="confirmation-note">
+      <svg class="note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path>
+        <path d="M12 6v6l4 2"></path>
+      </svg>
+      Your order will be submitted immediately after confirmation
+    </p>
+  </div>
+</div>

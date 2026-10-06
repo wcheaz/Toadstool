@@ -57,8 +57,8 @@ Before running the application or tests, you need to configure environment varia
 
 ### Creating the `.env` File
 
-1. Create a `.env` file in the project root (same directory as `pom.xml`):
-   ```
+1. Create a `.env` file in the project root (same directory as `pom.xml`) by copying the example:
+   ```bash
    cp .env.example .env
    ```
 
@@ -69,33 +69,43 @@ Before running the application or tests, you need to configure environment varia
    DB_NAME=<your-db-name>
    DB_USERNAME=<your-db-username>
    DB_PASSWORD=<your-db-password>
+   FAUXNANCE_BASE_URL=<your-fauxnance-url>
+   FAUXNANCE_API_KEY=<your-api-key>
    ```
 
 **Important:** The `.env` file is git-ignored and contains sensitive credentials. Never commit it to version control.
 
-### Configuration Files Modified
+### How Configuration Works
 
-The following Spring Boot configuration files use environment variables with fallback defaults:
+- Spring Boot automatically loads environment variables from the `.env` file via `spring.config.import` in `application.yml`
+- All `application.yml` files are now committed to git (they contain no secrets, only variable references)
+- Credentials come **exclusively** from your `.env` file, not from any checked-in configuration
+
+### Application Configuration Files
+
+The following Spring Boot configuration files define the application structure using environment variables:
 
 - **`src/main/resources/application.yml`** - Production/main application configuration
-  - Uses `${VAR:default}` pattern for environment variable injection
-  - Falls back to `localhost:5432` if `DB_HOST` is not set
+  - Uses environment variables: `${DB_HOST}`, `${DB_PORT}`, `${DB_NAME}`, `${DB_USERNAME}`, `${DB_PASSWORD}`
   - Contains Flyway migration settings and MyBatis mapper configuration
+  - Requires all database variables to be set in `.env`
 
 - **`src/test/resources/application.yml`** - Test application configuration
-  - Overrides settings for test environment
-  - Points to database at `localhost:5432` (expects SSH tunnel for VM connections)
-  - Enables Flyway automatic migration and validation
+  - Uses environment variables with test-safe defaults
+  - Enables Flyway automatic migration and validation for tests
 
 ### Variable Reference
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `DB_HOST` | PostgreSQL server hostname or IP | `<your-db-host>` or `localhost` |
+| `DB_HOST` | PostgreSQL server hostname or IP | `localhost` or `<your-db-host>` |
 | `DB_PORT` | PostgreSQL server port | `5432` |
-| `DB_NAME` | Database name | `<your-db-name>` |
-| `DB_USERNAME` | Database username | `<your-db-username>` |
-| `DB_PASSWORD` | Database password | `<your-db-password>` |
+| `DB_NAME` | Database name | `toadstool_db` |
+| `DB_USERNAME` | Database username | `toadstool_user` |
+| `DB_PASSWORD` | Database password | Your secure password |
+| `FAUXNANCE_BASE_URL` | Fauxnance API base URL | `https://y4t9nq2bqf.execute-api.eu-west-2.amazonaws.com/v1` |
+| `FAUXNANCE_API_KEY` | Fauxnance API key | `fnx_dev_...` |
+| `FAUXNANCE_TIMEOUT_SECONDS` | API timeout | `10` |
 
 # Testing
 
@@ -192,3 +202,28 @@ Example successful test run output:
 - Ensure SSH tunnel is established before running tests
 - Check that `.env` variables are set correctly
 - Verify network connectivity to your VM
+
+# Spring Profiles and Market Hours
+
+## Development Mode (Default)
+
+When running the application without a specific Spring profile (default behavior), the MarketStatusService bypasses market hours validation. This allows testing and development to proceed at any time.
+
+**Running in development mode:**
+```bash
+java -jar target/leap-0.0.1-SNAPSHOT.jar
+```
+
+## Production Mode
+
+To enforce real US market hours (9:30 AM - 4:00 PM EST, Monday-Friday), deploy with the `prod` profile:
+
+```bash
+java -jar target/leap-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+```
+
+**Important for Production Deployment:**
+- Before going live, ensure the deployment configuration sets `--spring.profiles.active=prod`
+- Orders placed outside market hours will be rejected with 422 UNPROCESSABLE_ENTITY and error message "Cannot place order: Market is closed"
+- This enforces regulatory compliance with real market hours
+- Test the `prod` profile thoroughly before production release

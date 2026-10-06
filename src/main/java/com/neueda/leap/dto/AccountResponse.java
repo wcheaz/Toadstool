@@ -2,6 +2,9 @@ package com.neueda.leap.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
+
 /**
  * Response DTO for account data
  */
@@ -9,6 +12,7 @@ public class AccountResponse {
     private UUID accountId;
     private UUID clientId;
     private String status;
+    @JsonSerialize(using = OffsetDateTimeSerializer.class)
     private OffsetDateTime openedAt;
 
     public AccountResponse() {

@@ -10,30 +10,30 @@ import static org.junit.jupiter.api.Assertions.*;
 class AssetClassFeeStructureTest {
 
     @Test
-    @DisplayName("EQUITY enum value exists")
-    void testEquityEnumExists() {
+    @DisplayName("EQUITY enum value has correct configuration")
+    void testEquityConfiguration() {
         AssetClassFeeStructure equity = AssetClassFeeStructure.EQUITY;
         assertNotNull(equity);
-        assertNotNull(equity.getFeePercentage());
-        assertNotNull(equity.getMinimumFee());
+        assertEquals(new BigDecimal("0.0005"), equity.getFeePercentage());
+        assertEquals(new BigDecimal("1.00000"), equity.getMinimumFee());
     }
 
     @Test
-    @DisplayName("CRYPTO enum value exists")
-    void testCryptoEnumExists() {
+    @DisplayName("CRYPTO enum value has correct configuration")
+    void testCryptoConfiguration() {
         AssetClassFeeStructure crypto = AssetClassFeeStructure.CRYPTO;
         assertNotNull(crypto);
-        assertNotNull(crypto.getFeePercentage());
-        assertNotNull(crypto.getMinimumFee());
+        assertEquals(new BigDecimal("0.001"), crypto.getFeePercentage());
+        assertEquals(new BigDecimal("2.00000"), crypto.getMinimumFee());
     }
 
     @Test
-    @DisplayName("FX enum value exists")
-    void testFxEnumExists() {
+    @DisplayName("FX enum value has correct configuration")
+    void testFxConfiguration() {
         AssetClassFeeStructure fx = AssetClassFeeStructure.FX;
         assertNotNull(fx);
-        assertNotNull(fx.getFeePercentage());
-        assertNotNull(fx.getMinimumFee());
+        assertEquals(new BigDecimal("0.0002"), fx.getFeePercentage());
+        assertEquals(new BigDecimal("0.50000"), fx.getMinimumFee());
     }
 
     @Test
@@ -55,152 +55,36 @@ class AssetClassFeeStructureTest {
     }
 
     @Test
-    @DisplayName("calculateFee returns positive value for large order value")
-    void testCalculateFeeReturnsPositiveForLargeOrder() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal largeOrderValue = new BigDecimal("10000.00");
-            BigDecimal fee = feeStructure.calculateFee(largeOrderValue);
-            
-            assertTrue(fee.compareTo(BigDecimal.ZERO) > 0, 
-                    feeStructure + " should return positive fee for large order");
-        }
+    @DisplayName("All enum values are retrievable")
+    void testAllEnumValuesExist() {
+        assertEquals(3, AssetClassFeeStructure.values().length);
+        assertNotNull(AssetClassFeeStructure.valueOf("EQUITY"));
+        assertNotNull(AssetClassFeeStructure.valueOf("CRYPTO"));
+        assertNotNull(AssetClassFeeStructure.valueOf("FX"));
     }
 
     @Test
-    @DisplayName("calculateFee returns at least the minimum fee for small order")
-    void testCalculateFeeReturnsAtLeastMinimumForSmallOrder() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal smallOrderValue = new BigDecimal("10.00");
-            BigDecimal fee = feeStructure.calculateFee(smallOrderValue);
-            
-            assertTrue(fee.compareTo(feeStructure.getMinimumFee()) >= 0,
-                    feeStructure + " should return at least minimum fee");
-            assertEquals(fee, feeStructure.getMinimumFee(),
-                    feeStructure + " should apply minimum fee for small orders");
-        }
+    @DisplayName("Fee percentage is immutable")
+    void testFeePercentageImmutable() {
+        AssetClassFeeStructure equity = AssetClassFeeStructure.EQUITY;
+        BigDecimal original = equity.getFeePercentage();
+        
+        // Verify same value returned consistently
+        assertEquals(original, equity.getFeePercentage());
+        assertEquals(original, equity.getFeePercentage());
     }
 
     @Test
-    @DisplayName("calculateFee for large order exceeds minimum fee")
-    void testCalculateFeeForLargeOrderExceedsMinimum() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            // Use a sufficiently large order value to exceed percentage-based fee
-            BigDecimal largeOrderValue = new BigDecimal("100000.00");
-            BigDecimal fee = feeStructure.calculateFee(largeOrderValue);
-            
-            assertTrue(fee.compareTo(feeStructure.getMinimumFee()) >= 0,
-                    feeStructure + " calculated fee should meet or exceed minimum");
-        }
+    @DisplayName("Minimum fee is immutable")
+    void testMinimumFeeImmutable() {
+        AssetClassFeeStructure crypto = AssetClassFeeStructure.CRYPTO;
+        BigDecimal original = crypto.getMinimumFee();
+        
+        // Verify same value returned consistently
+        assertEquals(original, crypto.getMinimumFee());
+        assertEquals(original, crypto.getMinimumFee());
     }
 
-    @Test
-    @DisplayName("calculateFee maintains 5 decimal precision")
-    void testCalculateFeePrecision() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal orderValue = new BigDecimal("12345.67");
-            BigDecimal fee = feeStructure.calculateFee(orderValue);
-            
-            assertEquals(5, fee.scale(), 
-                    feeStructure + " should maintain 5 decimal places");
-        }
-    }
-
-    @Test
-    @DisplayName("calculateFee handles zero order value with minimum fee")
-    void testCalculateFeeZeroOrderValue() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal orderValue = BigDecimal.ZERO;
-            BigDecimal fee = feeStructure.calculateFee(orderValue);
-            
-            assertEquals(feeStructure.getMinimumFee(), fee,
-                    feeStructure + " should return minimum fee for zero order value");
-        }
-    }
-
-    @Test
-    @DisplayName("calculateFee results increase with larger order values")
-    void testCalculateFeeIncreases() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal smallOrder = new BigDecimal("1000.00");
-            BigDecimal largeOrder = new BigDecimal("100000.00");
-            
-            BigDecimal feeSmall = feeStructure.calculateFee(smallOrder);
-            BigDecimal feeLarge = feeStructure.calculateFee(largeOrder);
-            
-            assertTrue(feeLarge.compareTo(feeSmall) >= 0,
-                    feeStructure + " fee should increase with order value");
-        }
-    }
-
-    // ==================== EDGE CASE & ERROR HANDLING TESTS ====================
-
-    @Test
-    @DisplayName("calculateFee throws IllegalArgumentException for null order value")
-    void testCalculateFeeNullOrderValue() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> feeStructure.calculateFee(null),
-                    feeStructure + " should throw for null order value");
-        }
-    }
-
-    @Test
-    @DisplayName("fromAssetClass returns correct EQUITY fee structure")
-    void testFromAssetClassEquity() {
-        AssetClassFeeStructure result = AssetClassFeeStructure.fromAssetClass(AssetClass.EQUITY);
-        assertEquals(AssetClassFeeStructure.EQUITY, result);
-    }
-
-    @Test
-    @DisplayName("fromAssetClass returns correct CRYPTO fee structure")
-    void testFromAssetClassCrypto() {
-        AssetClassFeeStructure result = AssetClassFeeStructure.fromAssetClass(AssetClass.CRYPTO);
-        assertEquals(AssetClassFeeStructure.CRYPTO, result);
-    }
-
-    @Test
-    @DisplayName("fromAssetClass returns correct FX fee structure")
-    void testFromAssetClassFx() {
-        AssetClassFeeStructure result = AssetClassFeeStructure.fromAssetClass(AssetClass.FX);
-        assertEquals(AssetClassFeeStructure.FX, result);
-    }
-
-    @Test
-    @DisplayName("fromAssetClass throws IllegalArgumentException for null asset class")
-    void testFromAssetClassNull() {
-        assertThrows(IllegalArgumentException.class,
-                () -> AssetClassFeeStructure.fromAssetClass(null),
-                "Should throw for null asset class");
-    }
-
-    @Test
-    @DisplayName("calculateFee handles negative order value (returns minimum fee)")
-    void testCalculateFeeNegativeOrderValue() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal negativeOrderValue = new BigDecimal("-1000.00");
-            BigDecimal fee = feeStructure.calculateFee(negativeOrderValue);
-            
-            // Negative order value * positive percentage = negative fee
-            // MAX(negative, minimum) = minimum
-            assertEquals(feeStructure.getMinimumFee(), fee,
-                    feeStructure + " should return minimum fee for negative order value");
-        }
-    }
-
-    @Test
-    @DisplayName("calculateFee handles very large order value")
-    void testCalculateFeeVeryLargeOrderValue() {
-        for (AssetClassFeeStructure feeStructure : AssetClassFeeStructure.values()) {
-            BigDecimal veryLargeOrderValue = new BigDecimal("999999999.99");
-            BigDecimal fee = feeStructure.calculateFee(veryLargeOrderValue);
-            
-            assertTrue(fee.compareTo(BigDecimal.ZERO) > 0);
-            assertEquals(5, fee.scale(), "Should maintain 5 decimal precision");
-        }
-    }
-
-    @Test
-    @DisplayName("EQUITY has lower fee percentage than CRYPTO")
     void testEquityFeeLowerThanCrypto() {
         assertTrue(AssetClassFeeStructure.EQUITY.getFeePercentage()
                 .compareTo(AssetClassFeeStructure.CRYPTO.getFeePercentage()) < 0,

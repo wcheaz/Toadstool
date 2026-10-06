@@ -24,7 +24,7 @@ public interface OrderMapper {
     @Select("SELECT COUNT(*) FROM trading.orders WHERE account_id = #{accountId}")
     int countOrdersByAccountId(@Param("accountId") UUID accountId);
 
-    @Insert("INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key) VALUES (#{accountId}, #{instrumentId}, #{side}, #{quantity}, #{idempotencyKey})")
+    @Insert("INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key) VALUES (#{accountId}, #{instrumentId}, #{side}, CAST(#{quantity} AS numeric), #{idempotencyKey})")
     void insertOrder(@Param("accountId") UUID accountId, @Param("instrumentId") UUID instrumentId, 
                      @Param("side") String side, @Param("quantity") String quantity, @Param("idempotencyKey") String idempotencyKey);
 
