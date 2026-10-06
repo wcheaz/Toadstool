@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CandleResponse, DepthLevel } from '../api.service';
+import { ApiService, CandleResponse, DepthLevel, OrderResponse } from '../api.service';
 import { createChart, ColorType, CandlestickSeries, UTCTimestamp } from 'lightweight-charts';
 import { OrderConfirmationComponent } from '../order-confirmation/order-confirmation.component';
 import { OrderSuccessComponent } from '../order-success/order-success.component';
