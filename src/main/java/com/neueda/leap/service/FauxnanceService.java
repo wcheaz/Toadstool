@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class FauxnanceService {
@@ -34,7 +35,7 @@ public class FauxnanceService {
     }
 
     private final ConcurrentHashMap<String, CacheEntry<?>> cache = new ConcurrentHashMap<>();
-    private static final long CACHE_TTL_MS = 5000; // 5 seconds
+    private static final long CACHE_TTL_MS = 60000; // 1 minute
 
     public FauxnanceService(RestTemplate restTemplate, FauxnanceProperties properties, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
@@ -100,7 +101,8 @@ public class FauxnanceService {
 
     private QuoteResponse fetchQuote(String symbol) {
         try {
-            String url = properties.getBaseUrl() + "/quotes/" + symbol;
+            String baseSymbol = extractBaseSymbol(symbol);
+            String url = properties.getBaseUrl() + "/quotes/" + baseSymbol;
             ResponseEntity<String> response = makeRequest(url);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -136,14 +138,17 @@ public class FauxnanceService {
 
     private List<QuoteResponse> fetchQuotes(List<String> symbols) {
         try {
-            String url = properties.getBaseUrl() + "/quotes?symbols=" + String.join(",", symbols);
+            List<String> baseSymbols = symbols.stream()
+                    .map(this::extractBaseSymbol)
+                    .collect(Collectors.toList());
+            String url = properties.getBaseUrl() + "/quotes?symbols=" + String.join(",", baseSymbols);
             ResponseEntity<String> response = makeRequest(url);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 logger.warn("Fauxnance API returned non-success status {} for batch quotes", response.getStatusCode());
                 return Collections.emptyList();
             }
-            
+
             if (response.getBody() == null) {
                 logger.warn("Fauxnance API returned empty body for batch quotes");
                 return Collections.emptyList();
@@ -152,18 +157,25 @@ public class FauxnanceService {
             JsonNode root = objectMapper.readTree(response.getBody());
             JsonNode data = root.get("data");
             List<QuoteResponse> quotes = new ArrayList<>();
-            if (data != null && data.isObject()) {
-                data.fields().forEachRemaining(entry -> {
-                    JsonNode quote = entry.getValue();
-                    quotes.add(new QuoteResponse(
-                            quote.get("symbol").asText(),
-                            quote.get("price").asDouble(),
-                            quote.get("bid").asDouble(),
-                            quote.get("ask").asDouble(),
-                            quote.get("change").asDouble(),
-                            quote.get("changePercent").asDouble(),
-                            quote.get("asOf").asText()
-                    ));
+            if (data != null && data.has("quotes")) {
+                JsonNode quotesArray = data.get("quotes");
+                quotesArray.forEach(entry -> {
+                    if (entry.has("quote") && !entry.has("error")) {
+                        JsonNode quote = entry.get("quote");
+                        quotes.add(new QuoteResponse(
+                                quote.get("symbol").asText(),
+                                quote.get("price").asDouble(),
+                                quote.get("bid").asDouble(),
+                                quote.get("ask").asDouble(),
+                                quote.get("change").asDouble(),
+                                quote.get("changePercent").asDouble(),
+                                quote.get("asOf").asText()
+                        ));
+                    } else if (entry.has("error")) {
+                        logger.warn("Fauxnance batch quote error for symbol {}: {}",
+                                entry.get("symbol").asText(),
+                                entry.get("error").get("message").asText());
+                    }
                 });
             }
             return quotes;
@@ -175,7 +187,8 @@ public class FauxnanceService {
 
     private List<CandleResponse> fetchCandles(String symbol, String fromDate, String toDate) {
         try {
-            String url = properties.getBaseUrl() + "/candles/" + symbol + "?from=" + fromDate + "&to=" + toDate;
+            String baseSymbol = extractBaseSymbol(symbol);
+            String url = properties.getBaseUrl() + "/candles/" + baseSymbol + "?from=" + fromDate + "&to=" + toDate;
             ResponseEntity<String> response = makeRequest(url);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -211,7 +224,8 @@ public class FauxnanceService {
 
     private SymbolResponse fetchSymbol(String symbol) {
         try {
-            String url = properties.getBaseUrl() + "/symbols/" + symbol;
+            String baseSymbol = extractBaseSymbol(symbol);
+            String url = properties.getBaseUrl() + "/symbols/" + baseSymbol;
             ResponseEntity<String> response = makeRequest(url);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -247,6 +261,17 @@ public class FauxnanceService {
         headers.set("Accept", "application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
         return restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+    }
+
+    private String extractBaseSymbol(String symbol) {
+        if (symbol == null || symbol.isEmpty()) {
+            return symbol;
+        }
+        int slashIndex = symbol.indexOf('/');
+        if (slashIndex > 0) {
+            return symbol.substring(0, slashIndex);
+        }
+        return symbol;
     }
 
     public static class QuoteResponse {

@@ -248,13 +248,10 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
       return;
     }
 
-    // TODO (W3-8): Fix confirmation modal display - should show before order submission
-    // Currently the modal closes immediately. Need to investigate why it's not displaying.
-    // Close the preview modal immediately
     this.isPreviewOpen = false;
     this.isSubmitting = true;
 
-    // Call the backend to place the order
+    // Place the order first
     this.apiService.placeOrder(
       this.accountId,
       this.selectedAsset.instrumentId,
@@ -262,15 +259,30 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
       this.quantity.toString()
     ).subscribe({
       next: (response: OrderResponse) => {
-        this.isSubmitting = false;
         console.log('Order placed successfully:', response);
-        this.isSuccessOpen = true;
+
+        // Auto-fill based on order type
+        if (this.orderType === 'market') {
+          // Market order: fill immediately at current price
+          this.fillOrder(response.orderId, this.selectedAsset!.price);
+        } else if (this.orderType === 'limit') {
+          // Limit order: fill only if current price meets the limit
+          if (this.orderSide === 'buy' && this.selectedAsset!.price <= this.limitPrice) {
+            this.fillOrder(response.orderId, this.limitPrice);
+          } else if (this.orderSide === 'sell' && this.selectedAsset!.price >= this.limitPrice) {
+            this.fillOrder(response.orderId, this.limitPrice);
+          } else {
+            // Limit price not met, order stays pending
+            this.isSubmitting = false;
+            this.isSuccessOpen = true;
+            console.log('Limit order placed. Waiting for price to reach', this.limitPrice);
+          }
+        }
       },
       error: (error) => {
         this.isSubmitting = false;
         console.error('Order placement failed:', error);
-        
-        // Extract error message
+
         if (error.error && error.error.message) {
           this.errorMessage = error.error.message;
         } else if (error.status === 422) {
@@ -285,6 +297,24 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
           this.errorMessage = 'Failed to place order. Please try again.';
         }
 
+        this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
+        this.isErrorOpen = true;
+      }
+    });
+  }
+
+  private fillOrder(orderId: string, fillPrice: number) {
+    // Call backend to fill the order
+    this.apiService.fillOrder(orderId, fillPrice).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.isSuccessOpen = true;
+        console.log('Order filled at price:', fillPrice);
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('Order fill failed:', error);
+        this.errorMessage = 'Order placement succeeded but filling failed. Order is pending.';
         this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
         this.isErrorOpen = true;
       }
