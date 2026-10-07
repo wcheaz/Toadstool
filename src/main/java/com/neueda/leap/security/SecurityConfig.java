@@ -48,7 +48,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 // Disable CSRF for stateless API
                 .csrf(csrf -> csrf.disable())
                 // Stateless session management (no cookies)
@@ -79,11 +79,12 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authz -> authz
                         // Public endpoints
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/health", "/api/health/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // Require authentication for every other API endpoint
-                        .anyRequest().authenticated()
-                )
+                .requestMatchers("/error", "/error/**").permitAll()
+                .requestMatchers("/api/health", "/api/health/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                // Require authentication for every other API endpoint
+                .anyRequest().authenticated()
+        )
                 // Add JWT filter before username/password auth filter
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenValidator, sessionKeyService), UsernamePasswordAuthenticationFilter.class);
 

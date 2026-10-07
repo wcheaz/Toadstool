@@ -6,6 +6,8 @@ import com.neueda.leap.Order;
 import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.repository.OrderRepository;
+import com.neueda.leap.security.AuthenticatedUser;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.validator.OrderValidator;
 import com.neueda.leap.validator.OrderValidationRequest;
 import com.neueda.leap.pricing.FeeStrategy;
@@ -28,6 +30,7 @@ public class OrderService {
     private final MarketStatusService marketStatusService;
     private final AccountService accountService;
     private final InstrumentService instrumentService;
+    private final TradeEventService tradeEventService;
     private final OrderValidator orderValidator;
     private final FeeStrategyFactory feeStrategyFactory;
 
@@ -36,18 +39,15 @@ public class OrderService {
                        MarketStatusService marketStatusService,
                        AccountService accountService,
                        InstrumentService instrumentService,
+                       TradeEventService tradeEventService,
                        OrderValidator orderValidator,
                        FeeStrategyFactory feeStrategyFactory) {
         this.orderRepository = orderRepository;
-=======
-                       OrderValidator orderValidator,
-                       FeeStrategyFactory feeStrategyFactory) {
-        this.orderRepository = orderRepository;
->>>>>>> 090d9686c55a043137e0d0ebb943a43a220c24b1
         this.pricingService = pricingService;
         this.marketStatusService = marketStatusService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
+        this.tradeEventService = tradeEventService;
         this.orderValidator = orderValidator;
         this.feeStrategyFactory = feeStrategyFactory;
     }

@@ -51,6 +51,10 @@ export class LoginComponent {
           this.errorMessage = 'Invalid username or password.';
         } else if (error.status === 400) {
           this.errorMessage = error.error?.message || 'Please enter your username and password.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'The backend is unavailable. Please make sure the API is running and try again.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'The backend is running but could not complete login. Check the server and database connection, then try again.';
         } else {
           this.errorMessage = 'Login failed. Please try again in a moment.';
         }

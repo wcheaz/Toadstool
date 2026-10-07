@@ -88,6 +88,10 @@ export class RegisterComponent {
           this.errorMessage = error.error?.message || 'That email or username is already in use.';
         } else if (error.status === 400) {
           this.errorMessage = error.error?.message || 'Please check your registration details.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'The backend is unavailable. Please make sure the API is running and try again.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'The backend is running but could not complete registration. Check the server and database connection, then try again.';
         } else {
           this.errorMessage = 'Registration failed. Please try again in a moment.';
         }

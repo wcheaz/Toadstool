@@ -5,6 +5,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -14,6 +16,7 @@ import java.util.Date;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @DisplayName("JWT Token Validator Unit Tests")
 class JwtTokenValidatorTest {
@@ -21,15 +24,21 @@ class JwtTokenValidatorTest {
     private JwtTokenValidator validator;
     private JwtProperties jwtProperties;
     private KeyPair signingKeys;
+    
+    @Mock
+    private JwtKeyProvider jwtKeyProvider;
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         signingKeys = generateKeyPair();
         jwtProperties = new JwtProperties();
         jwtProperties.setPublicKey(Base64.getEncoder().encodeToString(signingKeys.getPublic().getEncoded()));
         jwtProperties.setEnabled(true);
-        validator = new JwtTokenValidator(jwtProperties);
-        validator.validateConfiguration();
+        
+        when(jwtKeyProvider.getVerificationKey()).thenReturn(signingKeys.getPublic());
+        
+        validator = new JwtTokenValidator(jwtProperties, jwtKeyProvider);
     }
 
     @Test

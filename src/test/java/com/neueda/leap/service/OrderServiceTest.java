@@ -54,6 +54,9 @@ class OrderServiceTest {
     private InstrumentService instrumentService;
 
     @Mock
+    private TradeEventService tradeEventService;
+
+    @Mock
     private OrderValidator orderValidator;
 
     @Mock
@@ -81,6 +84,7 @@ class OrderServiceTest {
             marketStatusService,
             accountService,
             instrumentService,
+            tradeEventService,
             orderValidator,
             feeStrategyFactory
         );
