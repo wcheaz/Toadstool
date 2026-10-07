@@ -1,7 +1,10 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
+import { ErrorModalComponent } from '../error-modal/error-modal.component';
+import { DepositModalComponent } from '../deposit-modal/deposit-modal.component';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
@@ -18,7 +21,7 @@ interface Asset {
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule, TradingModalComponent],
+  imports: [CommonModule, TradingModalComponent, ErrorModalComponent, DepositModalComponent],
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
@@ -28,12 +31,19 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   currentBalance: number = 142384.50;
   availableForTrading: number = 12450.00;
   isBalanceVisible: boolean = true;
-  activeTab: string = 'news';
   platformStatus: string = 'Platform live status: Standard Trading Hours';
   
   // Trading modal state
   isTradeModalOpen: boolean = false;
   selectedAsset: Asset | null = null;
+
+  // Error modal state
+  isErrorModalOpen: boolean = false;
+  errorMessage: string = '';
+  errorDetails?: string;
+
+  // Deposit modal state
+  isDepositModalOpen: boolean = false;
 
   // Available assets
   assets: Asset[] = [
@@ -75,7 +85,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, private router: Router) {
     // Get client info from localStorage
     this.clientName = localStorage.getItem('clientName') || 'User';
     this.accountId = localStorage.getItem('accountId') || '';
@@ -237,12 +247,8 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isBalanceVisible = !this.isBalanceVisible;
   }
 
-  setActiveTab(tab: string) {
-    this.activeTab = tab;
-  }
-
   deposit() {
-    alert('Deposit functionality coming soon');
+    this.isDepositModalOpen = true;
   }
 
   withdraw() {
@@ -255,6 +261,25 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   navigateTo(section: string) {
     console.log('Navigating to:', section);
+    switch (section) {
+      case 'dashboard':
+        this.router.navigate(['/homepage']);
+        break;
+      case 'news':
+        this.router.navigate(['/news']);
+        break;
+      case 'trading':
+        console.log('Trading page not yet implemented');
+        break;
+      case 'settings':
+        console.log('Settings page not yet implemented');
+        break;
+      case 'support':
+        console.log('Support page not yet implemented');
+        break;
+      default:
+        console.log('Unknown section:', section);
+    }
   }
 
   openProfile() {
@@ -266,7 +291,12 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
-    if (!quote) return;
+    if (!quote) {
+      this.errorMessage = 'API is down';
+      this.errorDetails = 'Unable to fetch quote data for this asset. Please try again later.';
+      this.isErrorModalOpen = true;
+      return;
+    }
     console.log('Opening trade modal for:', instrument.symbol);
     this.selectedAsset = {
       instrumentId: instrument.instrumentId,
@@ -302,8 +332,27 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     this.selectedAsset = null;
   }
 
+  closeErrorModal() {
+    this.isErrorModalOpen = false;
+    this.errorMessage = '';
+    this.errorDetails = '';
+  }
+
+  closeDepositModal() {
+    this.isDepositModalOpen = false;
+  }
+
+  onDepositSubmit(summary: any) {
+    console.log('Deposit submitted:', summary);
+    // Update account balance
+    this.currentBalance += summary.total;
+    this.availableForTrading += summary.amount;
+    // Show success message
+    alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.total)} initiated successfully!`);
+  }
+
   logout() {
-    localStorage.removeItem('clientName');
-    window.location.href = '/login';
+    localStorage.clear();
+    this.router.navigate(['/login']);
   }
 }

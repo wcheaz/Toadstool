@@ -144,14 +144,8 @@
 
     <!-- Content Tabs and Dashboard Area -->
     <section class="dashboard-content">
-      <div class="content-tabs">
-        <button class="tab-button active" (click)="setActiveTab('news')">News</button>
-        <button class="tab-button" (click)="setActiveTab('trading')">Trading</button>
-        <button class="tab-button" (click)="setActiveTab('settings')">Settings</button>
-      </div>
-
       <!-- NEWS TAB CONTENT -->
-      <div class="tab-content" *ngIf="activeTab === 'news'">
+      <div class="tab-content">
         <div class="dashboard-grid">
           <!-- Left Column: News Module -->
           <div class="dashboard-module news-module">
@@ -245,20 +239,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Trading Tab Content (placeholder) -->
-      <div class="tab-content" *ngIf="activeTab === 'trading'">
-        <div class="placeholder">
-          <p>Trading features coming soon...</p>
-        </div>
-      </div>
-
-      <!-- Settings Tab Content (placeholder) -->
-      <div class="tab-content" *ngIf="activeTab === 'settings'">
-        <div class="placeholder">
-          <p>Settings features coming soon...</p>
-        </div>
-      </div>
     </section>
 
   <!-- Trading Modal -->
@@ -269,5 +249,18 @@
     [instrumentId]="selectedInstrumentId"
     (close)="closeTradeModal()">
   </app-trading-modal>
+
+  <app-error-modal
+    [isOpen]="isErrorModalOpen"
+    [errorMessage]="errorMessage"
+    [errorDetails]="errorDetails"
+    (close)="closeErrorModal()">
+  </app-error-modal>
+
+  <app-deposit-modal
+    [isOpen]="isDepositModalOpen"
+    (close)="closeDepositModal()"
+    (submit)="onDepositSubmit($event)">
+  </app-deposit-modal>
   </main>
 </div>

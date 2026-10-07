@@ -1,0 +1,205 @@
+<div class="deposit-modal-overlay" *ngIf="isOpen" (click)="closeModal()">
+  <div class="deposit-modal" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="header-content">
+        <h1 class="modal-title">Deposit Funds</h1>
+        <p class="modal-subtitle">Add funds to your trading account</p>
+      </div>
+      <button class="close-btn" (click)="closeModal()" title="Close">✕</button>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="progress-indicator">
+      <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+        <div class="step-number">1</div>
+        <div class="step-label">Amount</div>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 1"></div>
+      <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+        <div class="step-number">2</div>
+        <div class="step-label">Account</div>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 2"></div>
+      <div class="step" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
+        <div class="step-number">3</div>
+        <div class="step-label">Review</div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="modal-content">
+      <!-- Step 1: Amount Input -->
+      <div *ngIf="currentStep === 1" class="step-content">
+        <h2 class="step-title">How much would you like to deposit?</h2>
+        
+        <div class="form-group">
+          <label class="form-label">Deposit Amount</label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">$</span>
+            <input
+              type="number"
+              class="amount-input"
+              [(ngModel)]="depositAmount"
+              placeholder="0.00"
+              min="100"
+              max="100000"
+              step="0.01"
+              (input)="depositAmount = depositAmount">
+          </div>
+          <p class="input-hint">Minimum: $100 • Maximum: $100,000</p>
+        </div>
+
+        <div class="deposit-info-box">
+          <div class="info-item">
+            <span class="info-label">Processing Fee:</span>
+            <span class="info-value">{{ depositFeePercentage }}%</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Processing Time:</span>
+            <span class="info-value">1-2 business days</span>
+          </div>
+        </div>
+
+        <div class="amount-preview" *ngIf="depositAmount">
+          <div class="preview-item">
+            <span>Deposit Amount:</span>
+            <span class="preview-value">{{ formatCurrency(parseFloatSafe(depositAmount)) }}</span>
+          </div>
+          <div class="preview-item">
+            <span>Processing Fee:</span>
+            <span class="preview-value">{{ formatCurrency(getDepositFee()) }}</span>
+          </div>
+          <div class="preview-item total">
+            <span>Total to Deposit:</span>
+            <span class="preview-value highlight">{{ formatCurrency(getTotalDeposit()) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Account Selection -->
+      <div *ngIf="currentStep === 2" class="step-content">
+        <h2 class="step-title">Select Source Account</h2>
+        <p class="step-description">Choose which bank account to transfer from</p>
+
+        <div class="account-selection">
+          <div
+            *ngFor="let account of bankAccounts"
+            class="account-card"
+            [class.selected]="selectedAccountId === account.id"
+            (click)="selectedAccountId = account.id">
+            <div class="account-card-header">
+              <div class="bank-icon">🏦</div>
+              <div class="account-info">
+                <div class="bank-name">{{ account.bankName }}</div>
+                <div class="account-type">{{ account.accountType }}</div>
+              </div>
+            </div>
+            <div class="account-number">{{ account.accountNumber }}</div>
+            <div class="selection-indicator" *ngIf="selectedAccountId === account.id">✓</div>
+          </div>
+        </div>
+
+        <div class="add-account-link">
+          <button class="link-button">+ Add New Bank Account</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Review & Confirm -->
+      <div *ngIf="currentStep === 3" class="step-content">
+        <h2 class="step-title">Review Deposit Details</h2>
+        
+        <div class="review-section">
+          <div class="review-card">
+            <h3 class="review-heading">Deposit Information</h3>
+            
+            <div class="review-item">
+              <span class="review-label">Deposit Amount:</span>
+              <span class="review-value">{{ formatCurrency(parseFloatSafe(depositAmount)) }}</span>
+            </div>
+            
+            <div class="review-item">
+              <span class="review-label">Processing Fee:</span>
+              <span class="review-value">{{ formatCurrency(getDepositFee()) }}</span>
+            </div>
+            
+            <div class="review-item total-line">
+              <span class="review-label">Total Amount:</span>
+              <span class="review-value total">{{ formatCurrency(getTotalDeposit()) }}</span>
+            </div>
+          </div>
+
+          <div class="review-card">
+            <h3 class="review-heading">Source Account</h3>
+            
+            <div class="review-item" *ngIf="getSelectedAccount()">
+              <span class="review-label">Bank:</span>
+              <span class="review-value">{{ getSelectedAccount()?.bankName }}</span>
+            </div>
+            
+            <div class="review-item" *ngIf="getSelectedAccount()">
+              <span class="review-label">Account Type:</span>
+              <span class="review-value">{{ getSelectedAccount()?.accountType }}</span>
+            </div>
+            
+            <div class="review-item" *ngIf="getSelectedAccount()">
+              <span class="review-label">Account Number:</span>
+              <span class="review-value">{{ getSelectedAccount()?.accountNumber }}</span>
+            </div>
+          </div>
+
+          <div class="review-card">
+            <h3 class="review-heading">Additional Information</h3>
+            
+            <div class="info-message">
+              <div class="info-icon">ℹ️</div>
+              <div class="info-text">
+                <p><strong>Processing Time:</strong> Deposits typically appear in your account within 1-2 business days.</p>
+                <p><strong>Security:</strong> Your bank account information is encrypted and securely stored.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="terms-agreement">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="agreeToTerms" class="checkbox-input">
+              <span>I agree to the deposit terms and conditions</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="previousStep()" [disabled]="currentStep === 1">
+        ← Back
+      </button>
+      
+      <div class="footer-spacer"></div>
+
+      <button
+        class="btn-cancel"
+        (click)="closeModal()">
+        Cancel
+      </button>
+
+      <button
+        *ngIf="currentStep < 3"
+        class="btn-primary"
+        (click)="nextStep()"
+        [disabled]="(currentStep === 1 && !canProceedToStep2()) || (currentStep === 2 && !canProceedToStep3())">
+        Next →
+      </button>
+
+      <button
+        *ngIf="currentStep === 3"
+        class="btn-deposit"
+        (click)="submitDeposit()"
+        [disabled]="!agreeToTerms || isProcessing">
+        <span *ngIf="!isProcessing">Confirm Deposit</span>
+        <span *ngIf="isProcessing">Processing...</span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -29,6 +29,7 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   @Input() accountId: string = '';
   @Input() candleData: CandleResponse[] = [];
   @Input() instrumentId: string = '';
+  @Input() apiError: string = '';
   @Output() close = new EventEmitter<void>();
 
   @ViewChild('chartContainer') chartContainer: ElementRef | null = null;
