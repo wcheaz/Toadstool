@@ -1,6 +1,7 @@
 package com.neueda.leap.repository;
 
 import com.neueda.leap.Account;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,4 +13,5 @@ public interface AccountRepository {
     List<Account> findByClientId(UUID clientId, int limit, int offset);
     int countByClientId(UUID clientId);
     void save(UUID clientId, String status);
+    void updateBalance(UUID accountId, BigDecimal balance);
 }

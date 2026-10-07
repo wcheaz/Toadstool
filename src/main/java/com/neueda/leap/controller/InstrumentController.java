@@ -223,7 +223,7 @@ public class InstrumentController {
 
     /**
      * GET /api/instruments/quotes/batch?instrumentIds=id1,id2,...
-     * Get batch quotes for multiple instruments (up to 25)
+     * Get batch quotes for multiple instruments (up to 25) in one API call
      */
     @GetMapping("/quotes/batch")
     public ResponseEntity<java.util.Map<String, QuoteDto>> getBatchQuotes(
@@ -234,28 +234,39 @@ public class InstrumentController {
                 return ResponseEntity.badRequest().build();
             }
 
-            java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
+            java.util.List<String> symbols = new java.util.ArrayList<>();
+            java.util.Map<String, UUID> symbolToIdMap = new java.util.HashMap<>();
+
             for (String idStr : ids) {
                 try {
                     UUID id = UUID.fromString(idStr.trim());
                     Instrument instrument = instrumentService.getInstrumentById(id);
                     if (instrument != null) {
-                        FauxnanceService.QuoteResponse quote = fauxnanceService.getQuote(instrument.getSymbol());
-                        if (quote != null) {
-                            QuoteDto response = new QuoteDto(
-                                    quote.getSymbol(),
-                                    quote.getPrice(),
-                                    quote.getBid(),
-                                    quote.getAsk(),
-                                    quote.getChange(),
-                                    quote.getChangePercent(),
-                                    quote.getAsOf()
-                            );
-                            quotes.put(id.toString(), response);
-                        }
+                        symbols.add(instrument.getSymbol());
+                        symbolToIdMap.put(instrument.getSymbol(), id);
                     }
                 } catch (IllegalArgumentException e) {
                     logger.warn("Invalid instrument ID format: {}", idStr);
+                }
+            }
+
+            java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
+            if (!symbols.isEmpty()) {
+                List<FauxnanceService.QuoteResponse> batchQuotes = fauxnanceService.getQuotes(symbols);
+                for (FauxnanceService.QuoteResponse quote : batchQuotes) {
+                    UUID instrumentId = symbolToIdMap.get(quote.getSymbol());
+                    if (instrumentId != null) {
+                        QuoteDto response = new QuoteDto(
+                                quote.getSymbol(),
+                                quote.getPrice(),
+                                quote.getBid(),
+                                quote.getAsk(),
+                                quote.getChange(),
+                                quote.getChangePercent(),
+                                quote.getAsOf()
+                        );
+                        quotes.put(instrumentId.toString(), response);
+                    }
                 }
             }
 
