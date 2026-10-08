@@ -199,6 +199,7 @@ public class OrderService {
                 + "\",\"side\":\"" + side
                 + "\",\"quantity\":\"" + quantity
                 + "\",\"idempotencyKey\":\"" + idempotencyKey + "\"}";
+            }
     /**
      * Execute/fill an order and update holdings and account balance.
      *
