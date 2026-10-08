@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../api.service';
-import { storeAuthSession } from '../auth-storage';
+import { clearAuthSession } from '../auth-storage';
 
 @Component({
   selector: 'app-register',
@@ -78,9 +78,9 @@ export class RegisterComponent {
       username: this.username.trim(),
       password: this.password
     }).subscribe({
-      next: (response) => {
-        storeAuthSession(response);
-        this.router.navigate(['/homepage']);
+      next: () => {
+        clearAuthSession();
+        this.router.navigate(['/login']);
       },
       error: (error) => {
         this.isLoading = false;

@@ -59,6 +59,10 @@ export function getClientDisplayName(): string | null {
   return readStoredItem(storageKeys.clientName) ?? readStoredItem(storageKeys.username);
 }
 
+export function getAccountId(): string | null {
+  return readStoredItem(storageKeys.accountId);
+}
+
 export function isAuthenticated(): boolean {
   return !!getAccessToken();
 }

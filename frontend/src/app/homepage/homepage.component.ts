@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef,
 import { CommonModule } from '@angular/common';
 import { ApiService, Instrument, QuoteResponse, CandleResponse } from '../api.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
+import { clearAuthSession, getAccountId, getClientDisplayName } from '../auth-storage';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
@@ -76,9 +77,8 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
-    // Get client info from localStorage
-    this.clientName = localStorage.getItem('clientName') || 'User';
-    this.accountId = localStorage.getItem('accountId') || '';
+    this.clientName = getClientDisplayName() || 'User';
+    this.accountId = getAccountId() || '';
   }
 
   ngOnInit() {
@@ -290,12 +290,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   logout() {
-    // Clear stored auth data
-    localStorage.removeItem('clientId');
-    localStorage.removeItem('clientEmail');
-    localStorage.removeItem('clientName');
-    localStorage.removeItem('clientStatus');
-    localStorage.removeItem('accountId');
+    clearAuthSession();
     
     // Redirect to login
     window.location.href = '/login';
