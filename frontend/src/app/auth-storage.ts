@@ -1,4 +1,4 @@
-import { AuthResponse } from './api.service';
+import { AuthResponse } from './core/api/api.models';
 
 const storageKeys = {
   accessToken: 'accessToken',

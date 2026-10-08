@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { LoginResponse } from './api/api.models';
+import { AuthResponse } from './api/api.models';
 
 /**
  * Handles the client session stored in localStorage.
@@ -11,11 +11,12 @@ export class AuthService {
   /**
    * Store client info in localStorage after login/registration
    */
-  storeClientSession(response: LoginResponse): void {
+  storeClientSession(response: AuthResponse): void {
     localStorage.setItem('clientId', response.clientId);
     localStorage.setItem('clientEmail', response.email);
     localStorage.setItem('clientName', response.displayName);
-    localStorage.setItem('clientStatus', response.status);
+    localStorage.setItem('accountId', response.accountId);
+    localStorage.setItem('accessToken', response.accessToken);
   }
 
   getClientName(): string {
@@ -28,6 +29,10 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('clientName');
+    localStorage.removeItem('clientId');
+    localStorage.removeItem('clientEmail');
+    localStorage.removeItem('accountId');
+    localStorage.removeItem('accessToken');
     window.location.href = '/login';
   }
 }

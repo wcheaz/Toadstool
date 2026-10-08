@@ -45,23 +45,10 @@ export class LoginComponent {
       next: (response) => {
         // Login successful - store client info in localStorage
         this.authService.storeClientSession(response);
-
-        // Fetch the account ID for this client
-        this.apiService.getAccountByClientId(response.clientId).subscribe({
-          next: (account) => {
-            localStorage.setItem('accountId', account.accountId);
-            console.log('Login successful:', response);
-            console.log('Account retrieved:', account.accountId);
-            
-            // Navigate to homepage
-            this.router.navigate(['/homepage']);
-          },
-          error: (error) => {
-            this.isLoading = false;
-            console.error('Failed to fetch account:', error);
-            this.errorMessage = 'Login succeeded but account retrieval failed. Please try again.';
-          }
-        });
+        console.log('Login successful:', response);
+        
+        // Navigate to homepage
+        this.router.navigate(['/homepage']);
       },
       error: (error) => {
         this.isLoading = false;
