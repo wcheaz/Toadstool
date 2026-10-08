@@ -1,1 +1,15 @@
-﻿<router-outlet></router-outlet>
+﻿<div class="app-wrapper">
+  <app-sidebar></app-sidebar>
+  <main class="main-layout">
+    <app-top-bar [clientName]="clientName" (profileClicked)="openProfileModal()"></app-top-bar>
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <!-- Profile Modal -->
+  <app-profile-modal
+    [isOpen]="isProfileModalOpen"
+    (close)="closeProfileModal()">
+  </app-profile-modal>
+</div>

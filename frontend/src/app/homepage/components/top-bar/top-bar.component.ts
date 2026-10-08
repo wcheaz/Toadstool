@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { AuthService } from '../../../core/auth.service';
 
 @Component({
@@ -10,11 +10,12 @@ import { AuthService } from '../../../core/auth.service';
 })
 export class TopBarComponent {
   @Input() clientName: string = '';
+  @Output() profileClicked = new EventEmitter<void>();
 
   constructor(private authService: AuthService) {}
 
   openProfile() {
-    alert('Profile settings coming soon');
+    this.profileClicked.emit();
   }
 
   openNotifications() {

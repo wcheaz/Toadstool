@@ -7,8 +7,6 @@ import { AuthService } from '../core/auth.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 import { ErrorModalComponent } from '../shared/components/error-modal/error-modal.component';
 import { DepositModalComponent } from '../deposit-modal/deposit-modal.component';
-import { SidebarComponent } from './components/sidebar/sidebar.component';
-import { TopBarComponent } from './components/top-bar/top-bar.component';
 import { BalanceWidgetComponent } from './components/balance-widget/balance-widget.component';
 import { NewsFeedComponent } from './components/news-feed/news-feed.component';
 import { MarketAssetsTableComponent } from './components/market-assets-table/market-assets-table.component';
@@ -24,8 +22,6 @@ import { takeUntil } from 'rxjs/operators';
     TradingModalComponent,
     ErrorModalComponent,
     DepositModalComponent,
-    SidebarComponent,
-    TopBarComponent,
     BalanceWidgetComponent,
     NewsFeedComponent,
     MarketAssetsTableComponent,
@@ -181,6 +177,18 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   closeDepositModal() {
     this.isDepositModalOpen = false;
+  }
+
+  openDepositModal() {
+    this.isDepositModalOpen = true;
+  }
+
+  onWithdrawClicked() {
+    alert('Withdraw functionality coming soon');
+  }
+
+  onTransferClicked() {
+    alert('Transfer functionality coming soon');
   }
 
   onDepositSubmit(summary: any) {

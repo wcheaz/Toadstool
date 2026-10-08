@@ -1,63 +1,57 @@
-<div class="homepage-container">
-  <!-- Sidebar -->
-  <app-sidebar></app-sidebar>
+<div class="homepage-content">
+  <!-- Balance Widget -->
+  <app-balance-widget
+    (depositClicked)="openDepositModal()"
+    (withdrawClicked)="onWithdrawClicked()"
+    (transferClicked)="onTransferClicked()"></app-balance-widget>
 
-  <!-- Main Content Area -->
-  <main class="main-content">
-    <!-- Top Bar -->
-    <app-top-bar [clientName]="clientName"></app-top-bar>
+  <!-- Content Tabs and Dashboard Area -->
+  <section class="dashboard-content">
+    <!-- NEWS TAB CONTENT -->
+    <div class="tab-content">
+      <div class="dashboard-grid">
+        <!-- Left Column: News Module -->
+        <app-news-feed></app-news-feed>
 
-    <!-- Balance Widget -->
-    <app-balance-widget></app-balance-widget>
+        <!-- Right Column: Market Assets + Features -->
+        <div class="dashboard-column">
+          <!-- Market Assets Module -->
+          <app-market-assets-table
+            [instruments]="instruments"
+            [quotes]="instrumentQuotes"
+            [loading]="loadingInstruments"
+            (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
+          </app-market-assets-table>
 
-    <!-- Content Tabs and Dashboard Area -->
-    <section class="dashboard-content">
-      <!-- NEWS TAB CONTENT -->
-      <div class="tab-content">
-        <div class="dashboard-grid">
-          <!-- Left Column: News Module -->
-          <app-news-feed></app-news-feed>
-
-          <!-- Right Column: Market Assets + Features -->
-          <div class="dashboard-column">
-            <!-- Market Assets Module -->
-            <app-market-assets-table
-              [instruments]="instruments"
-              [quotes]="instrumentQuotes"
-              [loading]="loadingInstruments"
-              (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
-            </app-market-assets-table>
-
-            <!-- Features Module -->
-            <app-features-grid></app-features-grid>
-          </div>
+          <!-- Features Module -->
+          <app-features-grid></app-features-grid>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Trading Modal -->
-    <app-trading-modal
-      [isOpen]="isTradeModalOpen"
-      [selectedAsset]="selectedAsset"
-      [accountId]="accountId"
-      [candleData]="tradingChartData"
-      [instrumentId]="selectedInstrumentId"
-      (close)="closeTradeModal()">
-    </app-trading-modal>
+  <!-- Trading Modal -->
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="selectedAsset"
+    [accountId]="accountId"
+    [candleData]="tradingChartData"
+    [instrumentId]="selectedInstrumentId"
+    (close)="closeTradeModal()">
+  </app-trading-modal>
 
-    <!-- Error Modal -->
-    <app-error-modal
-      [isOpen]="isErrorModalOpen"
-      [errorMessage]="errorMessage"
-      [errorDetails]="errorDetails"
-      (close)="closeErrorModal()">
-    </app-error-modal>
+  <!-- Error Modal -->
+  <app-error-modal
+    [isOpen]="isErrorModalOpen"
+    [errorMessage]="errorMessage"
+    [errorDetails]="errorDetails"
+    (close)="closeErrorModal()">
+  </app-error-modal>
 
-    <!-- Deposit Modal -->
-    <app-deposit-modal
-      [isOpen]="isDepositModalOpen"
-      (close)="closeDepositModal()"
-      (submit)="onDepositSubmit($event)">
-    </app-deposit-modal>
-  </main>
+  <!-- Deposit Modal -->
+  <app-deposit-modal
+    [isOpen]="isDepositModalOpen"
+    (close)="closeDepositModal()"
+    (submit)="onDepositSubmit($event)">
+  </app-deposit-modal>
 </div>

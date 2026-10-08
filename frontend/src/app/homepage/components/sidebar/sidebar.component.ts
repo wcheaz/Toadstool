@@ -22,6 +22,9 @@ export class SidebarComponent {
       case 'trading':
         this.router.navigate(['/trading']);
         break;
+      case 'activity':
+        this.router.navigate(['/activity']);
+        break;
       case 'settings':
         this.router.navigate(['/settings']);
         break;

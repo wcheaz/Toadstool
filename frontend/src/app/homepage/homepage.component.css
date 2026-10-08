@@ -1,29 +1,16 @@
 /* Toadstool Trader Dashboard - layout and tab styles.
    Section-specific styles live in the extracted module components. */
 
-/* Homepage Container */
-.homepage-container {
-  display: flex;
-  height: 100vh;
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  color: #f3f4f6;
-}
-
-/* Main Content */
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  background: transparent;
+/* Homepage Content */
+.homepage-content {
+  padding: 24px 40px;
 }
 
 /* Dashboard Content */
 .dashboard-content {
-  margin: 0 40px 40px 40px;
+  margin-top: 20px;
+  margin-left: 40px;
+  margin-right: 40px;
   flex: 1;
   overflow-y: auto;
   padding: 0;
