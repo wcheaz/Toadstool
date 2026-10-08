@@ -19,7 +19,7 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migrations
     table: flyway_schema_history
     validateOnMigrate: false
@@ -50,3 +50,11 @@ logging:
     com.neueda.leap: DEBUG
     org.springframework.web: DEBUG
 
+auth:
+  jwt:
+    public-key: ${AUTH_JWT_PUBLIC_KEY:BASE64_X509_PUBLIC_KEY}
+    private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
+    issuer: toadstool
+    access-token-ttl-minutes: 15
+    enabled: true
+    require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

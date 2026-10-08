@@ -89,6 +89,7 @@ class InstrumentControllerTest {
     @DisplayName("POST /api/instruments creates an instrument with the YAML response fields")
     void createInstrumentReturnsCreatedPayload() throws Exception {
         UUID instrumentId = UUID.fromString("44444444-4444-4444-4444-444444444444");
+        ControllerTestSupport.authenticateAdmin();
         Instrument instrument = new Instrument(instrumentId, "BTC-USD", "Bitcoin", AssetClass.CRYPTO, InstrumentStatus.TRADABLE);
 
         when(instrumentService.createInstrument("BTC-USD", "Bitcoin", "CRYPTO")).thenReturn(instrument);
@@ -109,6 +110,7 @@ class InstrumentControllerTest {
     @DisplayName("PATCH /api/instruments/{instrumentId}/status returns the updated status")
     void updateInstrumentStatusReturnsUpdatedInstrument() throws Exception {
         UUID instrumentId = UUID.fromString("55555555-5555-5555-5555-555555555555");
+        ControllerTestSupport.authenticateAdmin();
         Instrument existing = new Instrument(instrumentId, "ETH-USD", "Ethereum", AssetClass.CRYPTO, InstrumentStatus.TRADABLE);
         Instrument updated = new Instrument(instrumentId, "ETH-USD", "Ethereum", AssetClass.CRYPTO, InstrumentStatus.HALTED);
 

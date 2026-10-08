@@ -1,0 +1,69 @@
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">T</div>
+    <div class="sidebar-title">Toadstool Trader</div>
+  </div>
+  <nav class="sidebar-nav">
+    <ul>
+      <li>
+        <button class="nav-button" (click)="navigateTo('dashboard')" title="Dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('news')" title="News">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"></path>
+            <path d="M4 9h16M4 14h12"></path>
+          </svg>
+          <span>News</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('trading')" title="Trading">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+          <span>Trading</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('activity')" title="Activity">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"></path>
+            <line x1="3" y1="3" x2="3" y2="21"></line>
+            <line x1="21" y1="3" x2="21" y2="21"></line>
+          </svg>
+          <span>Activity</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('settings')" title="Settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"></path>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('support')" title="Support">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <circle cx="9" cy="10" r="1"></circle>
+            <circle cx="12" cy="10" r="1"></circle>
+            <circle cx="15" cy="10" r="1"></circle>
+          </svg>
+          <span>Support</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</aside>

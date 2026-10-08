@@ -1,29 +1,31 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ApiService, CandleResponse, DepthLevel, OrderResponse } from '../api.service';
-import { createChart, ColorType, CandlestickSeries, UTCTimestamp } from 'lightweight-charts';
+import { ApiService } from '../core/api/api.service';
+import { CandleResponse, DepthLevel, OrderResponse } from '../core/api/api.models';
+import { Asset } from '../shared/models/asset.model';
+import { ChartComponent } from '../shared/components/chart/chart.component';
+import { ErrorModalComponent } from '../shared/components/error-modal/error-modal.component';
 import { OrderConfirmationComponent } from '../order-confirmation/order-confirmation.component';
 import { OrderSuccessComponent } from '../order-success/order-success.component';
-import { ErrorModalComponent } from '../error-modal/error-modal.component';
-
-interface Asset {
-  instrumentId: string;
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  holdings: number;
-}
+import { OrderTicketComponent, OrderTicketValue } from './components/order-ticket/order-ticket.component';
+import { MarketDepthComponent } from './components/market-depth/market-depth.component';
 
 @Component({
   selector: 'app-trading-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderConfirmationComponent, OrderSuccessComponent, ErrorModalComponent],
+  imports: [
+    CommonModule,
+    ChartComponent,
+    OrderTicketComponent,
+    MarketDepthComponent,
+    OrderConfirmationComponent,
+    OrderSuccessComponent,
+    ErrorModalComponent
+  ],
   templateUrl: './trading-modal.component.html',
   styleUrl: './trading-modal.component.css'
 })
-export class TradingModalComponent implements AfterViewInit, OnChanges {
+export class TradingModalComponent implements OnChanges {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
   @Input() accountId: string = '';
@@ -31,17 +33,6 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   @Input() instrumentId: string = '';
   @Input() apiError: string = '';
   @Output() close = new EventEmitter<void>();
-
-  @ViewChild('chartContainer') chartContainer: ElementRef | null = null;
-
-  orderType: 'market' | 'limit' = 'market';
-  orderSide: 'buy' | 'sell' = 'buy';
-  quantity: number = 50;
-  limitPrice: number = 0;
-  duration: 'day' | 'gtc' = 'day';
-  agreedToTerms: boolean = false;
-  isPreviewOpen: boolean = false;
-  isSuccessOpen: boolean = false;
 
   selectedTimeframe: string = '3M';
   loadingCandles: boolean = true;
@@ -56,25 +47,21 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
     { label: '1Y', days: 365 }
   ];
 
+  isPreviewOpen: boolean = false;
+  isSuccessOpen: boolean = false;
+  isErrorOpen: boolean = false;
+  errorMessage: string = '';
+  errorDetails: string = '';
+  isSubmitting: boolean = false;
+  pendingTicket: OrderTicketValue | null = null;
+
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {}
 
-  ngAfterViewInit() {
-    console.log('ngAfterViewInit - candleData length:', this.candleData.length);
-    if (this.candleData.length > 0) {
-      setTimeout(() => this.renderChart(), 100);
-    }
-  }
-
   ngOnChanges(changes: SimpleChanges) {
-    console.log('ngOnChanges detected:', {
-      candleData: changes['candleData']?.currentValue?.length || 0,
-      isFirstChange: changes['candleData']?.firstChange
-    });
     if (changes['candleData']) {
       const newData = changes['candleData'].currentValue as CandleResponse[];
       if (newData && newData.length > 0) {
         this.loadingCandles = false;
-        setTimeout(() => this.renderChart(), 100);
       }
     }
     if (changes['instrumentId'] && this.instrumentId) {
@@ -84,13 +71,17 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
 
   loadMarketDepth() {
     this.apiService.getMarketDepth(this.instrumentId).subscribe({
-      next: (depth) => {
+      next: (depth: DepthLevel[]) => {
         this.depthLevels = depth;
         this.cdr.detectChanges();
         console.log('Market depth loaded:', depth.length, 'levels');
       },
-      error: (e) => console.error('Failed to load market depth:', e)
+      error: (e: any) => console.error('Failed to load market depth:', e)
     });
+  }
+
+  selectTimeframe(timeframeLabel: string) {
+    this.loadCandles(timeframeLabel);
   }
 
   loadCandles(timeframeLabel: string) {
@@ -101,124 +92,24 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
     this.selectedTimeframe = timeframeLabel;
 
     this.apiService.getCandles(this.instrumentId, timeframe.days).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
         this.candleData = candles;
         this.loadingCandles = false;
-        this.renderChart();
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load candles:', e);
         this.loadingCandles = false;
       }
     });
   }
 
-  renderChart() {
-    if (!this.chartContainer || this.candleData.length === 0) {
-      console.log('Chart render blocked:', {
-        hasContainer: !!this.chartContainer,
-        dataLength: this.candleData.length,
-        containerRef: this.chartContainer?.nativeElement
-      });
-      return;
-    }
-
-    console.log('Rendering chart with', this.candleData.length, 'candles');
-
-    const container = this.chartContainer.nativeElement;
-
-    // Ensure container has dimensions
-    if (!container.clientWidth || !container.clientHeight) {
-      console.warn('Container has no dimensions:', {
-        width: container.clientWidth,
-        height: container.clientHeight
-      });
-    }
-
-    container.innerHTML = '';
-
-    const width = container.clientWidth || 400;
-    const height = 300;
-
-    console.log('Chart dimensions:', { width, height });
-
-    const chart = createChart(container, {
-      layout: {
-        background: { type: ColorType.Solid, color: '#1e1e1e' },
-        textColor: '#d1d5db'
-      },
-      width: width,
-      height: height,
-      timeScale: { timeVisible: true, secondsVisible: false }
-    });
-
-    const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderUpColor: '#26a69a',
-      borderDownColor: '#ef5350',
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350'
-    });
-
-    const chartData = this.candleData.map(c => ({
-      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close
-    }));
-
-    console.log('Chart data points:', chartData.length);
-    candlestickSeries.setData(chartData);
-    chart.timeScale().fitContent();
-    console.log('Chart rendered successfully');
-  }
-
-  selectTimeframe(timeframeLabel: string) {
-    this.loadCandles(timeframeLabel);
-  }
-
-  isErrorOpen: boolean = false;
-  errorMessage: string = '';
-  errorDetails: string = '';
-  isSubmitting: boolean = false;
-
-  get estimatedValue(): number {
-    if (!this.selectedAsset) return 0;
-    return this.quantity * this.selectedAsset.price;
-  }
-
-  get estimatedFees(): number {
-    return 0; // Placeholder for fee calculation
-  }
-
-  get orderTotal(): number {
-    return this.estimatedValue + this.estimatedFees;
-  }
-
-  get estFillPrice(): string {
-    if (!this.selectedAsset) return '$0.00';
-    if (this.orderType === 'limit') {
-      return `$${this.limitPrice.toFixed(2)}`;
-    }
-    return `$${this.selectedAsset.price.toFixed(2)}`;
-  }
-
   closeModal() {
     this.close.emit();
   }
 
-  placeOrder() {
-    if (!this.agreedToTerms) {
-      alert('Please agree to market conditions before placing an order');
-      return;
-    }
-    this.previewOrder();
-  }
-
-  previewOrder() {
+  onOrderPreviewed(ticket: OrderTicketValue) {
+    this.pendingTicket = ticket;
     this.isPreviewOpen = true;
   }
 
@@ -231,7 +122,10 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
   }
 
   confirmOrder() {
-    if (!this.agreedToTerms) {
+    const ticket = this.pendingTicket;
+    if (!ticket) return;
+
+    if (!ticket.agreedToTerms) {
       this.errorMessage = 'Please agree to market conditions before placing an order';
       this.isErrorOpen = true;
       return;
@@ -249,29 +143,41 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
       return;
     }
 
-    // TODO (W3-8): Fix confirmation modal display - should show before order submission
-    // Currently the modal closes immediately. Need to investigate why it's not displaying.
-    // Close the preview modal immediately
     this.isPreviewOpen = false;
     this.isSubmitting = true;
 
-    // Call the backend to place the order
+    // Place the order first
     this.apiService.placeOrder(
       this.accountId,
       this.selectedAsset.instrumentId,
-      this.orderSide.toUpperCase(),
-      this.quantity.toString()
+      ticket.orderSide.toUpperCase(),
+      ticket.quantity.toString()
     ).subscribe({
       next: (response: OrderResponse) => {
-        this.isSubmitting = false;
         console.log('Order placed successfully:', response);
-        this.isSuccessOpen = true;
+
+        // Auto-fill based on order type
+        if (ticket.orderType === 'market') {
+          // Market order: fill immediately at current price
+          this.fillOrder(response.orderId, this.selectedAsset!.price);
+        } else if (ticket.orderType === 'limit') {
+          // Limit order: fill only if current price meets the limit
+          if (ticket.orderSide === 'buy' && this.selectedAsset!.price <= ticket.limitPrice) {
+            this.fillOrder(response.orderId, ticket.limitPrice);
+          } else if (ticket.orderSide === 'sell' && this.selectedAsset!.price >= ticket.limitPrice) {
+            this.fillOrder(response.orderId, ticket.limitPrice);
+          } else {
+            // Limit price not met, order stays pending
+            this.isSubmitting = false;
+            this.isSuccessOpen = true;
+            console.log('Limit order placed. Waiting for price to reach', ticket.limitPrice);
+          }
+        }
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isSubmitting = false;
         console.error('Order placement failed:', error);
-        
-        // Extract error message
+
         if (error.error && error.error.message) {
           this.errorMessage = error.error.message;
         } else if (error.status === 422) {
@@ -286,6 +192,24 @@ export class TradingModalComponent implements AfterViewInit, OnChanges {
           this.errorMessage = 'Failed to place order. Please try again.';
         }
 
+        this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
+        this.isErrorOpen = true;
+      }
+    });
+  }
+
+  private fillOrder(orderId: string, fillPrice: number) {
+    // Call backend to fill the order
+    this.apiService.fillOrder(orderId, fillPrice).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.isSuccessOpen = true;
+        console.log('Order filled at price:', fillPrice);
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('Order fill failed:', error);
+        this.errorMessage = 'Order placement succeeded but filling failed. Order is pending.';
         this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
         this.isErrorOpen = true;
       }

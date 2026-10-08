@@ -4,6 +4,7 @@ import com.neueda.leap.Instrument;
 import com.neueda.leap.InstrumentCreateRequest;
 import com.neueda.leap.InstrumentStatusUpdateRequest;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.FauxnanceService;
 import org.slf4j.Logger;
@@ -94,6 +95,9 @@ public class InstrumentController {
      */
     @PostMapping
     public ResponseEntity<InstrumentDto> createInstrument(@RequestBody InstrumentCreateRequest request) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         try {
             // Validate input
             if (request.getSymbol() == null || request.getSymbol().trim().isEmpty()) {
@@ -130,6 +134,9 @@ public class InstrumentController {
     public ResponseEntity<InstrumentDto> updateInstrumentStatus(
             @PathVariable UUID instrumentId,
             @RequestBody InstrumentStatusUpdateRequest request) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             Instrument instrument = instrumentService.getInstrumentById(instrumentId);
@@ -223,7 +230,7 @@ public class InstrumentController {
 
     /**
      * GET /api/instruments/quotes/batch?instrumentIds=id1,id2,...
-     * Get batch quotes for multiple instruments (up to 25)
+     * Get batch quotes for multiple instruments (up to 25) in one API call
      */
     @GetMapping("/quotes/batch")
     public ResponseEntity<java.util.Map<String, QuoteDto>> getBatchQuotes(
@@ -234,28 +241,39 @@ public class InstrumentController {
                 return ResponseEntity.badRequest().build();
             }
 
-            java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
+            java.util.List<String> symbols = new java.util.ArrayList<>();
+            java.util.Map<String, UUID> symbolToIdMap = new java.util.HashMap<>();
+
             for (String idStr : ids) {
                 try {
                     UUID id = UUID.fromString(idStr.trim());
                     Instrument instrument = instrumentService.getInstrumentById(id);
                     if (instrument != null) {
-                        FauxnanceService.QuoteResponse quote = fauxnanceService.getQuote(instrument.getSymbol());
-                        if (quote != null) {
-                            QuoteDto response = new QuoteDto(
-                                    quote.getSymbol(),
-                                    quote.getPrice(),
-                                    quote.getBid(),
-                                    quote.getAsk(),
-                                    quote.getChange(),
-                                    quote.getChangePercent(),
-                                    quote.getAsOf()
-                            );
-                            quotes.put(id.toString(), response);
-                        }
+                        symbols.add(instrument.getSymbol());
+                        symbolToIdMap.put(instrument.getSymbol(), id);
                     }
                 } catch (IllegalArgumentException e) {
                     logger.warn("Invalid instrument ID format: {}", idStr);
+                }
+            }
+
+            java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
+            if (!symbols.isEmpty()) {
+                List<FauxnanceService.QuoteResponse> batchQuotes = fauxnanceService.getQuotes(symbols);
+                for (FauxnanceService.QuoteResponse quote : batchQuotes) {
+                    UUID instrumentId = symbolToIdMap.get(quote.getSymbol());
+                    if (instrumentId != null) {
+                        QuoteDto response = new QuoteDto(
+                                quote.getSymbol(),
+                                quote.getPrice(),
+                                quote.getBid(),
+                                quote.getAsk(),
+                                quote.getChange(),
+                                quote.getChangePercent(),
+                                quote.getAsOf()
+                        );
+                        quotes.put(instrumentId.toString(), response);
+                    }
                 }
             }
 

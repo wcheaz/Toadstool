@@ -2,6 +2,7 @@ package com.neueda.leap.controller;
 
 import com.neueda.leap.AdminUser;
 import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.AdminUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,9 @@ public class AdminUserController {
      */
     @PostMapping
     public ResponseEntity<AdminUserDto> createAdminUser(@RequestBody CreateAdminUserRequest request) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         try {
             // Validate input
             if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
@@ -64,6 +68,9 @@ public class AdminUserController {
      */
     @GetMapping("/{adminUserId}")
     public ResponseEntity<AdminUserDto> getAdminUser(@PathVariable UUID adminUserId) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         AdminUser adminUser = adminUserService.getAdminUserById(adminUserId);
         if (adminUser == null) {
             return ResponseEntity.notFound().build();
@@ -81,6 +88,9 @@ public class AdminUserController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Validate pagination
@@ -119,6 +129,9 @@ public class AdminUserController {
     public ResponseEntity<AdminUserDto> updateAdminUser(
             @PathVariable UUID adminUserId,
             @RequestBody UpdateAdminUserRequest request) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             AdminUser adminUser = adminUserService.getAdminUserById(adminUserId);

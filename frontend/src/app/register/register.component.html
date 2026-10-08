@@ -7,20 +7,19 @@
 
     <h2 class="welcome-title">Create an account</h2>
     <p class="welcome-subtitle">Start trading in less than 5 minutes</p>
-    
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
 
     <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
       <div class="form-group">
-        <label for="fullName">Full Name</label>
+        <label for="displayName">Display Name</label>
         <input
           type="text"
-          id="fullName"
+          id="displayName"
           class="form-control"
-          [(ngModel)]="fullName"
-          name="fullName"
+          [(ngModel)]="displayName"
+          name="displayName"
           placeholder="e.g. John Doe"
           [disabled]="isLoading"
           required
@@ -36,6 +35,20 @@
           [(ngModel)]="email"
           name="email"
           placeholder="you@example.com"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          class="form-control"
+          [(ngModel)]="username"
+          name="username"
+          placeholder="Choose a username"
           [disabled]="isLoading"
           required
         />

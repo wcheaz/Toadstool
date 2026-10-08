@@ -2,6 +2,7 @@ package com.neueda.leap.controller;
 
 import com.neueda.leap.Account;
 import com.neueda.leap.Fill;
+import com.neueda.leap.Order;
 import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.FillStatus;
 import com.neueda.leap.service.AccountService;
@@ -44,6 +45,7 @@ class FillControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.clearAuthentication();
         mockMvc = ControllerTestSupport.buildMockMvc(new FillController(fillService, orderService, accountService));
     }
 
@@ -52,9 +54,14 @@ class FillControllerTest {
     void getFillReturnsFillPayload() throws Exception {
         UUID fillId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID orderId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        UUID accountId = UUID.fromString("abababab-abab-abab-abab-abababababab");
+        UUID clientId = UUID.fromString("cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcdcdcd");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Fill fill = new Fill(fillId, orderId, new BigDecimal("101.2500000000"), new BigDecimal("2.0000000000"), FillStatus.Filled, EXECUTED_AT);
 
         when(fillService.getFillById(fillId)).thenReturn(fill);
+        when(orderService.getOrderById(orderId)).thenReturn(new Order(orderId, accountId, UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), com.neueda.leap.enums.OrderSide.BUY, new BigDecimal("2.0000000000"), "idem-fill", EXECUTED_AT));
+        when(accountService.getAccountById(accountId)).thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, EXECUTED_AT));
 
         mockMvc.perform(get("/api/fills/{fillId}", fillId))
                 .andExpect(status().isOk())
@@ -83,6 +90,7 @@ class FillControllerTest {
         UUID accountId = UUID.fromString("44444444-4444-4444-4444-444444444444");
         UUID clientId = UUID.fromString("55555555-5555-5555-5555-555555555555");
         UUID orderId = UUID.fromString("66666666-6666-6666-6666-666666666666");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Fill fill = new Fill(UUID.fromString("77777777-7777-7777-7777-777777777777"), orderId, new BigDecimal("99.0000000000"), new BigDecimal("5.0000000000"), FillStatus.Pending, EXECUTED_AT);
 
         when(accountService.getAccountById(accountId)).thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, EXECUTED_AT));

@@ -6,6 +6,7 @@ import com.neueda.leap.TradeEvent;
 import com.neueda.leap.enums.ClientStatus;
 import com.neueda.leap.enums.OrderSide;
 import com.neueda.leap.enums.TradeEventEntityType;
+import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.TradeEventService;
@@ -40,13 +41,17 @@ class TradeEventControllerTest {
     private OrderService orderService;
 
     @Mock
+    private AccountService accountService;
+
+    @Mock
     private ClientService clientService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = ControllerTestSupport.buildMockMvc(new TradeEventController(tradeEventService, orderService, clientService));
+        ControllerTestSupport.clearAuthentication();
+        mockMvc = ControllerTestSupport.buildMockMvc(new TradeEventController(tradeEventService, orderService, accountService, clientService));
     }
 
     @Test
@@ -54,6 +59,8 @@ class TradeEventControllerTest {
     void listTradeEventsByOrderReturnsEventHistory() throws Exception {
         UUID clientId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID orderId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        UUID accountId = UUID.fromString("44444444-4444-4444-4444-444444444444");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         TradeEvent event = new TradeEvent(
                 UUID.fromString("33333333-3333-3333-3333-333333333333"),
                 clientId,
@@ -65,7 +72,9 @@ class TradeEventControllerTest {
         );
 
         when(orderService.getOrderById(orderId))
-                .thenReturn(new Order(orderId, UUID.fromString("44444444-4444-4444-4444-444444444444"), UUID.fromString("55555555-5555-5555-5555-555555555555"), OrderSide.BUY, new BigDecimal("2.0000000000"), "idem", OCCURRED_AT));
+                .thenReturn(new Order(orderId, accountId, UUID.fromString("55555555-5555-5555-5555-555555555555"), OrderSide.BUY, new BigDecimal("2.0000000000"), "idem", OCCURRED_AT));
+        when(accountService.getAccountById(accountId))
+                .thenReturn(new com.neueda.leap.Account(accountId, clientId, com.neueda.leap.enums.AccountStatus.ACTIVE, OCCURRED_AT));
         when(tradeEventService.listTradeEventsByEntity(orderId)).thenReturn(List.of(event));
 
         mockMvc.perform(get("/api/orders/{orderId}/events", orderId))
@@ -85,6 +94,7 @@ class TradeEventControllerTest {
     void listTradeEventsByClientReturnsPaginatedItems() throws Exception {
         UUID clientId = UUID.fromString("66666666-6666-6666-6666-666666666666");
         UUID entityId = UUID.fromString("77777777-7777-7777-7777-777777777777");
+        ControllerTestSupport.authenticateClient(clientId, UUID.fromString("99999999-9999-9999-9999-999999999999"));
         TradeEvent event = new TradeEvent(
                 UUID.fromString("88888888-8888-8888-8888-888888888888"),
                 clientId,

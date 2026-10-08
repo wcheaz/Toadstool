@@ -1,7 +1,9 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService, CandleResponse } from '../api.service';
+import { ApiService } from '../core/api/api.service';
+import { AuthService } from '../core/auth.service';
+import { CandleResponse } from '../core/api/api.models';
 import { NewsService, NewsResponse } from '../services/news.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 import { Subscription, interval } from 'rxjs';
@@ -52,6 +54,7 @@ interface CalendarEvent {
 })
 export class NewsComponent implements OnInit, OnDestroy {
   clientName: string = '';
+  accountId: string = '';
   activeTab: string = 'all-feed';
 
   // Trading modal state
@@ -139,8 +142,9 @@ export class NewsComponent implements OnInit, OnDestroy {
     }
   ];
 
-  constructor(private router: Router, private apiService: ApiService, private newsService: NewsService, private cdr: ChangeDetectorRef) {
-    this.clientName = localStorage.getItem('clientName') || 'User';
+  constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private newsService: NewsService, private cdr: ChangeDetectorRef) {
+    this.clientName = this.authService.getClientName();
+    this.accountId = this.authService.getAccountId();
   }
 
   ngOnInit() {
@@ -279,12 +283,12 @@ export class NewsComponent implements OnInit, OnDestroy {
     this.isTradeModalOpen = true;
 
     this.apiService.getCandles(this.selectedAsset.instrumentId, 90).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
         this.tradingChartData = candles;
         this.apiError = '';
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load chart data:', e);
         this.apiError = 'API is down';
         this.cdr.detectChanges();

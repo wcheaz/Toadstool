@@ -1,0 +1,94 @@
+<div class="trading-right">
+  <div class="order-ticket">
+    <h3>Order ticket</h3>
+
+    <!-- Buy/Sell Buttons -->
+    <div class="side-selector">
+      <button class="side-btn" [class.active]="orderSide === 'buy'" (click)="orderSide = 'buy'">
+        BUY
+      </button>
+      <button class="side-btn sell" [class.active]="orderSide === 'sell'" (click)="orderSide = 'sell'">
+        SELL
+      </button>
+    </div>
+
+    <!-- Order Type -->
+    <div class="form-section">
+      <label>Order type</label>
+      <div class="order-type-selector">
+        <button class="type-btn" [class.active]="orderType === 'market'" (click)="orderType = 'market'">
+          Market
+        </button>
+        <button class="type-btn" [class.active]="orderType === 'limit'" (click)="orderType = 'limit'">
+          Limit
+        </button>
+      </div>
+    </div>
+
+    <!-- Quantity -->
+    <div class="form-section">
+      <label>Quantity</label>
+      <div class="quantity-input">
+        <input type="number" [(ngModel)]="quantity" min="1" placeholder="0">
+        <span class="unit-label">Shares</span>
+      </div>
+    </div>
+
+    <!-- Limit Price (if Limit order) -->
+    <div class="form-section" *ngIf="orderType === 'limit'">
+      <label>Limit Price</label>
+      <input type="number" [(ngModel)]="limitPrice" min="0" step="0.01" placeholder="0.00">
+    </div>
+
+    <!-- Duration -->
+    <div class="form-section">
+      <label>Duration</label>
+      <div class="duration-selector">
+        <select [(ngModel)]="duration" class="duration-select">
+          <option value="day">Day</option>
+          <option value="gtc">GTC (Good Till Cancel)</option>
+        </select>
+        <div class="price-info">
+          <div class="info-label">Est. Fill</div>
+          <div class="info-value">{{ estFillPrice }}</div>
+        </div>
+        <div class="price-info">
+          <div class="info-label">LIVE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-section">
+      <div class="summary-row">
+        <span>Estimated value</span>
+        <span>${{ estimatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Estimated fees</span>
+        <span>${{ estimatedFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="summary-row total">
+        <span>Order total</span>
+        <span>${{ orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-group">
+      <button class="btn-preview" (click)="previewOrder()">Preview Order</button>
+      <button class="btn-place" [class.buy]="orderSide === 'buy'" [class.sell]="orderSide === 'sell'"
+              (click)="placeOrder()" [disabled]="!agreedToTerms">
+        Place {{ orderSide === 'buy' ? 'Buy' : 'Sell' }} Order
+      </button>
+    </div>
+
+    <!-- Terms Disclaimer -->
+    <div class="terms-section">
+      <label class="terms-checkbox">
+        <input type="checkbox" [(ngModel)]="agreedToTerms">
+        <span>Orders are subject to market conditions and account approval.</span>
+      </label>
+    </div>
+  </div>
+</div>

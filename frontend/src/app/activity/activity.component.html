@@ -1,0 +1,62 @@
+<div class="activity-container">
+  <div class="activity-header">
+    <h1>Activity Ledger</h1>
+    <p class="activity-subtitle">Real-time transaction tracking and operational dispute reporting</p>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">ALL-TIME TRANSACTIONS</div>
+      <div class="stat-value">{{ stats.allTimeExecutions }}</div>
+      <div class="stat-unit">Executions</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">SUCCESSFUL ORDERS</div>
+      <div class="stat-value success-text">{{ stats.successRate }}</div>
+      <div class="stat-unit">Success</div>
+    </div>
+    <div class="stat-card pending">
+      <div class="stat-label">PENDING LIQUIDATIONS</div>
+      <div class="stat-value pending-text">{{ stats.pendingLiquidations }}</div>
+    </div>
+  </div>
+
+  <!-- Transactions Section -->
+  <div class="transactions-section">
+    <div class="section-header">
+      <h2>Past 30 Days Order Activity</h2>
+      <button class="report-btn" (click)="downloadReport()">Trade Dispute Report</button>
+    </div>
+
+    <div class="table-container">
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Transaction ID</th>
+            <th>Asset Symbol</th>
+            <th>Order Type</th>
+            <th>Total Amount</th>
+            <th>Order Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tx of transactions">
+            <td class="tx-id">
+              <div>{{ tx.id }}</div>
+              <div class="tx-date">{{ tx.date }}</div>
+            </td>
+            <td>{{ tx.asset }}</td>
+            <td>{{ tx.orderType }}</td>
+            <td>${{ tx.amount.toFixed(2) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(tx.status)">
+                {{ tx.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,7 @@ import com.neueda.leap.Account;
 import com.neueda.leap.dto.AccountResponse;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.dto.HoldingsResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
 import com.neueda.leap.service.FauxnanceService;
@@ -24,12 +25,12 @@ public class AccountController {
 
     private final AccountService accountService;
     private final ClientService clientService;
-    private final FauxnanceService fauxnanceService;
+    // private final FauxnanceService fauxnanceService;
 
     public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService) {
         this.accountService = accountService;
         this.clientService = clientService;
-        this.fauxnanceService = fauxnanceService;
+        // this.fauxnanceService = fauxnanceService;
     }
 
     /**
@@ -44,6 +45,9 @@ public class AccountController {
             }
 
             UUID clientId = request.getClientId();
+            if (!SecurityAccess.canAccessClient(clientId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
             // Verify client exists
             if (clientService.getClientById(clientId) == null) {
@@ -69,6 +73,9 @@ public class AccountController {
         if (account == null) {
             return ResponseEntity.notFound().build();
         }
+        if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(mapToAccountResponse(account));
     }
 
@@ -81,6 +88,9 @@ public class AccountController {
             @PathVariable UUID clientId,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.canAccessClient(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             // Verify client exists
@@ -118,6 +128,9 @@ public class AccountController {
             Account account = accountService.getAccountById(accountId);
             if (account == null) {
                 return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
             // TODO: Fetch actual positions from fills/trades

@@ -2,27 +2,44 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import {
+  LoginResponse,
+  RegisterRequest,
+  Instrument,
+  QuoteResponse,
+  CandleResponse,
+  DepthLevel,
+  QuotePreviewResponse,
+  AccountResponse,
+  OrderResponse,
+  PaginatedResponse,
+  AuthResponse,
+  LoginRequest,
+  TokenValidationResponse
+} from './api.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8081/api';
+  private readonly apiUrl = 'http://localhost:8081/api';
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Login with email - verifies email exists in clients table
-   */
-  login(email: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email });
+  register(request: RegisterRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, request);
   }
 
-  /**
-   * Register a new client account
-   */
-  register(data: RegisterRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/register`, data);
+  login(request: LoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request);
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/auth/logout`, {});
+  }
+
+  validateToken(token: string): Observable<TokenValidationResponse> {
+    return this.http.post<TokenValidationResponse>(`${this.apiUrl}/auth/validate`, { token });
   }
 
   /**
@@ -116,102 +133,27 @@ export class ApiService {
     if (idempotencyKey) {
       headers['Idempotency-Key'] = idempotencyKey;
     }
-    
+
     const body = {
       instrumentId: instrumentId,
       side: side,
       quantity: quantity
     };
-    
+
     return this.http.post<OrderResponse>(
       `${this.apiUrl}/accounts/${accountId}/orders`,
       body,
       { headers }
     );
   }
-}
 
-export interface LoginResponse {
-  clientId: string;
-  email: string;
-  displayName: string;
-  status: string;
-  message: string;
-}
-
-export interface RegisterRequest {
-  displayName: string;
-  email: string;
-  password: string;
-}
-
-export interface Instrument {
-  instrumentId: string;
-  symbol: string;
-  name: string;
-  assetClass: string;
-  status: string;
-}
-
-export interface QuoteResponse {
-  symbol: string;
-  price: number;
-  bid: number;
-  ask: number;
-  change: number;
-  changePercent: number;
-  asOf: string;
-}
-
-export interface CandleResponse {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-export interface QuotePreviewResponse {
-  instrumentId: string;
-  symbol: string;
-  side: string;
-  quantity: string;
-  indicativePrice: string;
-  estimatedTotal: string;
-  timestamp: string;
-  notes: string;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  pagination: {
-    limit: number;
-    offset: number;
-    totalCount: number;
-    hasMore: boolean;
-  };
-}
-
-export interface AccountResponse {
-  accountId: string;
-  clientId: string;
-  status: string;
-  openedAt: string;
-}
-
-export interface OrderResponse {
-  orderId: string;
-  accountId: string;
-  instrumentId: string;
-  side: string;
-  quantity: string;
-  idempotencyKey: string;
-  status: string;
-  submittedAt: string;
-}
-export interface DepthLevel {
-  volume: number;
-  price: number;
-  side: string;
+  /**
+   * Fill/execute an order at a specified price
+   */
+  fillOrder(orderId: string, price: number): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(
+      `${this.apiUrl}/orders/${orderId}/fill?price=${price}`,
+      {}
+    );
+  }
 }
