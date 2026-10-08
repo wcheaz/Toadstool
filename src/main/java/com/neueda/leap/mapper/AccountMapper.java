@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Update;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,4 +51,6 @@ public interface AccountMapper {
 
     @Insert("INSERT INTO trading.accounts (account_id, client_id, status) VALUES (#{accountId}, #{clientId}, #{status})")
     void insertAccountWithId(@Param("accountId") UUID accountId, @Param("clientId") UUID clientId, @Param("status") String status);
+    @Update("UPDATE trading.accounts SET balance = #{balance} WHERE account_id = #{accountId}")
+    void updateAccountBalance(@Param("accountId") UUID accountId, @Param("balance") BigDecimal balance);
 }

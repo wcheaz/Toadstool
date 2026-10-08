@@ -3,6 +3,7 @@ package com.neueda.leap.service;
 import com.neueda.leap.Account;
 import com.neueda.leap.repository.AccountRepository;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,5 +57,12 @@ public class AccountService {
     public boolean verifyAccountOwnership(UUID accountId, UUID clientId) {
         Account account = getAccountById(accountId);
         return account != null && account.getClientId().equals(clientId);
+    }
+
+    /**
+     * Update account balance (used when orders are filled)
+     */
+    public void updateAccountBalance(UUID accountId, BigDecimal newBalance) {
+        accountRepository.updateBalance(accountId, newBalance);
     }
 }

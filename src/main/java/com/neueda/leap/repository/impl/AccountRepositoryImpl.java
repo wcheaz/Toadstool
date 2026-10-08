@@ -4,6 +4,7 @@ import com.neueda.leap.Account;
 import com.neueda.leap.repository.AccountRepository;
 import com.neueda.leap.mapper.AccountMapper;
 import org.springframework.stereotype.Repository;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,5 +38,10 @@ public class AccountRepositoryImpl implements AccountRepository {
     @Override
     public void save(UUID clientId, String status) {
         accountMapper.insertAccount(clientId, status);
+    }
+
+    @Override
+    public void updateBalance(UUID accountId, BigDecimal balance) {
+        accountMapper.updateAccountBalance(accountId, balance);
     }
 }

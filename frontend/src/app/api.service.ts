@@ -118,17 +118,27 @@ export class ApiService {
     if (idempotencyKey) {
       headers['Idempotency-Key'] = idempotencyKey;
     }
-    
+
     const body = {
       instrumentId: instrumentId,
       side: side,
       quantity: quantity
     };
-    
+
     return this.http.post<OrderResponse>(
       `${this.apiUrl}/accounts/${accountId}/orders`,
       body,
       { headers }
+    );
+  }
+
+  /**
+   * Fill/execute an order at a specified price
+   */
+  fillOrder(orderId: string, price: number): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(
+      `${this.apiUrl}/orders/${orderId}/fill?price=${price}`,
+      {}
     );
   }
 }

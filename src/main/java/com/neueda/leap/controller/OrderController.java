@@ -2,10 +2,12 @@ package com.neueda.leap.controller;
 
 import com.neueda.leap.Order;
 import com.neueda.leap.Account;
+import com.neueda.leap.Holdings;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.FauxnanceService;
+import com.neueda.leap.service.HoldingsService;
 import com.neueda.leap.dto.PlaceOrderRequest;
 import com.neueda.leap.dto.OrderResponse;
 import com.neueda.leap.dto.PaginatedResponse;
@@ -13,8 +15,12 @@ import com.neueda.leap.security.SecurityAccess;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.UUID;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,12 +36,14 @@ public class OrderController {
     private final AccountService accountService;
     private final InstrumentService instrumentService;
     private final FauxnanceService fauxnanceService;
+    private final HoldingsService holdingsService;
 
-    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService) {
+    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService, HoldingsService holdingsService) {
         this.orderService = orderService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
         this.fauxnanceService = fauxnanceService;
+        this.holdingsService = holdingsService;
     }
 
     /**
@@ -60,6 +68,16 @@ public class OrderController {
             // Validate instrument exists and is tradable
             if (instrumentService.getInstrumentById(request.getInstrumentId()) == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            // Validate SELL orders have sufficient holdings
+            if ("SELL".equalsIgnoreCase(request.getSide())) {
+                Optional<Holdings> holdings = holdingsService.getHolding(accountId, request.getInstrumentId());
+                BigDecimal requestedQuantity = new BigDecimal(request.getQuantity());
+                if (holdings.isEmpty() || holdings.get().getQuantity().compareTo(requestedQuantity) < 0) {
+                    BigDecimal availableQuantity = holdings.isPresent() ? holdings.get().getQuantity() : BigDecimal.ZERO;
+                    throw new IllegalArgumentException("Insufficient holdings. Available: " + availableQuantity + ", Requested: " + requestedQuantity);
+                }
             }
 
             // Generate idempotency key if not provided
@@ -111,6 +129,30 @@ public class OrderController {
         }
 
         return ResponseEntity.ok(mapToOrderResponse(order));
+    }
+
+    /**
+     * POST /api/orders/{orderId}/fill
+     * Fill/execute an order at a specified price
+     */
+    @PostMapping("/orders/{orderId}/fill")
+    public ResponseEntity<OrderResponse> fillOrder(
+            @PathVariable UUID orderId,
+            @RequestParam java.math.BigDecimal price) {
+        try {
+            Order order = orderService.getOrderById(orderId);
+            if (order == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            orderService.fillOrder(orderId, price);
+            order = orderService.getOrderById(orderId);
+            return ResponseEntity.ok(mapToOrderResponse(order));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**

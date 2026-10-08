@@ -103,11 +103,9 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loadingInstruments = true;
     this.apiService.getInstruments(25, 0).subscribe({
       next: (response) => {
-        console.log('Instruments loaded:', response.items);
         this.instruments = response.items;
         this.cdr.detectChanges();
 
-        // TEST: Load first instrument
         if (response.items.length > 0) {
           this.testInstrument = response.items[0];
           this.cdr.detectChanges();
@@ -115,7 +113,6 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
           this.apiService.getInstrumentQuote(this.testInstrument.instrumentId).subscribe({
             next: (quote: QuoteResponse) => {
               this.testPrice = quote.price;
-              console.log('Test price loaded:', this.testPrice);
               this.cdr.detectChanges();
             },
             error: (e: any) => console.error('Test price error:', e)
@@ -137,13 +134,10 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     const instrumentIds = this.instruments.map(i => i.instrumentId);
     this.apiService.getBatchQuotes(instrumentIds).subscribe({
       next: (quotes) => {
-        console.log('Batch response keys:', Object.keys(quotes));
-        console.log('Sample quote:', Object.values(quotes)[0]);
         this.instrumentQuotes = new Map(Object.entries(quotes));
         this.loadingInstruments = false;
         this.cdr.detectChanges();
         console.log('Batch quotes refreshed for', this.instruments.length, 'instruments');
-        console.log('Map size:', this.instrumentQuotes.size);
       },
       error: (error) => {
         console.error('Failed to load batch quotes:', error);
@@ -253,7 +247,6 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   navigateTo(section: string) {
-    console.log('Navigating to:', section);
   }
 
   openProfile() {
@@ -266,7 +259,6 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
     if (!quote) return;
-    console.log('Opening trade modal for:', instrument.symbol);
     this.selectedAsset = {
       instrumentId: instrument.instrumentId,
       symbol: instrument.symbol,
@@ -279,15 +271,11 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     this.selectedTimeframeForChart = '90'; // default to 3M
     this.isTradeModalOpen = true;
 
-    // Fetch chart data for the default timeframe
-    console.log('Fetching candles for:', instrument.instrumentId);
     this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
       next: (candles: CandleResponse[]) => {
         console.log('Candles received:', candles.length, 'items');
         this.tradingChartData = candles;
-        console.log('tradingChartData set to:', this.tradingChartData.length, 'items');
         this.cdr.detectChanges();
-        console.log('detectChanges called');
       },
       error: (e: any) => {
         console.error('Failed to load chart data:', e);

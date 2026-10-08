@@ -65,6 +65,12 @@ class OrderServiceTest {
     @Mock
     private FeeStrategy feeStrategy;
 
+    @Mock
+    private FillService fillService;
+
+    @Mock
+    private HoldingsService holdingsService;
+
     private UUID accountId;
     private UUID instrumentId;
     private UUID orderId;
@@ -86,7 +92,9 @@ class OrderServiceTest {
             instrumentService,
             tradeEventService,
             orderValidator,
-            feeStrategyFactory
+            feeStrategyFactory,
+            fillService,
+            holdingsService
         );
 
         // Setup default active account
