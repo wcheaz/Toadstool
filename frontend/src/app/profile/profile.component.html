@@ -1,0 +1,145 @@
+<div class="profile-modal-overlay" [class.open]="isOpen" (click)="closeModal()">
+  <div class="profile-modal" (click)="$event.stopPropagation()">
+    <!-- Close Button -->
+    <button class="close-btn" (click)="closeModal()" title="Close profile panel">
+      ✕
+    </button>
+
+    <div class="profile-content">
+      <!-- Header Section -->
+      <div class="profile-header-section">
+        <div class="profile-header-left">
+          <div class="profile-avatar-large">
+            <div class="avatar-text">{{ clientName.charAt(0).toUpperCase() }}</div>
+          </div>
+          <div class="profile-name-section">
+            <h1 class="profile-name">{{ clientName }}</h1>
+            <span class="profile-status verified-badge">✓ Verified</span>
+          </div>
+        </div>
+        <button class="btn btn-edit-profile" (click)="updateProfile()">Edit Profile</button>
+      </div>
+
+      <!-- Main Content Grid -->
+      <div class="profile-grid">
+        <!-- Left Column -->
+        <div class="profile-column-left">
+          <!-- Personal & Contact Details -->
+          <div class="profile-section">
+            <h2 class="section-title">Personal & contact details</h2>
+            <div class="section-content">
+              <div class="detail-row">
+                <span class="detail-label">Legal name</span>
+                <span class="detail-value">{{ clientName }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Date of birth</span>
+                <span class="detail-value">07 / 06 / 1992</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Phone number</span>
+                <span class="detail-value">+1 ••• ••• 8184</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Email address</span>
+                <span class="detail-value">{{ email }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Country</span>
+                <span class="detail-value">United States</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Address</span>
+                <span class="detail-value">••• ••••• Street, New York, NY •••••</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trading Preferences -->
+          <div class="profile-section">
+            <h2 class="section-title">Trading preferences</h2>
+            <div class="section-content">
+              <div class="detail-row">
+                <span class="detail-label">Base currency</span>
+                <span class="detail-value">USD – US Dollar</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Time zone</span>
+                <span class="detail-value">New York (ET1)</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Default order type</span>
+                <span class="detail-value">Market</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Default timeframe</span>
+                <span class="detail-value">Email & In-app</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="profile-column-right">
+          <!-- Account Overview -->
+          <div class="profile-section">
+            <h2 class="section-title">Account overview</h2>
+            <div class="section-content">
+              <div class="detail-row">
+                <span class="detail-label">Account type</span>
+                <span class="detail-value">Individual - Cash</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Account status</span>
+                <span class="detail-value status-active">Active</span>
+              </div>
+              <div class="detail-row full-width">
+                <span class="detail-label">Account verification</span>
+                <span class="verification-badge">✓ Personal information and documents approved</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Overview -->
+          <div class="profile-section">
+            <h2 class="section-title">Security overview</h2>
+            <div class="section-content">
+              <div class="detail-row">
+                <span class="detail-label">Two-factor authentication</span>
+                <span class="security-badge enabled">✓ Enabled</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Authentication app</span>
+                <span class="detail-value">Authenticator 10 sign-in</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Password</span>
+                <span class="detail-value">•••••••••••• Updated 5 Oct 2024</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Last sign-in</span>
+                <span class="detail-value">28 Oct 2024, 10:54 ET, New York, US</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Chrome on macOS</span>
+                <span class="time-device">This device</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="profile-footer">
+        <button class="btn btn-secondary" (click)="changePassword()">Change Password</button>
+        <button class="btn btn-outline-danger" (click)="logout()">Sign Out</button>
+      </div>
+
+      <!-- Info Text -->
+      <div class="profile-info-text">
+        <span class="icon">ℹ️</span>
+        <span>Sensitive information is masked for your security. Manager sign in and verification in Account Settings.</span>
+      </div>
+    </div>
+  </div>
+</div>

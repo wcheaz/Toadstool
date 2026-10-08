@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -9,6 +9,10 @@ import { CommonModule } from '@angular/common';
   styleUrl: './balance-widget.component.css'
 })
 export class BalanceWidgetComponent {
+  @Output() depositClicked = new EventEmitter<void>();
+  @Output() withdrawClicked = new EventEmitter<void>();
+  @Output() transferClicked = new EventEmitter<void>();
+
   // TODO: Remove - mock balance data
   currentBalance: number = 142384.50;
   // TODO: Remove - mock balance data
@@ -21,14 +25,14 @@ export class BalanceWidgetComponent {
   }
 
   deposit() {
-    alert('Deposit functionality coming soon');
+    this.depositClicked.emit();
   }
 
   withdraw() {
-    alert('Withdraw functionality coming soon');
+    this.withdrawClicked.emit();
   }
 
   transfer() {
-    alert('Transfer functionality coming soon');
+    this.transferClicked.emit();
   }
 }
