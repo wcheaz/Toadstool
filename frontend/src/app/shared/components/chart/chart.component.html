@@ -1,0 +1,12 @@
+<div class="chart-container">
+  <div class="time-period-selector">
+    <button *ngFor="let tf of timeframes"
+      class="period-btn"
+      [class.active]="selectedTimeframe === tf.label"
+      (click)="selectTimeframe(tf.label)">
+      {{ tf.label }}
+    </button>
+  </div>
+  <div *ngIf="loading" class="chart-loading">Loading chart...</div>
+  <div #chartContainer [style.display]="loading ? 'none' : 'block'"></div>
+</div>

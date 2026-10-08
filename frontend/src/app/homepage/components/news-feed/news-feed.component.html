@@ -1,0 +1,13 @@
+<div class="dashboard-module news-module">
+  <div class="module-header">
+    <h3>News</h3>
+    <div class="module-handle">⋮⋮</div>
+  </div>
+  <div class="news-section">
+    <div class="news-item" *ngFor="let item of newsItems">
+      <p class="news-date">{{ item.date }}</p>
+      <h4 class="news-title">{{ item.title }}</h4>
+      <p class="news-description">{{ item.description }}</p>
+    </div>
+  </div>
+</div>

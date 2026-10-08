@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../api.service';
-import { clearAuthSession } from '../auth-storage';
+import { RouterLink, Router } from '@angular/router';
+import { ApiService } from '../core/api/api.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './register.component.html',
-  styleUrl: './register.component.css'
+  styleUrls: ['../shared/styles/auth.css', './register.component.css']
 })
 export class RegisterComponent {
   email: string = '';
@@ -23,7 +23,7 @@ export class RegisterComponent {
   errorMessage: string = '';
   isLoading: boolean = false;
 
-  constructor(private readonly router: Router, private readonly apiService: ApiService) {}
+  constructor(private router: Router, private apiService: ApiService, private authService: AuthService) {}
 
   onSubmit() {
     this.submitted = true;
@@ -78,9 +78,14 @@ export class RegisterComponent {
       username: this.username.trim(),
       password: this.password
     }).subscribe({
-      next: () => {
-        clearAuthSession();
-        this.router.navigate(['/login']);
+      next: (response) => {
+        // Registration successful - store client info in localStorage
+        this.authService.storeClientSession(response);
+
+        console.log('Registration successful:', response);
+        
+        // Navigate to homepage
+        this.router.navigate(['/homepage']);
       },
       error: (error) => {
         this.isLoading = false;

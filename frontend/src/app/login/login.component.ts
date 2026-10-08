@@ -2,15 +2,15 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { ApiService } from '../api.service';
-import { storeAuthSession } from '../auth-storage';
+import { ApiService } from '../core/api/api.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrls: ['../shared/styles/auth.css', './login.component.css']
 })
 export class LoginComponent {
   username: string = '';
@@ -23,6 +23,7 @@ export class LoginComponent {
   constructor(
     private router: Router,
     private apiService: ApiService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -42,7 +43,11 @@ export class LoginComponent {
       password: this.password
     }).subscribe({
       next: (response) => {
-        storeAuthSession(response);
+        // Login successful - store client info in localStorage
+        this.authService.storeClientSession(response);
+        console.log('Login successful:', response);
+        
+        // Navigate to homepage
         this.router.navigate(['/homepage']);
       },
       error: (error) => {

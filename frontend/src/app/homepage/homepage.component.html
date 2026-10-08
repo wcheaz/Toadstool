@@ -1,273 +1,62 @@
 <div class="homepage-container">
   <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">T</div>
-      <div class="sidebar-title">Toadstool Trader</div>
-    </div>
-    <nav class="sidebar-nav">
-      <ul>
-        <li>
-          <button class="nav-button" (click)="navigateTo('dashboard')" title="Dashboard">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span>Dashboard</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-button" (click)="navigateTo('news')" title="News">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16v16H4z"></path>
-              <path d="M4 9h16M4 14h12"></path>
-            </svg>
-            <span>News</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-button" (click)="navigateTo('trading')" title="Trading">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-              <polyline points="17 6 23 6 23 12"></polyline>
-            </svg>
-            <span>Trading</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-button" (click)="navigateTo('settings')" title="Settings">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"></path>
-            </svg>
-            <span>Settings</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-button" (click)="navigateTo('support')" title="Support">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              <circle cx="9" cy="10" r="1"></circle>
-              <circle cx="12" cy="10" r="1"></circle>
-              <circle cx="15" cy="10" r="1"></circle>
-            </svg>
-            <span>Support</span>
-          </button>
-        </li>
-      </ul>
-    </nav>
-  </aside>
+  <app-sidebar></app-sidebar>
 
   <!-- Main Content Area -->
   <main class="main-content">
     <!-- Top Bar -->
-    <header class="top-bar">
-      <div class="welcome-section">
-        <h1 class="welcome-text">Welcome, {{ clientName }}</h1>
-      </div>
-
-      <div class="top-right-actions">
-        <button class="icon-button" (click)="openProfile()" title="Client Profile">
-          <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <span>Profile</span>
-        </button>
-        <button class="icon-button" (click)="openNotifications()" title="Notification Settings">
-          <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span>Notifications</span>
-        </button>
-        <button class="icon-button" (click)="logout()" title="Sign Out">
-          <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </header>
+    <app-top-bar [clientName]="clientName"></app-top-bar>
 
     <!-- Balance Widget -->
-    <section class="balance-widget">
-      <div class="balance-header">
-        <div class="balance-title-section">
-          <h2>Current Balance</h2>
-        </div>
-        <button class="visibility-toggle" (click)="toggleBalanceVisibility()" title="Toggle balance visibility">
-          <svg *ngIf="isBalanceVisible" class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-          <svg *ngIf="!isBalanceVisible" class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-            <line x1="1" y1="1" x2="23" y2="23"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div class="balance-content">
-        <div class="balance-left">
-          <div class="balance-amount">
-            <p class="balance-value-label">Current Balance</p>
-            <p class="balance-value" *ngIf="isBalanceVisible">
-              ${{ currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-            </p>
-            <p class="balance-value hidden" *ngIf="!isBalanceVisible">••••••</p>
-          </div>
-          <div class="balance-available">
-            <p class="available-label">Available for Trading</p>
-            <p class="available-value" *ngIf="isBalanceVisible">${{ availableForTrading.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
-            <p class="available-value hidden" *ngIf="!isBalanceVisible">••••••</p>
-          </div>
-        </div>
-
-        <div class="balance-actions">
-          <button class="action-button depo-btn" (click)="deposit()" title="Deposit funds">
-            Deposit
-          </button>
-          <button class="action-button withdraw-btn" (click)="withdraw()" title="Withdraw funds">
-            Withdraw
-          </button>
-          <button class="action-button transfer-btn" (click)="transfer()" title="Transfer funds">
-            Transfer
-          </button>
-        </div>
-      </div>
-    </section>
+    <app-balance-widget></app-balance-widget>
 
     <!-- Content Tabs and Dashboard Area -->
     <section class="dashboard-content">
-      <div class="content-tabs">
-        <button class="tab-button active" (click)="setActiveTab('news')">News</button>
-        <button class="tab-button" (click)="setActiveTab('trading')">Trading</button>
-        <button class="tab-button" (click)="setActiveTab('settings')">Settings</button>
-      </div>
-
       <!-- NEWS TAB CONTENT -->
-      <div class="tab-content" *ngIf="activeTab === 'news'">
+      <div class="tab-content">
         <div class="dashboard-grid">
           <!-- Left Column: News Module -->
-          <div class="dashboard-module news-module">
-            <div class="module-header">
-              <h3>News</h3>
-              <div class="module-handle">⋮⋮</div>
-            </div>
-            <div class="news-section">
-              <div class="news-item">
-                <p class="news-date">Oct 24, 2024</p>
-                <h4 class="news-title">Federal Reserve Announces Inter-rate Policy Framework</h4>
-                <p class="news-description">Markets brace for upcoming policy shifts as rate projections consolidate.</p>
-              </div>
-              <div class="news-item">
-                <p class="news-date">Oct 23, 2024</p>
-                <h4 class="news-title">Tech Stocks Rebound Amid Supply Chain Normalization</h4>
-                <p class="news-description">Semiconductor indices record 3.2% rise following logistic breakthroughs.</p>
-              </div>
-              <div class="news-item">
-                <p class="news-date">Oct 22, 2024</p>
-                <h4 class="news-title">Global Energy Commodities Stabilize After Cartel Accord</h4>
-                <p class="news-description">Crude futures trading range narrow in pre-session adjustments.</p>
-              </div>
-            </div>
-          </div>
+          <app-news-feed></app-news-feed>
 
           <!-- Right Column: Market Assets + Features -->
           <div class="dashboard-column">
             <!-- Market Assets Module -->
-            <div class="dashboard-module market-module">
-              <div class="module-header">
-                <h3>Market Assets</h3>
-                <div class="header-actions">
-                  <a href="#" class="view-exchange">View exchange</a>
-                  <div class="module-handle">⋮⋮</div>
-                </div>
-              </div>
-              <div class="market-assets-table">
-                <div class="table-header">
-                  <div>Asset</div>
-                  <div>Price</div>
-                  <div>Change %</div>
-                  <div>Holdings</div>
-                  <div>Action</div>
-                </div>
-
-                <!-- Live instruments from Fauxnance API -->
-                <div *ngFor="let instrument of instruments" class="table-row">
-                  <div class="table-cell">
-                    <span class="asset-name">{{ instrument.symbol }}</span>
-                    <span class="asset-full">{{ instrument.name }}</span>
-                  </div>
-                  <div class="table-cell">
-                    {{ (getQuote(instrument.instrumentId)?.price || 0) | currency }}
-                  </div>
-                  <div class="table-cell" [ngClass]="getPriceChangeClass(getQuote(instrument.instrumentId)?.changePercent)">
-                    {{ getQuote(instrument.instrumentId)?.changePercent?.toFixed(2) || 'Loading...' }}%
-                  </div>
-                  <div class="table-cell">-- Units</div>
-                  <div class="table-cell"><button class="trade-btn" (click)="openTradeModal(instrument, getQuote(instrument.instrumentId))">Trade</button></div>
-                </div>
-
-                <!-- Fallback: No instruments loaded -->
-                <div *ngIf="instruments.length === 0 && !loadingInstruments" class="table-row">
-                  <div class="table-cell" colspan="5">No instruments available</div>
-                </div>
-              </div>
-            </div>
+            <app-market-assets-table
+              [instruments]="instruments"
+              [quotes]="instrumentQuotes"
+              [loading]="loadingInstruments"
+              (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
+            </app-market-assets-table>
 
             <!-- Features Module -->
-            <div class="dashboard-module features-module">
-              <div class="module-header">
-                <h3>Potential Features (Roadmap Placeholders)</h3>
-                <div class="module-handle">⋮⋮</div>
-              </div>
-              <div class="features-grid">
-                <div class="feature-card">
-                  <h4>AI Trading Signals</h4>
-                  <p>Automated alert feeds trained on backtested pattern libraries.</p>
-                </div>
-                <div class="feature-card">
-                  <h4>Portfolio Analytics</h4>
-                  <p>Interactive variance graphs and asset covariance matrices.</p>
-                </div>
-                <div class="feature-card">
-                  <h4>Social Trading</h4>
-                  <p>Simulated peer copying boards and custom benchmark tracking.</p>
-                </div>
-              </div>
-            </div>
+            <app-features-grid></app-features-grid>
           </div>
-        </div>
-      </div>
-
-      <!-- Trading Tab Content (placeholder) -->
-      <div class="tab-content" *ngIf="activeTab === 'trading'">
-        <div class="placeholder">
-          <p>Trading features coming soon...</p>
-        </div>
-      </div>
-
-      <!-- Settings Tab Content (placeholder) -->
-      <div class="tab-content" *ngIf="activeTab === 'settings'">
-        <div class="placeholder">
-          <p>Settings features coming soon...</p>
         </div>
       </div>
     </section>
 
-  <!-- Trading Modal -->
-  <app-trading-modal
-    [isOpen]="isTradeModalOpen"
-    [selectedAsset]="selectedAsset"
-    [candleData]="tradingChartData"
-    [instrumentId]="selectedInstrumentId"
-    (close)="closeTradeModal()">
-  </app-trading-modal>
+    <!-- Trading Modal -->
+    <app-trading-modal
+      [isOpen]="isTradeModalOpen"
+      [selectedAsset]="selectedAsset"
+      [candleData]="tradingChartData"
+      [instrumentId]="selectedInstrumentId"
+      (close)="closeTradeModal()">
+    </app-trading-modal>
+
+    <!-- Error Modal -->
+    <app-error-modal
+      [isOpen]="isErrorModalOpen"
+      [errorMessage]="errorMessage"
+      [errorDetails]="errorDetails"
+      (close)="closeErrorModal()">
+    </app-error-modal>
+
+    <!-- Deposit Modal -->
+    <app-deposit-modal
+      [isOpen]="isDepositModalOpen"
+      (close)="closeDepositModal()"
+      (submit)="onDepositSubmit($event)">
+    </app-deposit-modal>
   </main>
 </div>

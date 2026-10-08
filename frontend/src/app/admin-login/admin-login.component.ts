@@ -8,7 +8,7 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './admin-login.component.html',
-  styleUrl: './admin-login.component.css'
+  styleUrls: ['../shared/styles/auth.css', './admin-login.component.css']
 })
 export class AdminLoginComponent {
   email: string = '';
@@ -35,9 +35,9 @@ export class AdminLoginComponent {
       return;
     }
 
-    // TODO: Replace with actual admin authentication service
+    // TODO: Remove - simulated admin login, replace with actual admin authentication service
     console.log('Admin login attempt for user:', this.email);
-    
+
     // Simulated successful login
     alert(`Welcome, Admin ${this.email}!`);
     this.resetForm();
