@@ -31,6 +31,7 @@ export class TradingModalComponent implements OnChanges {
   @Input() accountId: string = '';
   @Input() candleData: CandleResponse[] = [];
   @Input() instrumentId: string = '';
+  @Input() apiError: string = '';
   @Output() close = new EventEmitter<void>();
 
   selectedTimeframe: string = '3M';

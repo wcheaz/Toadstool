@@ -5,7 +5,18 @@
       ✕
     </button>
 
-    <div class="trading-content">
+    <!-- Error State -->
+    <div *ngIf="apiError" class="error-state">
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <h2 class="error-title">API Error</h2>
+        <p class="error-message">{{ apiError }}</p>
+        <p class="error-details">Please try again later or contact support if the problem persists.</p>
+        <button class="error-close-btn" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+
+    <div class="trading-content" *ngIf="!apiError">
       <!-- Left Panel: Asset Details and Chart -->
       <div class="trading-left">
         <!-- Asset Header -->

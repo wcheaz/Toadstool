@@ -5,6 +5,8 @@ import { Instrument, QuoteResponse, CandleResponse } from '../core/api/api.model
 import { Asset } from '../shared/models/asset.model';
 import { AuthService } from '../core/auth.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
+import { ErrorModalComponent } from '../error-modal/error-modal.component';
+import { DepositModalComponent } from '../deposit-modal/deposit-modal.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TopBarComponent } from './components/top-bar/top-bar.component';
 import { BalanceWidgetComponent } from './components/balance-widget/balance-widget.component';
@@ -20,6 +22,8 @@ import { takeUntil } from 'rxjs/operators';
   imports: [
     CommonModule,
     TradingModalComponent,
+    ErrorModalComponent,
+    DepositModalComponent,
     SidebarComponent,
     TopBarComponent,
     BalanceWidgetComponent,
@@ -42,7 +46,18 @@ export class HomepageComponent implements OnInit, OnDestroy {
   isTradeModalOpen: boolean = false;
   selectedAsset: Asset | null = null;
 
-  // TODO: Remove - mock asset data, superseded by instruments loaded from the Fauxnance API
+  // Error modal state
+  isErrorModalOpen: boolean = false;
+  errorMessage: string = '';
+  errorDetails?: string;
+
+  // Deposit modal state
+  isDepositModalOpen: boolean = false;
+
+  // UI state
+  isBalanceVisible: boolean = true;
+
+  // Available assets
   assets: Asset[] = [
     { instrumentId: '11111111-1111-1111-1111-111111111111', symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
     { instrumentId: '22222222-2222-2222-2222-222222222222', symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
@@ -115,12 +130,150 @@ export class HomepageComponent implements OnInit, OnDestroy {
     });
   }
 
+<<<<<<< HEAD
   setActiveTab(tab: string) {
     this.activeTab = tab;
   }
 
   openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
     if (!quote) return;
+=======
+  selectTimeframe(timeframe: string) {
+    this.selectedTimeframe = timeframe;
+    if (this.testInstrument) {
+      this.loadCandles(timeframe);
+    }
+  }
+
+  loadCandles(timeframe: string) {
+    if (!this.testInstrument) return;
+
+    this.loadingCandles = true;
+    const timeframeObj = this.timeframes.find(tf => tf.label === timeframe);
+    if (!timeframeObj) {
+      this.loadingCandles = false;
+      return;
+    }
+
+    const days = Math.max(1, Math.ceil(timeframeObj.days));
+    this.apiService.getCandles(this.testInstrument.instrumentId, days).subscribe({
+      next: (candles) => {
+        this.candles = candles;
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+        setTimeout(() => this.renderChart(), 0);
+      },
+      error: (error) => {
+        console.error('Failed to load candles:', error);
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  renderChart() {
+    if (!this.chartContainer || this.candles.length === 0) return;
+
+    const container = this.chartContainer.nativeElement;
+    container.innerHTML = '';
+
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#1e1e1e' },
+        textColor: '#d1d5db'
+      },
+      width: container.clientWidth,
+      height: 400,
+      timeScale: { timeVisible: true, secondsVisible: true }
+    });
+
+    const candlestickSeries = chart.addSeries(CandlestickSeries, { upColor: '#26a69a', downColor: '#ef5350' });
+    const volumeSeries = chart.addSeries(HistogramSeries, { color: '#1f77b4' });
+
+    const candleData = this.candles.map(c => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close
+    }));
+
+    const volumeData = this.candles.map(c => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
+      value: c.volume,
+      color: c.close >= c.open ? '#26a69a' : '#ef5350'
+    }));
+
+    candlestickSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+    chart.timeScale().fitContent();
+  }
+
+  getQuote(instrumentId: string): QuoteResponse | undefined {
+    return this.instrumentQuotes.get(instrumentId);
+  }
+
+  getPriceChangeClass(changePercent: number | undefined): string {
+    if (!changePercent) return '';
+    return changePercent >= 0 ? 'price-up' : 'price-down';
+  }
+
+  toggleBalanceVisibility() {
+    this.isBalanceVisible = !this.isBalanceVisible;
+  }
+
+  deposit() {
+    this.isDepositModalOpen = true;
+  }
+
+  withdraw() {
+    alert('Withdraw functionality coming soon');
+  }
+
+  transfer() {
+    alert('Transfer functionality coming soon');
+  }
+
+  navigateTo(section: string) {
+    console.log('Navigating to:', section);
+    switch (section) {
+      case 'dashboard':
+        this.router.navigate(['/homepage']);
+        break;
+      case 'news':
+        this.router.navigate(['/news']);
+        break;
+      case 'trading':
+        console.log('Trading page not yet implemented');
+        break;
+      case 'settings':
+        console.log('Settings page not yet implemented');
+        break;
+      case 'support':
+        console.log('Support page not yet implemented');
+        break;
+      default:
+        console.log('Unknown section:', section);
+    }
+  }
+
+  openProfile() {
+    alert('Profile settings coming soon');
+  }
+
+  openNotifications() {
+    alert('Notifications settings coming soon');
+  }
+
+  openTradeModal(instrument: Instrument, quote: QuoteResponse | undefined) {
+    if (!quote) {
+      this.errorMessage = 'API is down';
+      this.errorDetails = 'Unable to fetch quote data for this asset. Please try again later.';
+      this.isErrorModalOpen = true;
+      return;
+    }
+    console.log('Opening trade modal for:', instrument.symbol);
+>>>>>>> 0c7d58f13a3b83c1b3d0e4c04cf14247ae8a7eb8
     this.selectedAsset = {
       instrumentId: instrument.instrumentId,
       symbol: instrument.symbol,
@@ -152,9 +305,33 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.selectedAsset = null;
   }
 
+  closeErrorModal() {
+    this.isErrorModalOpen = false;
+    this.errorMessage = '';
+    this.errorDetails = '';
+  }
+
+  closeDepositModal() {
+    this.isDepositModalOpen = false;
+  }
+
+  onDepositSubmit(summary: any) {
+    console.log('Deposit submitted:', summary);
+    // Update account balance
+    this.currentBalance += summary.total;
+    this.availableForTrading += summary.amount;
+    // Show success message
+    alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.total)} initiated successfully!`);
+  }
+
   logout() {
+<<<<<<< HEAD
     this.authService.logout();
     // Redirect to login
     window.location.href = '/login';
+=======
+    localStorage.clear();
+    this.router.navigate(['/login']);
+>>>>>>> 0c7d58f13a3b83c1b3d0e4c04cf14247ae8a7eb8
   }
 }
