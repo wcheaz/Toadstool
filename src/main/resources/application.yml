@@ -36,6 +36,11 @@ fauxnance:
   apiKey: ${FAUXNANCE_API_KEY}
   timeoutSeconds: ${FAUXNANCE_TIMEOUT_SECONDS:10}
 
+finnhub:
+  apiKey: ${FINNHUB_API_KEY}
+  baseUrl: https://finnhub.io/api/v1
+  newsRateLimitDelayMs: 100
+
 server:
   port: 8081
 
@@ -44,3 +49,4 @@ logging:
     root: INFO
     com.neueda.leap: DEBUG
     org.springframework.web: DEBUG
+
