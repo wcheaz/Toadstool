@@ -1,7 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService, CandleResponse } from '../api.service';
+import { ApiService } from '../core/api/api.service';
+import { CandleResponse } from '../core/api/api.models';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 
 interface Asset {
@@ -245,12 +246,12 @@ export class NewsComponent implements OnInit {
     this.isTradeModalOpen = true;
 
     this.apiService.getCandles(this.selectedAsset.instrumentId, 90).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
         this.tradingChartData = candles;
         this.apiError = '';
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load chart data:', e);
         this.apiError = 'API is down';
         this.cdr.detectChanges();
