@@ -1,12 +1,9 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.Holdings;
-import com.neueda.leap.Order;
-import com.neueda.leap.Fill;
 import com.neueda.leap.Account;
 import com.neueda.leap.Instrument;
 import com.neueda.leap.enums.OrderSide;
-import com.neueda.leap.enums.FillStatus;
 import com.neueda.leap.repository.HoldingsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,7 +69,6 @@ class HoldingsServiceTest {
     @DisplayName("Create new holding when account buys an instrument for first time")
     void testCreateNewHoldingOnFirstBuy() {
         BigDecimal buyQuantity = new BigDecimal("100");
-        Fill fill = new Fill(UUID.randomUUID(), buyQuantity, buyQuantity, FillStatus.Filled);
 
         when(holdingsRepository.findByAccountIdAndInstrumentId(accountId, instrumentId))
             .thenReturn(Optional.empty());

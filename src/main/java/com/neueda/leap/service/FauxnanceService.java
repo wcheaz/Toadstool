@@ -57,6 +57,7 @@ public class FauxnanceService {
         return quote;
     }
 
+    @SuppressWarnings("unchecked")
     public List<QuoteResponse> getQuotes(List<String> symbols) {
         String cacheKey = "quotes:" + String.join(",", symbols);
         CacheEntry<?> cached = cache.get(cacheKey);
@@ -71,6 +72,7 @@ public class FauxnanceService {
         return quotes;
     }
 
+    @SuppressWarnings("unchecked")
     public List<CandleResponse> getCandles(String symbol, String fromDate, String toDate) {
         String cacheKey = "candles:" + symbol + ":" + fromDate + ":" + toDate;
         CacheEntry<?> cached = cache.get(cacheKey);

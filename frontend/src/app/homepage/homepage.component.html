@@ -39,6 +39,7 @@
     <app-trading-modal
       [isOpen]="isTradeModalOpen"
       [selectedAsset]="selectedAsset"
+      [accountId]="accountId"
       [candleData]="tradingChartData"
       [instrumentId]="selectedInstrumentId"
       (close)="closeTradeModal()">

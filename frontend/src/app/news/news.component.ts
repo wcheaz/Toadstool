@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from '../core/api/api.service';
+import { AuthService } from '../core/auth.service';
 import { CandleResponse } from '../core/api/api.models';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 
@@ -48,6 +49,7 @@ interface CalendarEvent {
 })
 export class NewsComponent implements OnInit {
   clientName: string = '';
+  accountId: string = '';
   activeTab: string = 'all-feed';
 
   // Trading modal state
@@ -177,8 +179,9 @@ export class NewsComponent implements OnInit {
     }
   ];
 
-  constructor(private router: Router, private apiService: ApiService, private cdr: ChangeDetectorRef) {
-    this.clientName = localStorage.getItem('clientName') || 'User';
+  constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
+    this.clientName = this.authService.getClientName();
+    this.accountId = this.authService.getAccountId();
   }
 
   ngOnInit() {
