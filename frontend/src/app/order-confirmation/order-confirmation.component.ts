@@ -1,14 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface Asset {
-  instrumentId: string;
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  holdings: number;
-}
+import { Asset } from '../shared/models/asset.model';
 
 @Component({
   selector: 'app-order-confirmation',
@@ -29,6 +21,7 @@ export class OrderConfirmationComponent {
   @Output() editOrder = new EventEmitter<void>();
   @Output() close = new EventEmitter<void>();
 
+  // TODO: Remove - mock balance data
   currentBalance: number = 142384.50;
   
   get estimatedValue(): number {

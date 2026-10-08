@@ -1,0 +1,39 @@
+<div class="dashboard-module market-module">
+  <div class="module-header">
+    <h3>Market Assets</h3>
+    <div class="header-actions">
+      <a href="#" class="view-exchange">View exchange</a>
+      <div class="module-handle">⋮⋮</div>
+    </div>
+  </div>
+  <div class="market-assets-table">
+    <div class="table-header">
+      <div>Asset</div>
+      <div>Price</div>
+      <div>Change %</div>
+      <div>Holdings</div>
+      <div>Action</div>
+    </div>
+
+    <!-- Live instruments from Fauxnance API -->
+    <div *ngFor="let instrument of instruments" class="table-row">
+      <div class="table-cell">
+        <span class="asset-name">{{ instrument.symbol }}</span>
+        <span class="asset-full">{{ instrument.name }}</span>
+      </div>
+      <div class="table-cell">
+        {{ (getQuote(instrument.instrumentId)?.price || 0) | currency }}
+      </div>
+      <div class="table-cell" [ngClass]="getPriceChangeClass(getQuote(instrument.instrumentId)?.changePercent)">
+        {{ getQuote(instrument.instrumentId)?.changePercent?.toFixed(2) || 'Loading...' }}%
+      </div>
+      <div class="table-cell">-- Units</div>
+      <div class="table-cell"><button class="trade-btn" (click)="onTradeClick(instrument, getQuote(instrument.instrumentId))">Trade</button></div>
+    </div>
+
+    <!-- Fallback: No instruments loaded -->
+    <div *ngIf="instruments.length === 0 && !loading" class="table-row">
+      <div class="table-cell" colspan="5">No instruments available</div>
+    </div>
+  </div>
+</div>

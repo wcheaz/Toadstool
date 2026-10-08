@@ -2,7 +2,8 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { ApiService } from '../api.service';
+import { ApiService } from '../core/api/api.service';
+import { AuthService } from '../core/auth.service';
 import { timeout } from 'rxjs/operators';
 
 @Component({
@@ -10,7 +11,7 @@ import { timeout } from 'rxjs/operators';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrls: ['../shared/styles/auth.css', './login.component.css']
 })
 export class LoginComponent {
   email: string = '';
@@ -23,6 +24,7 @@ export class LoginComponent {
   constructor(
     private router: Router,
     private apiService: ApiService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -50,11 +52,8 @@ export class LoginComponent {
     ).subscribe({
       next: (response) => {
         // Login successful - store client info in localStorage
-        localStorage.setItem('clientId', response.clientId);
-        localStorage.setItem('clientEmail', response.email);
-        localStorage.setItem('clientName', response.displayName);
-        localStorage.setItem('clientStatus', response.status);
-        
+        this.authService.storeClientSession(response);
+
         // Fetch the account ID for this client
         this.apiService.getAccountByClientId(response.clientId).subscribe({
           next: (account) => {

@@ -1,14 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface Asset {
-  instrumentId: string;
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  holdings: number;
-}
+import { Asset } from '../shared/models/asset.model';
 
 @Component({
   selector: 'app-order-success',
@@ -26,6 +18,7 @@ export class OrderSuccessComponent {
   @Output() returnToDashboard = new EventEmitter<void>();
   @Output() viewActivity = new EventEmitter<void>();
 
+  // TODO: Remove - mock order summary data, replace with the actual order response
   currentBalance: number = 142384.50;
   estimatedValue: number = 7106.00;
   estimatedFees: number = 0.00;
