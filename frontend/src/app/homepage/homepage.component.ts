@@ -33,7 +33,9 @@ import { takeUntil } from 'rxjs/operators';
 export class HomepageComponent implements OnInit, OnDestroy {
   clientName: string = '';
   accountId: string = '';
-  activeTab: string = 'news';
+  currentBalance: number = 142384.50;
+  availableForTrading: number = 12450.00;
+  activeTab: string = 'overview';
   platformStatus: string = 'Platform live status: Standard Trading Hours';
 
   // Trading modal state
@@ -56,6 +58,9 @@ export class HomepageComponent implements OnInit, OnDestroy {
   selectedInstrumentId: string = '';
   selectedTimeframeForChart: string = '90'; // default 3M
 
+  // UI state
+  isBalanceVisible: boolean = true;
+
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
@@ -66,7 +71,6 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadInstruments();
-    // Auto-refresh quotes every 5 seconds
     interval(5000)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.refreshQuotes());
@@ -86,7 +90,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
         this.refreshQuotes();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Failed to load instruments:', error);
         this.loadingInstruments = false;
       }
@@ -110,6 +114,75 @@ export class HomepageComponent implements OnInit, OnDestroy {
       }
     });
   }
+      return;
+    }
+
+    const days = Math.max(1, Math.ceil(timeframeObj.days));
+    this.apiService.getCandles(this.testInstrument.instrumentId, days).subscribe({
+      next: (candles: CandleResponse[]) => {
+        this.candles = candles;
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+        setTimeout(() => this.renderChart(), 0);
+      },
+      error: (error: any) => {
+        console.error('Failed to load candles:', error);
+        this.loadingCandles = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  renderChart() {
+    if (!this.chartContainer || this.candles.length === 0) return;
+
+    const container = this.chartContainer.nativeElement;
+    container.innerHTML = '';
+
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#1e1e1e' },
+        textColor: '#d1d5db'
+      },
+      width: container.clientWidth,
+      height: 400,
+      timeScale: { timeVisible: true, secondsVisible: true }
+    });
+
+    const candlestickSeries = chart.addSeries(CandlestickSeries, { upColor: '#26a69a', downColor: '#ef5350' });
+    const volumeSeries = chart.addSeries(HistogramSeries, { color: '#1f77b4' });
+
+    const candleData = this.candles.map((c: CandleResponse) => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close
+    }));
+
+    const volumeData = this.candles.map((c: CandleResponse) => ({
+      time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
+      value: c.volume,
+      color: c.close >= c.open ? '#26a69a' : '#ef5350'
+    }));
+
+    candlestickSeries.setData(candleData);
+    volumeSeries.setData(volumeData);
+    chart.timeScale().fitContent();
+  }
+
+  getQuote(instrumentId: string): QuoteResponse | undefined {
+    return this.instrumentQuotes.get(instrumentId);
+  }
+
+  getPriceChangeClass(changePercent: number | undefined): string {
+    if (!changePercent) return '';
+    return changePercent >= 0 ? 'price-up' : 'price-down';
+  }
+
+  toggleBalanceVisibility() {
+    this.isBalanceVisible = !this.isBalanceVisible;
+  }
 
   setActiveTab(tab: string) {
     this.activeTab = tab;
@@ -131,11 +204,12 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.isTradeModalOpen = true;
 
     this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
+        console.log('Candles received:', candles.length, 'items');
         this.tradingChartData = candles;
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load chart data:', e);
         console.error('Error details:', e.status, e.statusText, e.message);
       }
@@ -145,5 +219,11 @@ export class HomepageComponent implements OnInit, OnDestroy {
   closeTradeModal() {
     this.isTradeModalOpen = false;
     this.selectedAsset = null;
+  }
+
+  logout() {
+    this.authService.logout();
+    // Redirect to login
+    window.location.href = '/login';
   }
 }

@@ -12,29 +12,34 @@ import {
   QuotePreviewResponse,
   AccountResponse,
   OrderResponse,
-  PaginatedResponse
+  PaginatedResponse,
+  AuthResponse,
+  LoginRequest,
+  TokenValidationResponse
 } from './api.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8081/api';
+  private readonly apiUrl = 'http://localhost:8081/api';
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Login with email - verifies email exists in clients table
-   */
-  login(email: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email });
+  register(request: RegisterRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, request);
   }
 
-  /**
-   * Register a new client account
-   */
-  register(data: RegisterRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/register`, data);
+  login(request: LoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request);
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/auth/logout`, {});
+  }
+
+  validateToken(token: string): Observable<TokenValidationResponse> {
+    return this.http.post<TokenValidationResponse>(`${this.apiUrl}/auth/validate`, { token });
   }
 
   /**

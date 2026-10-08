@@ -70,12 +70,12 @@ export class TradingModalComponent implements OnChanges {
 
   loadMarketDepth() {
     this.apiService.getMarketDepth(this.instrumentId).subscribe({
-      next: (depth) => {
+      next: (depth: DepthLevel[]) => {
         this.depthLevels = depth;
         this.cdr.detectChanges();
         console.log('Market depth loaded:', depth.length, 'levels');
       },
-      error: (e) => console.error('Failed to load market depth:', e)
+      error: (e: any) => console.error('Failed to load market depth:', e)
     });
   }
 
@@ -91,12 +91,12 @@ export class TradingModalComponent implements OnChanges {
     this.selectedTimeframe = timeframeLabel;
 
     this.apiService.getCandles(this.instrumentId, timeframe.days).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
         this.candleData = candles;
         this.loadingCandles = false;
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load candles:', e);
         this.loadingCandles = false;
       }
@@ -173,7 +173,7 @@ export class TradingModalComponent implements OnChanges {
           }
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isSubmitting = false;
         console.error('Order placement failed:', error);
 

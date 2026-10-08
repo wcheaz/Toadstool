@@ -3,6 +3,7 @@ package com.neueda.leap.controller;
 import com.neueda.leap.Client;
 import com.neueda.leap.dto.LoginRequest;
 import com.neueda.leap.dto.LoginResponse;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.ClientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,10 @@ public class LoginController {
      */
     @PostMapping
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse("Admin role required"));
+        }
+
         // Validate email input
         if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
             return ResponseEntity

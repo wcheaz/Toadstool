@@ -13,8 +13,9 @@ import { AuthService } from '../core/auth.service';
   styleUrls: ['../shared/styles/auth.css', './register.component.css']
 })
 export class RegisterComponent {
-  fullName: string = '';
   email: string = '';
+  displayName: string = '';
+  username: string = '';
   password: string = '';
   confirmPassword: string = '';
   agreedToTerms: boolean = false;
@@ -29,8 +30,14 @@ export class RegisterComponent {
     this.errorMessage = '';
     this.isLoading = true;
 
-    if (!this.fullName || this.fullName.trim() === '') {
-      this.errorMessage = 'Please enter your full name';
+    if (!this.displayName || this.displayName.trim() === '') {
+      this.errorMessage = 'Please enter your display name';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.username || this.username.trim() === '') {
+      this.errorMessage = 'Please enter a username';
       this.isLoading = false;
       return;
     }
@@ -65,10 +72,10 @@ export class RegisterComponent {
       return;
     }
 
-    // Call backend API to register new client
     this.apiService.register({
-      displayName: this.fullName,
-      email: this.email,
+      email: this.email.trim(),
+      displayName: this.displayName.trim(),
+      username: this.username.trim(),
       password: this.password
     }).subscribe({
       next: (response) => {
@@ -81,14 +88,17 @@ export class RegisterComponent {
         this.router.navigate(['/homepage']);
       },
       error: (error) => {
-        // Registration failed - show error message
         this.isLoading = false;
         if (error.status === 409) {
-          this.errorMessage = 'Email already exists. Please use a different email.';
+          this.errorMessage = error.error?.message || 'That email or username is already in use.';
         } else if (error.status === 400) {
-          this.errorMessage = 'Invalid request. Please check your input and try again.';
+          this.errorMessage = error.error?.message || 'Please check your registration details.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'The backend is unavailable. Please make sure the API is running and try again.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'The backend is running but could not complete registration. Check the server and database connection, then try again.';
         } else {
-          this.errorMessage = 'Registration failed. Please try again.';
+          this.errorMessage = 'Registration failed. Please try again in a moment.';
         }
         console.error('Registration error:', error);
       }
@@ -96,8 +106,9 @@ export class RegisterComponent {
   }
 
   resetForm() {
-    this.fullName = '';
     this.email = '';
+    this.displayName = '';
+    this.username = '';
     this.password = '';
     this.confirmPassword = '';
     this.agreedToTerms = false;

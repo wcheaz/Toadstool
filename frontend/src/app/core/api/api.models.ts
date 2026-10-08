@@ -1,3 +1,32 @@
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  expiresIn: number;
+  clientId: string;
+  accountId: string;
+  displayName: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
+export interface TokenValidationResponse {
+  authenticated: boolean;
+  subject: string;
+  username: string;
+  email: string;
+  role: string;
+  tokenType: string;
+  sessionKeyId: string;
+  clientId: string;
+  accountId: string;
+  issuedAt: string;
+}
+
 export interface LoginResponse {
   clientId: string;
   email: string;

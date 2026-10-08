@@ -37,6 +37,7 @@ class ClientControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.clearAuthentication();
         mockMvc = ControllerTestSupport.buildMockMvc(new ClientController(clientService));
     }
 
@@ -44,6 +45,7 @@ class ClientControllerTest {
     @DisplayName("GET /api/clients/{clientId} returns the client payload from the YAML contract")
     void getClientReturnsClientPayload() throws Exception {
         UUID clientId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        ControllerTestSupport.authenticateClient(clientId, UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
         Client client = new Client(clientId, "client@example.com", "Alice Trader", ClientStatus.ACTIVE, CREATED_AT, UPDATED_AT);
 
         when(clientService.getClientById(clientId)).thenReturn(client);
@@ -64,6 +66,7 @@ class ClientControllerTest {
     @DisplayName("GET /api/clients supports pagination and status filtering")
     void listClientsReturnsPaginatedItems() throws Exception {
         UUID firstClientId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        ControllerTestSupport.authenticateAdmin();
         Client client = new Client(firstClientId, "active@example.com", "Active Client", ClientStatus.ACTIVE, CREATED_AT, UPDATED_AT);
 
         when(clientService.listClientsByStatus("ACTIVE", 2, 0)).thenReturn(List.of(client));
@@ -89,6 +92,7 @@ class ClientControllerTest {
     @DisplayName("PUT /api/clients/{clientId} accepts a request body and returns the updated client")
     void updateClientUsesRequestBodyContract() throws Exception {
         UUID clientId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        ControllerTestSupport.authenticateClient(clientId, UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
         Client existing = new Client(clientId, "client@example.com", "Before", ClientStatus.ACTIVE, CREATED_AT, UPDATED_AT);
         Client updated = new Client(clientId, "client@example.com", "After", ClientStatus.ACTIVE, CREATED_AT, UPDATED_AT.plusDays(1));
 

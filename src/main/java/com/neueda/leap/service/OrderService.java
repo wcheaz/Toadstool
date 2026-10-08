@@ -8,6 +8,8 @@ import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.enums.OrderSide;
 import com.neueda.leap.repository.OrderRepository;
+import com.neueda.leap.security.AuthenticatedUser;
+import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.validator.OrderValidator;
 import com.neueda.leap.validator.OrderValidationRequest;
 import com.neueda.leap.pricing.FeeStrategy;
@@ -30,6 +32,7 @@ public class OrderService {
     private final MarketStatusService marketStatusService;
     private final AccountService accountService;
     private final InstrumentService instrumentService;
+    private final TradeEventService tradeEventService;
     private final OrderValidator orderValidator;
     private final FeeStrategyFactory feeStrategyFactory;
     private final FillService fillService;
@@ -40,6 +43,7 @@ public class OrderService {
                        MarketStatusService marketStatusService,
                        AccountService accountService,
                        InstrumentService instrumentService,
+                       TradeEventService tradeEventService,
                        OrderValidator orderValidator,
                        FeeStrategyFactory feeStrategyFactory,
                        FillService fillService,
@@ -49,6 +53,7 @@ public class OrderService {
         this.marketStatusService = marketStatusService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
+        this.tradeEventService = tradeEventService;
         this.orderValidator = orderValidator;
         this.feeStrategyFactory = feeStrategyFactory;
         this.fillService = fillService;
@@ -165,6 +170,12 @@ public class OrderService {
         
         // Step 11: Set totalPrice on the order object (not persisted to DB, calculated at submission time)
         order.setTotalPrice(totalPrice);
+
+        tradeEventService.recordOrderSubmitted(
+                account.getClientId(),
+                order.getOrderId(),
+                buildOrderEventDetails(account.getClientId(), accountId, instrumentId, side, quantity, idempotencyKey)
+        );
         
         return order;
     }
@@ -176,6 +187,19 @@ public class OrderService {
         orderRepository.updateStatus(orderId, status);
     }
 
+    private String buildOrderEventDetails(UUID ownerClientId, UUID accountId, UUID instrumentId,
+                                          String side, String quantity, String idempotencyKey) {
+        AuthenticatedUser authenticatedUser = SecurityAccess.currentUser();
+        UUID authenticatedUserId = authenticatedUser != null && authenticatedUser.getClientId() != null
+                ? authenticatedUser.getClientId()
+                : ownerClientId;
+        return "{\"authenticatedUserId\":\"" + authenticatedUserId
+                + "\",\"accountId\":\"" + accountId
+                + "\",\"instrumentId\":\"" + instrumentId
+                + "\",\"side\":\"" + side
+                + "\",\"quantity\":\"" + quantity
+                + "\",\"idempotencyKey\":\"" + idempotencyKey + "\"}";
+    }
     /**
      * Execute/fill an order and update holdings and account balance.
      *

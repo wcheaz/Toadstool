@@ -59,6 +59,7 @@ class OrderControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.clearAuthentication();
         mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService, fauxnanceService, holdingsService));
     }
 
@@ -68,6 +69,7 @@ class OrderControllerTest {
         UUID accountId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID clientId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         UUID instrumentId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Order order = new Order(
                 UUID.fromString("33333333-3333-3333-3333-333333333333"),
                 accountId,
@@ -107,6 +109,7 @@ class OrderControllerTest {
         UUID accountId = UUID.fromString("44444444-4444-4444-4444-444444444444");
         UUID clientId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         UUID instrumentId = UUID.fromString("55555555-5555-5555-5555-555555555555");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Order existing = new Order(
                 UUID.fromString("66666666-6666-6666-6666-666666666666"),
                 accountId,
@@ -136,11 +139,14 @@ class OrderControllerTest {
     @DisplayName("GET /api/orders/{orderId} uses the YAML lookup path")
     void getOrderUsesYamlPath() throws Exception {
         UUID accountId = UUID.fromString("77777777-7777-7777-7777-777777777777");
+        UUID clientId = UUID.fromString("12121212-1212-1212-1212-121212121212");
         UUID orderId = UUID.fromString("88888888-8888-8888-8888-888888888888");
         UUID instrumentId = UUID.fromString("99999999-9999-9999-9999-999999999999");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Order order = new Order(orderId, accountId, instrumentId, OrderSide.BUY, new BigDecimal("3.0000000000"), "idem-999", SUBMITTED_AT);
 
         when(orderService.getOrderById(orderId)).thenReturn(order);
+        when(accountService.getAccountById(accountId)).thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, SUBMITTED_AT));
 
         mockMvc.perform(get("/api/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
@@ -157,6 +163,7 @@ class OrderControllerTest {
         UUID accountId = UUID.fromString("aaaaaaaa-1111-1111-1111-111111111111");
         UUID clientId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
         UUID instrumentId = UUID.fromString("bbbbbbbb-1111-1111-1111-111111111111");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
         Order order = new Order(
                 UUID.fromString("cccccccc-1111-1111-1111-111111111111"),
                 accountId,
@@ -189,6 +196,7 @@ class OrderControllerTest {
         UUID accountId = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
         UUID clientId = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
         UUID instrumentId = UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff");
+        ControllerTestSupport.authenticateClient(clientId, accountId);
 
         when(accountService.getAccountById(accountId)).thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, SUBMITTED_AT));
         when(instrumentService.getInstrumentById(instrumentId))
