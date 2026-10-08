@@ -1,7 +1,7 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CandleResponse } from '../../../core/api/api.models';
-import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, UTCTimestamp, IChartApi } from 'lightweight-charts';
 
 export interface ChartTimeframe {
   label: string;
@@ -20,7 +20,7 @@ export interface ChartTimeframe {
   templateUrl: './chart.component.html',
   styleUrl: './chart.component.css'
 })
-export class ChartComponent implements AfterViewInit, OnChanges {
+export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() candleData: CandleResponse[] = [];
   @Input() timeframes: ChartTimeframe[] = [];
   @Input() selectedTimeframe: string = '';
@@ -30,6 +30,19 @@ export class ChartComponent implements AfterViewInit, OnChanges {
   @Output() timeframeSelected = new EventEmitter<string>();
 
   @ViewChild('chartContainer') chartContainer: ElementRef | null = null;
+
+  private chartInstance: IChartApi | null = null;
+
+  ngOnDestroy() {
+    this.disposeChart();
+  }
+
+  private disposeChart() {
+    if (this.chartInstance) {
+      this.chartInstance.remove();
+      this.chartInstance = null;
+    }
+  }
 
   ngAfterViewInit() {
     if (this.candleData.length > 0) {
@@ -60,6 +73,7 @@ export class ChartComponent implements AfterViewInit, OnChanges {
     }
 
     const container = this.chartContainer.nativeElement;
+    this.disposeChart();
     container.innerHTML = '';
 
     const width = container.clientWidth || 400;
@@ -74,6 +88,7 @@ export class ChartComponent implements AfterViewInit, OnChanges {
       height: height,
       timeScale: { timeVisible: true, secondsVisible: false }
     });
+    this.chartInstance = chart;
 
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#26a69a',

@@ -1,4 +1,4 @@
-<div class="trading-modal-overlay" *ngIf="isOpen" (click)="closeModal()">
+<div class="trading-modal-overlay" [class.open]="isOpen" (click)="closeModal()">
   <div class="trading-modal" (click)="$event.stopPropagation()">
     <!-- Close Button -->
     <button class="close-btn" (click)="closeModal()" title="Close trading panel">

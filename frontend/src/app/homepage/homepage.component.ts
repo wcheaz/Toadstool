@@ -127,6 +127,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     };
     this.selectedInstrumentId = instrument.instrumentId;
     this.selectedTimeframeForChart = '90'; // default to 3M
+    this.tradingChartData = [];
     this.isTradeModalOpen = true;
 
     this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
