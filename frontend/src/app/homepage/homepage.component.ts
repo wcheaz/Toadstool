@@ -27,10 +27,6 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   accountId: string = '';
   currentBalance: number = 142384.50;
   availableForTrading: number = 12450.00;
-  isBalanceVisible: boolean = true;
-  activeTab: string = 'news';
-  platformStatus: string = 'Platform live status: Standard Trading Hours';
-  
   // Trading modal state
   isTradeModalOpen: boolean = false;
   selectedAsset: Asset | null = null;
@@ -73,6 +69,10 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   selectedInstrumentId: string = '';
   selectedTimeframeForChart: string = '90'; // default 3M
 
+  // UI state
+  isBalanceVisible: boolean = true;
+  activeTab: string = 'overview';
+
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
@@ -83,7 +83,6 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.loadInstruments();
-    // Auto-refresh quotes every 5 seconds
     interval(5000)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.refreshQuotes());
@@ -112,17 +111,17 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
           this.cdr.detectChanges();
           this.loadCandles(this.selectedTimeframe);
           this.apiService.getInstrumentQuote(this.testInstrument.instrumentId).subscribe({
-            next: (quote) => {
+            next: (quote: QuoteResponse) => {
               this.testPrice = quote.price;
               this.cdr.detectChanges();
             },
-            error: (e) => console.error('Test price error:', e)
+            error: (e: any) => console.error('Test price error:', e)
           });
         }
 
         this.refreshQuotes();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Failed to load instruments:', error);
         this.loadingInstruments = false;
       }
@@ -166,13 +165,13 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const days = Math.max(1, Math.ceil(timeframeObj.days));
     this.apiService.getCandles(this.testInstrument.instrumentId, days).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
         this.candles = candles;
         this.loadingCandles = false;
         this.cdr.detectChanges();
         setTimeout(() => this.renderChart(), 0);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Failed to load candles:', error);
         this.loadingCandles = false;
         this.cdr.detectChanges();
@@ -199,7 +198,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     const candlestickSeries = chart.addSeries(CandlestickSeries, { upColor: '#26a69a', downColor: '#ef5350' });
     const volumeSeries = chart.addSeries(HistogramSeries, { color: '#1f77b4' });
 
-    const candleData = this.candles.map(c => ({
+    const candleData = this.candles.map((c: CandleResponse) => ({
       time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
       open: c.open,
       high: c.high,
@@ -207,7 +206,7 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
       close: c.close
     }));
 
-    const volumeData = this.candles.map(c => ({
+    const volumeData = this.candles.map((c: CandleResponse) => ({
       time: Math.floor(new Date(c.date).getTime() / 1000) as UTCTimestamp,
       value: c.volume,
       color: c.close >= c.open ? '#26a69a' : '#ef5350'
@@ -273,11 +272,12 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isTradeModalOpen = true;
 
     this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
-      next: (candles) => {
+      next: (candles: CandleResponse[]) => {
+        console.log('Candles received:', candles.length, 'items');
         this.tradingChartData = candles;
         this.cdr.detectChanges();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Failed to load chart data:', e);
         console.error('Error details:', e.status, e.statusText, e.message);
       }
@@ -290,7 +290,14 @@ export class HomepageComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   logout() {
+    // Clear stored auth data
+    localStorage.removeItem('clientId');
+    localStorage.removeItem('clientEmail');
     localStorage.removeItem('clientName');
+    localStorage.removeItem('clientStatus');
+    localStorage.removeItem('accountId');
+    
+    // Redirect to login
     window.location.href = '/login';
   }
 }

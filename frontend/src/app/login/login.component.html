@@ -14,14 +14,28 @@
 
     <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
       <div class="form-group">
-        <label for="email">Client email</label>
+        <label for="username">Username</label>
         <input
-          type="email"
-          id="email"
+          type="text"
+          id="username"
           class="form-control"
-          [(ngModel)]="email"
-          name="email"
-          placeholder="you@example.com"
+          [(ngModel)]="username"
+          name="username"
+          placeholder="Enter your username"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter your password"
           [disabled]="isLoading"
           required
         />
@@ -64,8 +78,8 @@
       </button>
 
       <div class="form-footer">
-        <p>Don't have an account? <a routerLink="/register" class="register-link">Register</a></p>
-        <p class="admin-footer">Admin? <a routerLink="/admin-login" class="admin-link">Click Here</a></p>
+        <p><a routerLink="/register" class="admin-link">Create a client account</a></p>
+        <p><a routerLink="/admin-login" class="admin-link">Admin Login</a></p>
       </div>
     </form>
   </div>

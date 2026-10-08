@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../api.service';
+import { storeAuthSession } from '../auth-storage';
 
 @Component({
   selector: 'app-register',
@@ -12,8 +13,9 @@ import { ApiService } from '../api.service';
   styleUrl: './register.component.css'
 })
 export class RegisterComponent {
-  fullName: string = '';
   email: string = '';
+  displayName: string = '';
+  username: string = '';
   password: string = '';
   confirmPassword: string = '';
   agreedToTerms: boolean = false;
@@ -21,15 +23,21 @@ export class RegisterComponent {
   errorMessage: string = '';
   isLoading: boolean = false;
 
-  constructor(private router: Router, private apiService: ApiService) {}
+  constructor(private readonly router: Router, private readonly apiService: ApiService) {}
 
   onSubmit() {
     this.submitted = true;
     this.errorMessage = '';
     this.isLoading = true;
 
-    if (!this.fullName || this.fullName.trim() === '') {
-      this.errorMessage = 'Please enter your full name';
+    if (!this.displayName || this.displayName.trim() === '') {
+      this.errorMessage = 'Please enter your display name';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.username || this.username.trim() === '') {
+      this.errorMessage = 'Please enter a username';
       this.isLoading = false;
       return;
     }
@@ -64,33 +72,28 @@ export class RegisterComponent {
       return;
     }
 
-    // Call backend API to register new client
     this.apiService.register({
-      displayName: this.fullName,
-      email: this.email,
+      email: this.email.trim(),
+      displayName: this.displayName.trim(),
+      username: this.username.trim(),
       password: this.password
     }).subscribe({
       next: (response) => {
-        // Registration successful - store client info in localStorage
-        localStorage.setItem('clientId', response.clientId);
-        localStorage.setItem('clientEmail', response.email);
-        localStorage.setItem('clientName', response.displayName);
-        localStorage.setItem('clientStatus', response.status);
-        
-        console.log('Registration successful:', response);
-        
-        // Navigate to homepage
+        storeAuthSession(response);
         this.router.navigate(['/homepage']);
       },
       error: (error) => {
-        // Registration failed - show error message
         this.isLoading = false;
         if (error.status === 409) {
-          this.errorMessage = 'Email already exists. Please use a different email.';
+          this.errorMessage = error.error?.message || 'That email or username is already in use.';
         } else if (error.status === 400) {
-          this.errorMessage = 'Invalid request. Please check your input and try again.';
+          this.errorMessage = error.error?.message || 'Please check your registration details.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'The backend is unavailable. Please make sure the API is running and try again.';
+        } else if (error.status >= 500) {
+          this.errorMessage = 'The backend is running but could not complete registration. Check the server and database connection, then try again.';
         } else {
-          this.errorMessage = 'Registration failed. Please try again.';
+          this.errorMessage = 'Registration failed. Please try again in a moment.';
         }
         console.error('Registration error:', error);
       }
@@ -98,8 +101,9 @@ export class RegisterComponent {
   }
 
   resetForm() {
-    this.fullName = '';
     this.email = '';
+    this.displayName = '';
+    this.username = '';
     this.password = '';
     this.confirmPassword = '';
     this.agreedToTerms = false;

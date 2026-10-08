@@ -1,0 +1,45 @@
+# Test configuration for JWT authentication testing
+spring:
+  application:
+    name: trading-platform-test
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/Toadstool_test
+    username: postgres
+    password: n3u3d4!
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    table: flyway_schema_history
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.neueda.leap
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    "[com.neueda.leap]": DEBUG
+    "[org.springframework.web]": DEBUG
+
+# JWT Authentication Configuration for Testing
+auth:
+  jwt:
+    enabled: false
+    require-https: false

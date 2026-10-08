@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { ApiService } from '../api.service';
-import { timeout } from 'rxjs/operators';
+import { storeAuthSession } from '../auth-storage';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +13,7 @@ import { timeout } from 'rxjs/operators';
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
-  email: string = '';
+  username: string = '';
   password: string = '';
   rememberMe: boolean = false;
   submitted: boolean = false;
@@ -31,79 +31,41 @@ export class LoginComponent {
     this.errorMessage = '';
     this.isLoading = true;
 
-    if (!this.email || this.email.trim() === '') {
-      this.errorMessage = 'Please enter your email';
+    if (!this.username || !this.password) {
+      this.errorMessage = 'Please enter your username and password';
       this.isLoading = false;
       return;
     }
 
-    if (!this.password || this.password.trim() === '') {
-      this.errorMessage = 'Please enter your password';
-      this.isLoading = false;
-      return;
-    }
-
-    // Call backend API to verify email exists in clients table
-    // Add timeout to prevent indefinite hanging (10 seconds)
-    this.apiService.login(this.email).pipe(
-      timeout(10000)
-    ).subscribe({
+    this.apiService.login({
+      username: this.username.trim(),
+      password: this.password
+    }).subscribe({
       next: (response) => {
-        // Login successful - store client info in localStorage
-        localStorage.setItem('clientId', response.clientId);
-        localStorage.setItem('clientEmail', response.email);
-        localStorage.setItem('clientName', response.displayName);
-        localStorage.setItem('clientStatus', response.status);
-        
-        // Fetch the account ID for this client
-        this.apiService.getAccountByClientId(response.clientId).subscribe({
-          next: (account) => {
-            localStorage.setItem('accountId', account.accountId);
-            console.log('Login successful:', response);
-            console.log('Account retrieved:', account.accountId);
-            
-            // Navigate to homepage
-            this.router.navigate(['/homepage']);
-          },
-          error: (error) => {
-            this.isLoading = false;
-            console.error('Failed to fetch account:', error);
-            this.errorMessage = 'Login succeeded but account retrieval failed. Please try again.';
-          }
-        });
+        storeAuthSession(response);
+        this.router.navigate(['/homepage']);
       },
       error: (error) => {
-        // Login failed - show error message
         this.isLoading = false;
-        
-        // Handle timeout
-        if (error.name === 'TimeoutError') {
-          this.errorMessage = 'Login request timed out. Please check your connection and try again.';
-        } else if (error.status === 0) {
-          this.errorMessage = 'Cannot connect to server. Please check your internet connection.';
-        } else if (error.status === 401) {
-          this.errorMessage = 'Email not found. Please check your email and try again.';
+        if (error.status === 401) {
+          this.errorMessage = 'Invalid username or password.';
         } else if (error.status === 400) {
-          this.errorMessage = 'Invalid request. Please try again.';
+          this.errorMessage = error.error?.message || 'Please enter your username and password.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'The backend is unavailable. Please make sure the API is running and try again.';
         } else if (error.status >= 500) {
-          this.errorMessage = 'Server error. Please try again later.';
+          this.errorMessage = 'The backend is running but could not complete login. Check the server and database connection, then try again.';
         } else {
-          this.errorMessage = 'Login failed. Please try again.';
+          this.errorMessage = 'Login failed. Please try again in a moment.';
         }
-        
-        // Trigger change detection to update the UI
-        this.cdr.markForCheck();
-        
-        console.error('Login error:', error);
       }
     });
 
   }
 
   resetForm() {
-    this.email = '';
+    this.username = '';
     this.password = '';
-    this.rememberMe = false;
     this.submitted = false;
     this.errorMessage = '';
     this.isLoading = false;
