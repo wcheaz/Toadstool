@@ -2,12 +2,15 @@
    Each component imports this via styleUrls before its own stylesheet. */
 
 .logo-section {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   margin-bottom: 35px;
 }
 
 .logo-icon {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
@@ -17,7 +20,7 @@
   color: white;
   font-size: 28px;
   font-weight: bold;
-  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .brand-title {
