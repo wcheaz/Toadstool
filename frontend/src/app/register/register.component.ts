@@ -22,8 +22,18 @@ export class RegisterComponent {
   submitted: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
+  showPassword: boolean = false;
+  showConfirmPassword: boolean = false;
 
   constructor(private router: Router, private apiService: ApiService, private authService: AuthService) {}
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility() {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
 
   onSubmit() {
     this.submitted = true;

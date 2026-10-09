@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { AuthService } from '../../../core/auth.service';
 
 @Component({
@@ -9,10 +9,13 @@ import { AuthService } from '../../../core/auth.service';
   styleUrl: './top-bar.component.css'
 })
 export class TopBarComponent {
-  @Input() clientName: string = '';
+  clientName: string = '';
   @Output() profileClicked = new EventEmitter<void>();
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+    // Get display name from auth service
+    this.clientName = this.authService.getClientName();
+  }
 
   openProfile() {
     this.profileClicked.emit();

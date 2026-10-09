@@ -1,7 +1,7 @@
 ﻿<div class="app-wrapper">
-  <app-sidebar></app-sidebar>
-  <main class="main-layout">
-    <app-top-bar [clientName]="clientName" (profileClicked)="openProfileModal()"></app-top-bar>
+  <app-sidebar *ngIf="isShowingMainLayout"></app-sidebar>
+  <main class="main-layout" [class.full-width]="!isShowingMainLayout">
+    <app-top-bar *ngIf="isShowingMainLayout" (profileClicked)="openProfileModal()"></app-top-bar>
     <div class="page-content">
       <router-outlet></router-outlet>
     </div>

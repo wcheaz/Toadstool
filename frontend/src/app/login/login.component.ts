@@ -19,6 +19,7 @@ export class LoginComponent {
   submitted: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
+  showPassword: boolean = false;
 
   constructor(
     private router: Router,
@@ -26,6 +27,10 @@ export class LoginComponent {
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
 
   onSubmit() {
     this.submitted = true;
@@ -63,6 +68,7 @@ export class LoginComponent {
         } else {
           this.errorMessage = 'Login failed. Please try again in a moment.';
         }
+        this.cdr.detectChanges();
       }
     });
 
