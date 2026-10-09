@@ -103,6 +103,32 @@
     </aside>
   </div>
 
+  <!-- News Detail Modal -->
+  <div class="modal-overlay" *ngIf="selectedNewsArticle" (click)="closeNewsDetail()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <button class="modal-close" (click)="closeNewsDetail()">✕</button>
+
+      <div class="modal-body">
+        <!-- Article Details -->
+        <div class="modal-article">
+          <h2 class="modal-title">{{ selectedNewsArticle.title }}</h2>
+          <div class="modal-meta">
+            <span class="modal-source">{{ selectedNewsArticle.market }}</span>
+            <span class="modal-time">{{ selectedNewsArticle.timestamp }}</span>
+          </div>
+
+          <img *ngIf="selectedNewsArticle.imageUrl" [src]="selectedNewsArticle.imageUrl" class="modal-image" alt="Article image">
+
+          <p class="modal-description">{{ selectedNewsArticle.description }}</p>
+
+          <a *ngIf="selectedNewsArticle.sourceUrl" [href]="selectedNewsArticle.sourceUrl" target="_blank" class="modal-read-more">
+            Read Full Article on Finnhub →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Trading Modal -->
   <app-trading-modal
     [isOpen]="isTradeModalOpen"

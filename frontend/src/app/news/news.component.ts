@@ -1,10 +1,13 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth.service';
 import { CandleResponse } from '../core/api/api.models';
+import { NewsService, NewsResponse } from '../services/news.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
+import { Subscription, interval } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 interface Asset {
   instrumentId: string;
@@ -24,6 +27,8 @@ interface NewsArticle {
   impact: 'HIGH' | 'MEDIUM' | 'LOW' | 'NEUTRAL';
   assets: string[];
   market?: string;
+  sourceUrl?: string;
+  imageUrl?: string;
 }
 
 interface MarketData {
@@ -47,7 +52,7 @@ interface CalendarEvent {
   templateUrl: './news.component.html',
   styleUrl: './news.component.css'
 })
-export class NewsComponent implements OnInit {
+export class NewsComponent implements OnInit, OnDestroy {
   clientName: string = '';
   accountId: string = '';
   activeTab: string = 'all-feed';
@@ -59,63 +64,21 @@ export class NewsComponent implements OnInit {
   selectedInstrumentId: string = '';
   selectedTimeframeForChart: string = '90';
   apiError: string = '';
+  isLoadingNews: boolean = false;
+  newsLoadError: string = '';
+
+  // News detail modal state
+  selectedNewsArticle: NewsArticle | null = null;
+  selectedStockPrice: number | null = null;
 
   // News categories
-  categories = ['All Feed', 'Macro Policy', 'Earnings', 'Commodities', 'Crypto', 'Forex'];
+  categories = ['News'];
 
-  // Sample news articles
-  newsArticles: NewsArticle[] = [
-    {
-      id: '1',
-      category: 'MACRO POLICY',
-      title: 'Federal Reserve Holds Benchmark Rates Steady, Pivot Signals Calibre to Q4 Output Strength',
-      description: 'Chair Powell reaffirmed the committee\'s steady-state posture on the labor-session plot, suggesting that strong policy into the upcoming weeks and months could trigger fresh 25bp adjustment matrix as done December.',
-      timestamp: '16 minutes ago',
-      impact: 'HIGH',
-      assets: ['NEMS', 'USDT', 'BTC'],
-      market: 'FIXED INCOME • 16 MINUTES • Recent Treasuries Slides Neath'
-    },
-    {
-      id: '2',
-      category: 'MACRO POLICY',
-      title: 'Bank of Tokyo Government Bond Purchase Volume Guidelines',
-      description: 'In an unexpected policy shift, the Bank of Tokyo calibrated bond-buying bands to contain anomalous margin compression, dampening regional retail consumer policy.',
-      timestamp: 'implied asset',
-      impact: 'MEDIUM',
-      assets: ['JPY', 'JGB'],
-      market: 'FIXED INCOME'
-    },
-    {
-      id: '3',
-      category: 'EARNINGS',
-      title: 'Silicon Core Yield Metrics Rise Beyond Forecasts in Q3',
-      description: 'Industrial manufacturers register their blood-core curve, revolving outstanding supply bottlenecks across primary micro-scale suppliers.',
-      timestamp: 'Estimated Asset',
-      impact: 'MEDIUM',
-      assets: ['NEMS'],
-      market: 'EARNINGS'
-    },
-    {
-      id: '4',
-      category: 'COMMODITIES',
-      title: 'Crude Supply Chains Normalise Following Maritime Accord Re-alignment',
-      description: 'Strategic transit lines resume unified daily vessel allocations, prompting consolidation of flush-month energy commodity derivatives over recent support levels.',
-      timestamp: 'Expected',
-      impact: 'MEDIUM',
-      assets: ['OIL', 'BRT'],
-      market: 'COMMODITIES'
-    },
-    {
-      id: '5',
-      category: 'CRYPTO',
-      title: 'Consolidated Vault Inflows Stabilise Amid Low OTC Volatility Periods',
-      description: 'Network liquidity wholesale velocity desuture liquidation constraints impacting with fixed custody exits, reducing monetary liquidity flight parameters to recent lows.',
-      timestamp: 'Network',
-      impact: 'LOW',
-      assets: ['BTC'],
-      market: 'CRYPTO'
-    }
-  ];
+  // Live news articles
+  newsArticles: NewsArticle[] = [];
+  rawNewsData: NewsResponse[] = [];
+
+  private newsRefreshSubscription: Subscription | null = null;
 
   // Live Market Sentiment
   marketSentiment = {
@@ -179,13 +142,97 @@ export class NewsComponent implements OnInit {
     }
   ];
 
-  constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
+  constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private newsService: NewsService, private cdr: ChangeDetectorRef) {
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
   }
 
   ngOnInit() {
-    // Initialize component
+    this.loadNews();
+
+    // Auto-refresh news every 5 minutes
+    this.newsRefreshSubscription = interval(300000)
+      .pipe(switchMap(() => this.newsService.getLatestNews()))
+      .subscribe({
+        next: (news) => {
+          this.rawNewsData = news;
+          this.convertNewsToArticles(news);
+          this.newsLoadError = '';
+          this.cdr.detectChanges();
+        },
+        error: (e) => {
+          console.error('Failed to auto-refresh news:', e);
+        }
+      });
+  }
+
+  ngOnDestroy() {
+    if (this.newsRefreshSubscription) {
+      this.newsRefreshSubscription.unsubscribe();
+    }
+  }
+
+  private loadNews() {
+    this.isLoadingNews = true;
+    this.newsLoadError = '';
+
+    this.newsService.getLatestNews().subscribe({
+      next: (news) => {
+        this.rawNewsData = news;
+        this.convertNewsToArticles(news);
+        this.isLoadingNews = false;
+        this.cdr.detectChanges();
+      },
+      error: (e) => {
+        console.error('Failed to load news:', e);
+        this.newsLoadError = 'Failed to load news. Please try again later.';
+        this.isLoadingNews = false;
+        this.newsArticles = [];
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private convertNewsToArticles(newsResponses: NewsResponse[]): void {
+    this.newsArticles = newsResponses.map((news, index) => ({
+      id: news.newsId,
+      category: news.category === 'company' ? 'Company News' : 'Market News',
+      title: news.headline,
+      description: news.summary || '',
+      timestamp: this.formatTimestamp(news.publishedTimestamp),
+      impact: this.getImpactLevel(news.source),
+      assets: [news.symbol],
+      market: `${news.source} • ${this.formatTimestamp(news.publishedTimestamp)}`,
+      sourceUrl: news.sourceUrl,
+      imageUrl: news.imageUrl
+    }));
+  }
+
+  private formatTimestamp(timestamp: number): string {
+    if (!timestamp) return 'Recently';
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
+  }
+
+  private getImpactLevel(source: string): 'HIGH' | 'MEDIUM' | 'LOW' | 'NEUTRAL' {
+    const sourceUpper = (source || '').toUpperCase();
+    if (sourceUpper.includes('REUTERS') || sourceUpper.includes('BLOOMBERG') || sourceUpper.includes('CNBC')) {
+      return 'HIGH';
+    }
+    if (sourceUpper.includes('SEEKING ALPHA') || sourceUpper.includes('INVESTOR')) {
+      return 'MEDIUM';
+    }
+    return 'LOW';
   }
 
   selectTab(category: string) {
@@ -194,20 +241,7 @@ export class NewsComponent implements OnInit {
   }
 
   get filteredNewsArticles(): NewsArticle[] {
-    if (this.activeTab === 'all-feed') {
-      return this.newsArticles;
-    }
-
-    const categoryMap: { [key: string]: string } = {
-      'macro-policy': 'MACRO POLICY',
-      'earnings': 'EARNINGS',
-      'commodities': 'COMMODITIES',
-      'crypto': 'CRYPTO',
-      'forex': 'FOREX'
-    };
-
-    const targetCategory = categoryMap[this.activeTab];
-    return this.newsArticles.filter(article => article.category === targetCategory);
+    return this.newsArticles;
   }
 
   navigateTo(route: string) {
@@ -290,6 +324,37 @@ export class NewsComponent implements OnInit {
       default:
         return '#6b7280';
     }
+  }
+
+  openNewsDetail(article: NewsArticle) {
+    this.selectedNewsArticle = article;
+    this.selectedStockPrice = null;
+    this.fetchStockPrice(article.assets[0]);
+  }
+
+  closeNewsDetail() {
+    this.selectedNewsArticle = null;
+    this.selectedStockPrice = null;
+  }
+
+  private fetchStockPrice(symbol: string) {
+    this.apiService.getCandles(this.getInstrumentIdBySymbol(symbol), 1).subscribe({
+      next: (candles) => {
+        if (candles && candles.length > 0) {
+          this.selectedStockPrice = candles[candles.length - 1].close;
+        }
+      },
+      error: (e) => {
+        console.error('Failed to fetch stock price:', e);
+        this.selectedStockPrice = null;
+      }
+    });
+  }
+
+  tradeSelectedStock(symbol: string) {
+    // Close news modal and open trading modal for the selected stock
+    this.closeNewsDetail();
+    this.openTradeModal(symbol, this.selectedStockPrice?.toString() || '0');
   }
 
   getImpactBgColor(impact: string): string {
