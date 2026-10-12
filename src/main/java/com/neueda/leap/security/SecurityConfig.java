@@ -82,6 +82,9 @@ public class SecurityConfig {
                 .requestMatchers("/error", "/error/**").permitAll()
                 .requestMatchers("/api/health", "/api/health/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+            // Role-protected admin/API operations
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/login/**").hasRole("ADMIN")
                 // Require authentication for every other API endpoint
                 .anyRequest().authenticated()
         )

@@ -3,11 +3,16 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface AdminLoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   expiresIn: number;
-  clientId: string;
-  accountId: string;
+  clientId: string | null;
+  accountId: string | null;
   displayName: string;
   username: string;
   email: string;

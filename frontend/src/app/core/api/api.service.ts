@@ -15,6 +15,7 @@ import {
   PaginatedResponse,
   AuthResponse,
   LoginRequest,
+  AdminLoginRequest,
   TokenValidationResponse
 } from './api.models';
 
@@ -32,6 +33,10 @@ export class ApiService {
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request);
+  }
+
+  adminLogin(request: AdminLoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/admin/login`, request);
   }
 
   logout(): Observable<void> {
