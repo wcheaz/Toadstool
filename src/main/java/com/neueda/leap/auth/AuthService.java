@@ -6,6 +6,7 @@ import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.ClientStatus;
 import com.neueda.leap.mapper.AccountMapper;
 import com.neueda.leap.mapper.ClientMapper;
+import com.neueda.leap.mapper.LoginEventMapper;
 import com.neueda.leap.security.JwtAuthenticationFilter;
 import com.neueda.leap.security.JwtTokenService.IssuedAccessToken;
 import com.neueda.leap.security.JwtTokenService;
@@ -17,12 +18,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -30,21 +34,25 @@ public class AuthService {
     private final ClientMapper clientMapper;
     private final AccountMapper accountMapper;
     private final AuthCredentialMapper authCredentialMapper;
+    private final LoginEventMapper loginEventMapper;
     private final SessionKeyService sessionKeyService;
     private final JwtTokenService jwtTokenService;
     private final JwtTokenValidator jwtTokenValidator;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
     public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AuthCredentialMapper authCredentialMapper,
-                       SessionKeyService sessionKeyService, JwtTokenService jwtTokenService,
+                       LoginEventMapper loginEventMapper, SessionKeyService sessionKeyService, JwtTokenService jwtTokenService,
                        JwtTokenValidator jwtTokenValidator, PasswordEncoder passwordEncoder) {
         this.clientMapper = clientMapper;
         this.accountMapper = accountMapper;
         this.authCredentialMapper = authCredentialMapper;
+        this.loginEventMapper = loginEventMapper;
         this.sessionKeyService = sessionKeyService;
         this.jwtTokenService = jwtTokenService;
         this.jwtTokenValidator = jwtTokenValidator;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Transactional
@@ -52,9 +60,11 @@ public class AuthService {
         AuthRegisterRequest normalizedRequest = normalizeRegisterRequest(request);
         validateRegisterRequest(normalizedRequest);
         if (clientMapper.selectClientByEmail(normalizedRequest.getEmail()) != null) {
+            recordLoginEvent(null, normalizedRequest.getEmail(), "FAILURE", "Email already registered");
             throw new AuthApiException(HttpStatus.CONFLICT, "Email is already registered");
         }
         if (authCredentialMapper.selectByUsername(normalizedRequest.getUsername()) != null) {
+            recordLoginEvent(null, normalizedRequest.getEmail(), "FAILURE", "Username already registered");
             throw new AuthApiException(HttpStatus.CONFLICT, "Username is already registered");
         }
 
@@ -77,6 +87,8 @@ public class AuthService {
         account.setAccountId(accountId);
         account.setClientId(clientId);
         account.setStatus(AccountStatus.ACTIVE);
+
+        recordLoginEvent(clientId, normalizedRequest.getEmail(), "SUCCESS", "Registration successful");
         return issueAuthResponse(client, account, normalizedRequest.getUsername(), credentialId);
     }
 
@@ -85,6 +97,10 @@ public class AuthService {
         validateLoginRequest(normalizedRequest);
         AuthCredential credential = authCredentialMapper.selectByUsername(normalizedRequest.getUsername());
         if (credential == null || !passwordEncoder.matches(normalizedRequest.getPassword(), credential.getPasswordHash())) {
+            Client attemptedClient = credential != null ? clientMapper.selectClientById(credential.getClientId()) : null;
+            recordLoginEvent(attemptedClient != null ? attemptedClient.getClientId() : null,
+                           attemptedClient != null ? attemptedClient.getEmail() : normalizedRequest.getUsername(),
+                           "FAILURE", "Invalid username or password");
             throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
 
@@ -92,9 +108,11 @@ public class AuthService {
         Client client = clientMapper.selectClientById(credential.getClientId());
         List<Account> accounts = accountMapper.selectAccountsByClientId(credential.getClientId(), 1, 0);
         if (accounts.isEmpty()) {
+            recordLoginEvent(client.getClientId(), client.getEmail(), "FAILURE", "Account not found for credential");
             throw new IllegalStateException("Account not found for credential");
         }
         Account account = accounts.get(0);
+        recordLoginEvent(client.getClientId(), client.getEmail(), "SUCCESS", null);
         return issueAuthResponse(client, account, credential.getUsername(), credential.getCredentialId());
     }
 
@@ -264,6 +282,19 @@ public class AuthService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void recordLoginEvent(UUID clientId, String email, String outcome, String failureReason) {
+        try {
+            Map<String, Object> details = new HashMap<>();
+            if (failureReason != null) {
+                details.put("reason", failureReason);
+            }
+            String detailsJson = objectMapper.writeValueAsString(details);
+            loginEventMapper.insertLoginEvent(clientId, email, outcome, detailsJson);
+        } catch (Exception e) {
+            System.err.println("Failed to record login event: " + e.getMessage());
+        }
     }
 
 }
