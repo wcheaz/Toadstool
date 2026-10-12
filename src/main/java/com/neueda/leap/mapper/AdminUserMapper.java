@@ -15,22 +15,26 @@ import java.util.UUID;
 @Mapper
 public interface AdminUserMapper {
 
-    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, role, status, created_at as createdAt, updated_at as updatedAt " +
+    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, password_hash as passwordHash, role, status, created_at as createdAt, updated_at as updatedAt " +
             "FROM trading.admin_users WHERE admin_user_id = #{adminUserId}")
     AdminUser selectAdminUserById(@Param("adminUserId") UUID adminUserId);
 
-    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, role, status, created_at as createdAt, updated_at as updatedAt " +
+    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, password_hash as passwordHash, role, status, created_at as createdAt, updated_at as updatedAt " +
             "FROM trading.admin_users WHERE email = #{email}")
     AdminUser selectAdminUserByEmail(@Param("email") String email);
 
-    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, role, status, created_at as createdAt, updated_at as updatedAt " +
+    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, password_hash as passwordHash, role, status, created_at as createdAt, updated_at as updatedAt " +
+            "FROM trading.admin_users WHERE email = #{email} AND status = 'ACTIVE'")
+    AdminUser selectActiveAdminUserByEmail(@Param("email") String email);
+
+    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, password_hash as passwordHash, role, status, created_at as createdAt, updated_at as updatedAt " +
             "FROM trading.admin_users ORDER BY created_at DESC LIMIT #{limit} OFFSET #{offset}")
     List<AdminUser> selectAllAdminUsers(@Param("limit") int limit, @Param("offset") int offset);
 
     @Select("SELECT COUNT(*) FROM trading.admin_users")
     int countAllAdminUsers();
 
-    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, role, status, created_at as createdAt, updated_at as updatedAt " +
+    @Select("SELECT admin_user_id as adminUserId, email, display_name as displayName, password_hash as passwordHash, role, status, created_at as createdAt, updated_at as updatedAt " +
             "FROM trading.admin_users WHERE role = #{role} ORDER BY created_at DESC LIMIT #{limit} OFFSET #{offset}")
     List<AdminUser> selectAdminUsersByRole(@Param("role") String role, @Param("limit") int limit, @Param("offset") int offset);
 

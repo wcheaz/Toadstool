@@ -12,10 +12,18 @@ export class AuthService {
    * Store client info in localStorage after login/registration
    */
   storeClientSession(response: AuthResponse): void {
-    localStorage.setItem('clientId', response.clientId);
+    if (response.clientId) {
+      localStorage.setItem('clientId', response.clientId);
+    } else {
+      localStorage.removeItem('clientId');
+    }
     localStorage.setItem('clientEmail', response.email);
     localStorage.setItem('clientName', response.displayName);
-    localStorage.setItem('accountId', response.accountId);
+    if (response.accountId) {
+      localStorage.setItem('accountId', response.accountId);
+    } else {
+      localStorage.removeItem('accountId');
+    }
     localStorage.setItem('accessToken', response.accessToken);
   }
 

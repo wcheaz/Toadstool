@@ -114,7 +114,7 @@ class OrderControllerTest {
                 UUID.fromString("66666666-6666-6666-6666-666666666666"),
                 accountId,
                 instrumentId,
-                OrderSide.SELL,
+                OrderSide.BUY,
                 new BigDecimal("1.0000000000"),
                 "dup-key",
                 SUBMITTED_AT
@@ -128,7 +128,7 @@ class OrderControllerTest {
         mockMvc.perform(post("/api/accounts/{accountId}/orders", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "dup-key")
-                        .content("{\"instrumentId\":\"" + instrumentId + "\",\"side\":\"SELL\",\"quantity\":\"1.0000000000\"}"))
+                        .content("{\"instrumentId\":\"" + instrumentId + "\",\"side\":\"BUY\",\"quantity\":\"1.0000000000\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.orderId").value(existing.getOrderId().toString()))
                 .andExpect(jsonPath("$.idempotencyKey").value("dup-key"))

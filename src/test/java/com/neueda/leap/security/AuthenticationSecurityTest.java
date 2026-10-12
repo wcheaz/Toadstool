@@ -5,7 +5,6 @@ import com.neueda.leap.auth.AuthResponse;
 import com.neueda.leap.auth.TokenValidationResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,14 +19,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
@@ -37,16 +33,27 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = ToadstoolApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "spring.datasource.url=jdbc:postgresql://localhost:5432/toadstool_db",
+    "spring.datasource.username=toadstool_user",
+    "spring.datasource.password=toadstool_password",
+    "spring.flyway.url=jdbc:postgresql://localhost:5432/toadstool_db",
+    "spring.flyway.user=toadstool_user",
+    "spring.flyway.password=toadstool_password"
+})
 @DisplayName("Authentication Security Tests")
 class AuthenticationSecurityTest {
 
     private static final KeyPair TOKEN_SIGNING_KEYS = generateKeyPair();
     private static final String PLATFORM_ACTIVITY_PATH = "/api/admin/analytics/platform-activity";
-    private static final String ADMIN_JDBC_URL = "jdbc:postgresql://localhost:5432/postgres";
-    private static final String TEST_DB_NAME = "toadstool_auth_" + UUID.randomUUID().toString().replace("-", "");
-    private static final String TEST_JDBC_URL = "jdbc:postgresql://localhost:5432/" + TEST_DB_NAME;
-    private static final String DB_USERNAME = "postgres";
-    private static final String DB_PASSWORD = "n3u3d4!";
+    private static final String ADMIN_PROBE_PATH = "/api/admin/probe";
+    private static final String SEEDED_ADMIN_EMAIL = "david.admin@neueda.com";
+    private static final String SEEDED_ADMIN_PASSWORD = "Admin123!";
+    private static final String TEST_DB_HOST = config("TEST_DB_HOST", "localhost");
+    private static final String TEST_DB_PORT = config("TEST_DB_PORT", "5432");
+    private static final String TEST_DB_NAME = config("TEST_DB_NAME", "toadstool_db");
+    private static final String TEST_DB_USERNAME = config("TEST_DB_USERNAME", "toadstool_user");
+    private static final String TEST_DB_PASSWORD = config("TEST_DB_PASSWORD", "toadstool_password");
 
     @LocalServerPort
     private int port;
@@ -55,28 +62,15 @@ class AuthenticationSecurityTest {
 
     @DynamicPropertySource
     static void registerJwtProperties(DynamicPropertyRegistry registry) {
-        recreateTestDatabase();
         registry.add("auth.jwt.enabled", () -> true);
         registry.add("auth.jwt.public-key",
                 () -> Base64.getEncoder().encodeToString(TOKEN_SIGNING_KEYS.getPublic().getEncoded()));
         registry.add("auth.jwt.private-key",
                 () -> Base64.getEncoder().encodeToString(TOKEN_SIGNING_KEYS.getPrivate().getEncoded()));
-        registry.add("spring.datasource.url", () -> TEST_JDBC_URL);
-        registry.add("spring.datasource.username", () -> DB_USERNAME);
-        registry.add("spring.datasource.password", () -> DB_PASSWORD);
-    }
-
-    @AfterAll
-    static void cleanUpTestDatabase() {
-        try (Connection connection = DriverManager.getConnection(ADMIN_JDBC_URL, DB_USERNAME, DB_PASSWORD);
-             Statement statement = connection.createStatement()) {
-            connection.setAutoCommit(true);
-            statement.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '" + TEST_DB_NAME
-                    + "' AND pid <> pg_backend_pid()");
-            statement.execute("DROP DATABASE IF EXISTS " + TEST_DB_NAME);
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to drop temporary authentication test database " + TEST_DB_NAME, e);
-        }
+        registry.add("spring.datasource.url",
+            () -> "jdbc:postgresql://" + TEST_DB_HOST + ":" + TEST_DB_PORT + "/" + TEST_DB_NAME);
+        registry.add("spring.datasource.username", () -> TEST_DB_USERNAME);
+        registry.add("spring.datasource.password", () -> TEST_DB_PASSWORD);
     }
 
     @Test
@@ -250,6 +244,53 @@ class AuthenticationSecurityTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 
+    @Test
+    @DisplayName("Client JWTs cannot access admin probe endpoint")
+    void clientJwtCannotAccessAdminProbeEndpoint() {
+    RegisteredUser registeredUser = registerUser();
+
+    ResponseEntity<String> response = restTemplate.exchange(
+        url(ADMIN_PROBE_PATH),
+        HttpMethod.GET,
+        new HttpEntity<>(authHeaders(registeredUser.authResponse().getAccessToken())),
+        String.class
+    );
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Admin login can access admin probe endpoint")
+    void adminLoginCanAccessAdminProbeEndpoint() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
+        url("/api/auth/admin/login"),
+        HttpMethod.POST,
+        new HttpEntity<>(
+            "{\"email\":\"" + SEEDED_ADMIN_EMAIL
+                + "\",\"password\":\"" + SEEDED_ADMIN_PASSWORD + "\"}",
+            headers
+        ),
+        AuthResponse.class
+    );
+
+    assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+    assertNotNull(loginResponse.getBody());
+    assertNotNull(loginResponse.getBody().getAccessToken());
+    assertEquals("ADMIN", loginResponse.getBody().getRole());
+
+    ResponseEntity<String> probeResponse = restTemplate.exchange(
+        url(ADMIN_PROBE_PATH),
+        HttpMethod.GET,
+        new HttpEntity<>(authHeaders(loginResponse.getBody().getAccessToken())),
+        String.class
+    );
+
+    assertEquals(HttpStatus.OK, probeResponse.getStatusCode());
+    }
+
     private String generateValidToken() {
         return Jwts.builder()
                 .setSubject(UUID.randomUUID().toString())
@@ -307,15 +348,16 @@ class AuthenticationSecurityTest {
         return new RegisteredUser(username, email, response.getBody());
     }
 
-    private static void recreateTestDatabase() {
-        try (Connection connection = DriverManager.getConnection(ADMIN_JDBC_URL, DB_USERNAME, DB_PASSWORD);
-             Statement statement = connection.createStatement()) {
-            connection.setAutoCommit(true);
-            statement.execute("DROP DATABASE IF EXISTS " + TEST_DB_NAME);
-            statement.execute("CREATE DATABASE " + TEST_DB_NAME);
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to create temporary authentication test database " + TEST_DB_NAME, e);
+    private static String config(String key, String defaultValue) {
+        String sysValue = System.getProperty(key);
+        if (sysValue != null && !sysValue.isBlank()) {
+            return sysValue;
         }
+        String envValue = System.getenv(key);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        return defaultValue;
     }
 
     private record RegisteredUser(String username, String email, AuthResponse authResponse) {
