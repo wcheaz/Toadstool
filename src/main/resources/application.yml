@@ -19,7 +19,7 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migrations
     table: flyway_schema_history
     validateOnMigrate: false

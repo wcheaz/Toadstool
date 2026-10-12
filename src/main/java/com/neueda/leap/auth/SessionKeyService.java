@@ -14,12 +14,12 @@ public class SessionKeyService {
         this.authSessionMapper = authSessionMapper;
     }
 
-    public void createSession(UUID sessionKeyId, UUID credentialId, UUID accountId,
+    public void createSession(UUID sessionKeyId, UUID credentialId, UUID clientId,
                               OffsetDateTime issuedAt, OffsetDateTime accessTokenExpiresAt) {
         authSessionMapper.insertSession(
                 sessionKeyId,
                 credentialId,
-                accountId,
+                clientId,
                 issuedAt,
                 accessTokenExpiresAt,
                 issuedAt

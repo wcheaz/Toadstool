@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -64,7 +65,7 @@ public class AuthService {
 
         clientMapper.insertClient(clientId, normalizedRequest.getEmail(), normalizedRequest.getDisplayName(), ClientStatus.ACTIVE.name());
         accountMapper.insertAccountWithId(accountId, clientId, AccountStatus.ACTIVE.name());
-        authCredentialMapper.insertCredential(credentialId, accountId, normalizedRequest.getUsername(), encodedPassword);
+        authCredentialMapper.insertCredential(credentialId, clientId, normalizedRequest.getUsername(), encodedPassword);
 
         Client client = new Client();
         client.setClientId(clientId);
@@ -88,11 +89,12 @@ public class AuthService {
         }
 
         authCredentialMapper.markLastLogin(credential.getCredentialId());
-        Account account = accountMapper.selectAccountById(credential.getAccountId());
-        if (account == null) {
+        Client client = clientMapper.selectClientById(credential.getClientId());
+        List<Account> accounts = accountMapper.selectAccountsByClientId(credential.getClientId(), 1, 0);
+        if (accounts.isEmpty()) {
             throw new IllegalStateException("Account not found for credential");
         }
-        Client client = clientMapper.selectClientById(account.getClientId());
+        Account account = accounts.get(0);
         return issueAuthResponse(client, account, credential.getUsername(), credential.getCredentialId());
     }
 
@@ -128,7 +130,7 @@ public class AuthService {
         sessionKeyService.createSession(
                 sessionKeyId,
                 credentialId,
-                account.getAccountId(),
+                client.getClientId(),
                 issuedAt,
                 OffsetDateTime.ofInstant(issuedAccessToken.getAccessTokenExpiresAt(), ZoneOffset.UTC)
         );

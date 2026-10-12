@@ -6,7 +6,7 @@ import java.util.UUID;
 public class AuthCredential {
 
     private UUID credentialId;
-    private UUID accountId;
+    private UUID clientId;
     private String username;
     private String passwordHash;
     private OffsetDateTime createdAt;
@@ -21,12 +21,12 @@ public class AuthCredential {
         this.credentialId = credentialId;
     }
 
-    public UUID getAccountId() {
-        return accountId;
+    public UUID getClientId() {
+        return clientId;
     }
 
-    public void setAccountId(UUID accountId) {
-        this.accountId = accountId;
+    public void setClientId(UUID clientId) {
+        this.clientId = clientId;
     }
 
     public String getUsername() {

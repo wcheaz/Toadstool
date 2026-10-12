@@ -163,6 +163,32 @@ class AuthenticationSecurityTest {
     }
 
     @Test
+    @DisplayName("Registered users can log in again and still receive valid JWTs")
+    void loginIssuesJwtForClientCredential() {
+        RegisteredUser registeredUser = registerUser();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<AuthResponse> loginResponse = restTemplate.exchange(
+                url("/api/auth/login"),
+                HttpMethod.POST,
+                new HttpEntity<>(
+                        "{\"username\":\"" + registeredUser.username()
+                                + "\",\"password\":\"Password123!\"}",
+                        headers
+                ),
+                AuthResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
+        assertNotNull(loginResponse.getBody());
+        assertNotNull(loginResponse.getBody().getAccessToken());
+        assertEquals(registeredUser.authResponse().getClientId(), loginResponse.getBody().getClientId());
+        assertEquals(registeredUser.authResponse().getAccountId(), loginResponse.getBody().getAccountId());
+    }
+
+    @Test
     @DisplayName("A client token can access only its own client data and not another client's")
     void clientTokenCanAccessOnlyOwnedData() {
         RegisteredUser firstUser = registerUser();
