@@ -4,6 +4,7 @@ import com.neueda.leap.AdminUser;
 import com.neueda.leap.enums.AdminRole;
 import com.neueda.leap.enums.AdminUserStatus;
 import com.neueda.leap.service.AdminUserService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,13 @@ class AdminUserControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.authenticateAdmin();
         mockMvc = ControllerTestSupport.buildMockMvc(new AdminUserController(adminUserService));
+    }
+
+    @AfterEach
+    void tearDown() {
+        ControllerTestSupport.clearAuthentication();
     }
 
     @Test

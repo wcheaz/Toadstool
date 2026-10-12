@@ -8,9 +8,9 @@ spring:
       write-dates-as-timestamps: false
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/Toadstool_test
-    username: postgres
-    password: n3u3d4!
+    url: jdbc:postgresql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:5432}/${TEST_DB_NAME:toadstool_db}
+    username: ${TEST_DB_USERNAME:toadstool_user}
+    password: ${TEST_DB_PASSWORD:toadstool_password}
     driver-class-name: org.postgresql.Driver
 
   jpa:

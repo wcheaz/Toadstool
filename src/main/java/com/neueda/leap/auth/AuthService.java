@@ -1,10 +1,14 @@
 package com.neueda.leap.auth;
 
 import com.neueda.leap.Account;
+import com.neueda.leap.AdminUser;
 import com.neueda.leap.Client;
+import com.neueda.leap.enums.AdminRole;
 import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.ClientStatus;
+import com.neueda.leap.enums.AdminUserStatus;
 import com.neueda.leap.mapper.AccountMapper;
+import com.neueda.leap.mapper.AdminUserMapper;
 import com.neueda.leap.mapper.ClientMapper;
 import com.neueda.leap.security.JwtAuthenticationFilter;
 import com.neueda.leap.security.JwtTokenService.IssuedAccessToken;
@@ -29,17 +33,20 @@ public class AuthService {
 
     private final ClientMapper clientMapper;
     private final AccountMapper accountMapper;
+    private final AdminUserMapper adminUserMapper;
     private final AuthCredentialMapper authCredentialMapper;
     private final SessionKeyService sessionKeyService;
     private final JwtTokenService jwtTokenService;
     private final JwtTokenValidator jwtTokenValidator;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AuthCredentialMapper authCredentialMapper,
+    public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AdminUserMapper adminUserMapper,
+                       AuthCredentialMapper authCredentialMapper,
                        SessionKeyService sessionKeyService, JwtTokenService jwtTokenService,
                        JwtTokenValidator jwtTokenValidator, PasswordEncoder passwordEncoder) {
         this.clientMapper = clientMapper;
         this.accountMapper = accountMapper;
+        this.adminUserMapper = adminUserMapper;
         this.authCredentialMapper = authCredentialMapper;
         this.sessionKeyService = sessionKeyService;
         this.jwtTokenService = jwtTokenService;
@@ -96,6 +103,48 @@ public class AuthService {
         }
         Account account = accounts.get(0);
         return issueAuthResponse(client, account, credential.getUsername(), credential.getCredentialId());
+    }
+
+    public AuthResponse adminLogin(AdminLoginRequest request) {
+        AdminLoginRequest normalizedRequest = normalizeAdminLoginRequest(request);
+        validateAdminLoginRequest(normalizedRequest);
+
+        AdminUser adminUser = adminUserMapper.selectActiveAdminUserByEmail(normalizedRequest.getEmail());
+        if (adminUser == null || !passwordEncoder.matches(normalizedRequest.getPassword(), adminUser.getPasswordHash())) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid admin email or password");
+        }
+
+        if (adminUser.getRole() != AdminRole.ADMIN) {
+            throw new AuthApiException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+        if (adminUser.getStatus() != AdminUserStatus.ACTIVE) {
+            throw new AuthApiException(HttpStatus.FORBIDDEN, "Admin user is not active");
+        }
+
+        OffsetDateTime issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        IssuedAccessToken issuedAccessToken = jwtTokenService.issueAccessToken(
+                null,
+                adminUser.getAdminUserId(),
+                null,
+                adminUser.getEmail(),
+                adminUser.getEmail(),
+                "ADMIN"
+        );
+
+        if (issuedAccessToken.getAccessToken() == null) {
+            throw new IllegalStateException("JWT authentication is disabled");
+        }
+
+        return new AuthResponse(
+                issuedAccessToken.getAccessToken(),
+                Duration.between(issuedAt.toInstant(), issuedAccessToken.getAccessTokenExpiresAt()).getSeconds(),
+                null,
+                null,
+                adminUser.getDisplayName(),
+                adminUser.getEmail(),
+                adminUser.getEmail(),
+                "ADMIN"
+        );
     }
 
     private AuthResponse issueAuthResponse(Client client, Account account, String username, UUID credentialId) {
@@ -169,6 +218,13 @@ public class AuthService {
         if (request == null || request.getUsername() == null || request.getUsername().isBlank()
                 || request.getPassword() == null || request.getPassword().isBlank()) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "Username and password are required");
+        }
+    }
+
+    private void validateAdminLoginRequest(AdminLoginRequest request) {
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()
+                || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new AuthApiException(HttpStatus.BAD_REQUEST, "Admin email and password are required");
         }
     }
 
@@ -253,6 +309,17 @@ public class AuthService {
 
         AuthLoginRequest normalized = new AuthLoginRequest();
         normalized.setUsername(trimToNull(request.getUsername()));
+        normalized.setPassword(request.getPassword());
+        return normalized;
+    }
+
+    private AdminLoginRequest normalizeAdminLoginRequest(AdminLoginRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        AdminLoginRequest normalized = new AdminLoginRequest();
+        normalized.setEmail(trimToNull(request.getEmail()));
         normalized.setPassword(request.getPassword());
         return normalized;
     }

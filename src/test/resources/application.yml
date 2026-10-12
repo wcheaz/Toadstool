@@ -1,14 +1,14 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: trading-platform
 
   datasource:
-    # Connects to shared VM database via SSH tunnel
-    # Prerequisites: SSH tunnel must be running:
-    # ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
-    url: jdbc:postgresql://localhost:5432/toadstool_db
-    username: toadstool_user
-    password: toadstool_password
+    # Uses env vars so test DB settings are machine-specific and not hardcoded.
+    url: jdbc:postgresql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:5432}/${TEST_DB_NAME:toadstool_db}
+    username: ${TEST_DB_USERNAME:toadstool_user}
+    password: ${TEST_DB_PASSWORD:toadstool_password}
     driver-class-name: org.postgresql.Driver
 
   jpa:
