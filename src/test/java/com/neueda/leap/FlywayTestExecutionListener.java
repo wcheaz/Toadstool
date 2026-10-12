@@ -40,7 +40,7 @@ public class FlywayTestExecutionListener extends AbstractTestExecutionListener {
             
             Flyway flyway = Flyway.configure()
                     .dataSource(dataSource)
-                    .locations("classpath:db/migration")
+                    .locations("classpath:db/migrations")
                     .cleanDisabled(false)
                     .validateOnMigrate(false)
                     .outOfOrder(true)

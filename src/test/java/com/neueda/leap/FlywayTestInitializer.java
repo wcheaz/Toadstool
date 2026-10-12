@@ -21,7 +21,7 @@ public class FlywayTestInitializer implements ApplicationContextInitializer<Conf
         // Configure and run Flyway
         Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
-                .locations("classpath:db/migration")
+                .locations("classpath:db/migrations")
                 .cleanDisabled(false)
                 .validateOnMigrate(false)
                 .outOfOrder(true)

@@ -13,7 +13,7 @@ public class TokenValidationResponse {
     private final String sessionKeyId;
     private final String clientId;
     private final String accountId;
-    private final Instant issuedAt;
+    private final String issuedAt;
 
     public TokenValidationResponse(boolean authenticated, String subject, String username, String email, String role, String tokenType,
                                    String sessionKeyId, String clientId, String accountId, Instant issuedAt) {
@@ -26,7 +26,7 @@ public class TokenValidationResponse {
         this.sessionKeyId = sessionKeyId;
         this.clientId = clientId;
         this.accountId = accountId;
-        this.issuedAt = issuedAt;
+        this.issuedAt = issuedAt == null ? null : issuedAt.toString();
     }
 
     public boolean isAuthenticated() {
@@ -65,7 +65,7 @@ public class TokenValidationResponse {
         return accountId;
     }
 
-    public Instant getIssuedAt() {
+    public String getIssuedAt() {
         return issuedAt;
     }
 }
