@@ -29,9 +29,9 @@
         <thead>
           <tr>
             <th>Transaction ID</th>
-            <th>Asset Symbol</th>
+            <th>Instrument Name</th>
             <th>Order Type</th>
-            <th>Total Amount</th>
+            <th>Quantity</th>
             <th>Order Status</th>
           </tr>
         </thead>
@@ -43,7 +43,7 @@
             </td>
             <td>{{ tx.asset }}</td>
             <td>{{ tx.orderType }}</td>
-            <td>${{ tx.amount.toFixed(2) }}</td>
+            <td>{{ tx.quantity }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(tx.status)">
                 {{ tx.status }}

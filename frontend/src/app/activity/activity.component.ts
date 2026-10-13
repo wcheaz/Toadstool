@@ -1,15 +1,17 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { timeout } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { catchError, timeout } from 'rxjs/operators';
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth.service';
+import { Instrument, OrderResponse } from '../core/api/api.models';
 
 interface Transaction {
   id: string;
   date: string;
   asset: string;
   orderType: string;
-  amount: number;
+  quantity: string;
   status: string;
 }
 
@@ -24,6 +26,7 @@ export class ActivityComponent implements OnInit {
   transactions: Transaction[] = [];
   readonly pageSize = 20;
   currentPage = 1;
+  totalOrderCount = 0;
 
   stats = {
     allTimeExecutions: 'Loading...',
@@ -38,74 +41,88 @@ export class ActivityComponent implements OnInit {
 
   ngOnInit() {
     console.log('[Activity] Initializing activity page');
-    this.initializeTransactions();
-    this.loadTransactionCount();
+    this.loadOrders();
   }
 
-  private loadTransactionCount(): void {
+  private loadOrders(page: number = this.currentPage): void {
     const accountId = this.authService.getAccountId();
     console.log('[Activity] Account ID:', accountId);
     if (!accountId) {
-      console.warn('[Activity] No account ID found; cannot load transaction count');
+      console.warn('[Activity] No account ID found; cannot load orders');
       this.stats.allTimeExecutions = 'Unavailable';
+      this.transactions = [];
+      this.totalOrderCount = 0;
       this.cdr.detectChanges();
       return;
     }
 
-    console.log('[Activity] Loading transaction count from backend');
-    this.apiService.getOrders(accountId, 1, 0).pipe(timeout(5000)).subscribe({
-      next: (response) => {
-        console.log('[Activity] Orders response:', response);
-        const totalCount = response?.pagination?.totalCount;
-        this.stats.allTimeExecutions = typeof totalCount === 'number'
-          ? totalCount.toLocaleString()
-          : 'Unavailable';
+    console.log('[Activity] Loading orders from backend');
+    const offset = (page - 1) * this.pageSize;
+    forkJoin({
+      orders: this.apiService.getOrders(accountId, this.pageSize, offset),
+      instruments: this.apiService.getInstruments(1000, 0).pipe(
+        catchError(() => of(null))
+      )
+    }).pipe(timeout(5000)).subscribe({
+      next: ({ orders, instruments }) => {
+        console.log('[Activity] Orders response:', orders);
+        const totalCount = orders?.pagination?.totalCount;
+        this.totalOrderCount = typeof totalCount === 'number' ? totalCount : 0;
+        this.stats.allTimeExecutions = this.totalOrderCount.toLocaleString();
+        this.currentPage = page;
+        const instrumentNames = this.createInstrumentNameMap(instruments?.items ?? []);
+        this.transactions = orders.items.map((order) => this.mapOrderToTransaction(order, instrumentNames));
         this.cdr.detectChanges();
         console.log('[Activity] Transaction count:', this.stats.allTimeExecutions);
       },
       error: (error) => {
-        console.error('[Activity] Failed to load transaction count:', error);
+        console.error('[Activity] Failed to load orders:', error);
         this.stats.allTimeExecutions = 'Unavailable';
+        this.transactions = [];
+        this.totalOrderCount = 0;
         this.cdr.detectChanges();
       }
     });
   }
 
-  private initializeTransactions() {
-    this.transactions = [
-      {
-        id: 'TX-RR2014-HEMS',
-        date: 'Oct 25, 2024 at 14:23 UTC',
-        asset: 'HEMS',
-        orderType: 'BUY (Standard)',
-        amount: 1423.84,
-        status: 'COMPLETED'
-      },
-      {
-        id: 'TX-762810-USDT',
-        date: 'Oct 25, 2024 at 13:45 UTC',
-        asset: 'USDT',
-        orderType: 'DEPOSIT',
-        amount: 5000.00,
-        status: 'COMPLETED'
-      },
-      {
-        id: 'TX-210245-BTC',
-        date: 'Oct 24, 2024 at 12:15 UTC',
-        asset: 'BTC',
-        orderType: 'SELL (Limit)',
-        amount: 10084.50,
-        status: 'PENDING'
-      },
-      {
-        id: 'TX-182854-HEMS',
-        date: 'Oct 24, 2024 at 11:22 UTC',
-        asset: 'HEMS',
-        orderType: 'BUY (Standard)',
-        amount: 2844.00,
-        status: 'REJECTED'
-      }
-    ];
+  private createInstrumentNameMap(instruments: Instrument[]): Map<string, string> {
+    return new Map(instruments.map((instrument) => [instrument.instrumentId, instrument.name]));
+  }
+
+  private mapOrderToTransaction(order: OrderResponse, instrumentNames: Map<string, string>): Transaction {
+    return {
+      id: order.orderId,
+      date: this.formatSubmittedAt(order.submittedAt),
+      asset: instrumentNames.get(order.instrumentId) ?? order.instrumentId,
+      orderType: order.side,
+      quantity: this.formatQuantity(order.quantity),
+      status: order.status
+    };
+  }
+
+  private formatSubmittedAt(submittedAt: string | number): string {
+    const numericTimestamp = typeof submittedAt === 'number'
+      ? submittedAt
+      : Number(submittedAt);
+    const timestampInMilliseconds = Number.isFinite(numericTimestamp)
+      ? numericTimestamp < 1_000_000_000_000
+        ? numericTimestamp * 1_000
+        : numericTimestamp
+      : NaN;
+    const parsedDate = Number.isFinite(timestampInMilliseconds)
+      ? new Date(timestampInMilliseconds)
+      : new Date(submittedAt);
+
+    return Number.isNaN(parsedDate.getTime())
+      ? String(submittedAt)
+      : parsedDate.toLocaleString();
+  }
+
+  private formatQuantity(quantity: string): string {
+    const numericQuantity = Number(quantity);
+    return Number.isFinite(numericQuantity)
+      ? numericQuantity.toLocaleString('en-US', { maximumFractionDigits: 4 })
+      : quantity;
   }
 
   getStatusClass(status: string): string {
@@ -113,23 +130,22 @@ export class ActivityComponent implements OnInit {
   }
 
   get paginatedTransactions(): Transaction[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.transactions.slice(startIndex, startIndex + this.pageSize);
+    return this.transactions;
   }
 
   get totalPages(): number {
-    return Math.ceil(this.transactions.length / this.pageSize);
+    return Math.ceil(this.totalOrderCount / this.pageSize);
   }
 
   goToPreviousPage(): void {
     if (this.currentPage > 1) {
-      this.currentPage--;
+      this.loadOrders(this.currentPage - 1);
     }
   }
 
   goToNextPage(): void {
     if (this.currentPage < this.totalPages) {
-      this.currentPage++;
+      this.loadOrders(this.currentPage + 1);
     }
   }
 }
