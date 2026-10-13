@@ -61,10 +61,6 @@
   color: #64748b;
 }
 
-.stat-card.success .success-text {
-  color: #22c55e;
-}
-
 /* Transactions Section */
 .transactions-section {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);

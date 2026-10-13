@@ -29,8 +29,7 @@ export class ActivityComponent implements OnInit {
   totalOrderCount = 0;
 
   stats = {
-    allTimeExecutions: 'Loading...',
-    successRate: '99.42%'
+    allTimeExecutions: 'Loading...'
   };
 
   constructor(
