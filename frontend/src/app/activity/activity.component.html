@@ -1,7 +1,7 @@
 <div class="activity-container">
   <div class="activity-header">
     <h1>Activity Ledger</h1>
-    <p class="activity-subtitle">Real-time transaction tracking and operational dispute reporting</p>
+    <p class="activity-subtitle">Real-time transaction tracking</p>
   </div>
 
   <!-- Statistics Section -->
@@ -16,17 +16,12 @@
       <div class="stat-value success-text">{{ stats.successRate }}</div>
       <div class="stat-unit">Success</div>
     </div>
-    <div class="stat-card pending">
-      <div class="stat-label">PENDING LIQUIDATIONS</div>
-      <div class="stat-value pending-text">{{ stats.pendingLiquidations }}</div>
-    </div>
   </div>
 
   <!-- Transactions Section -->
   <div class="transactions-section">
     <div class="section-header">
       <h2>Past 30 Days Order Activity</h2>
-      <button class="report-btn" (click)="downloadReport()">Trade Dispute Report</button>
     </div>
 
     <div class="table-container">

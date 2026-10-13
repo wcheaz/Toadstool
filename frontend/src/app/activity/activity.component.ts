@@ -22,8 +22,7 @@ export class ActivityComponent implements OnInit {
 
   stats = {
     allTimeExecutions: '2,841',
-    successRate: '99.42%',
-    pendingLiquidations: '$0.00'
+    successRate: '99.42%'
   };
 
   ngOnInit() {
@@ -69,9 +68,5 @@ export class ActivityComponent implements OnInit {
 
   getStatusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
-  }
-
-  downloadReport() {
-    console.log('Downloading Trade Dispute Report...');
   }
 }
