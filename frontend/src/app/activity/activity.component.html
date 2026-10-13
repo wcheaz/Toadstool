@@ -1,7 +1,7 @@
 <div class="activity-container">
   <div class="activity-header">
     <h1>Activity Ledger</h1>
-    <p class="activity-subtitle">Real-time transaction tracking and operational dispute reporting</p>
+    <p class="activity-subtitle">Real-time transaction tracking</p>
   </div>
 
   <!-- Statistics Section -->
@@ -11,22 +11,12 @@
       <div class="stat-value">{{ stats.allTimeExecutions }}</div>
       <div class="stat-unit">Executions</div>
     </div>
-    <div class="stat-card success">
-      <div class="stat-label">SUCCESSFUL ORDERS</div>
-      <div class="stat-value success-text">{{ stats.successRate }}</div>
-      <div class="stat-unit">Success</div>
-    </div>
-    <div class="stat-card pending">
-      <div class="stat-label">PENDING LIQUIDATIONS</div>
-      <div class="stat-value pending-text">{{ stats.pendingLiquidations }}</div>
-    </div>
   </div>
 
   <!-- Transactions Section -->
   <div class="transactions-section">
     <div class="section-header">
-      <h2>Past 30 Days Order Activity</h2>
-      <button class="report-btn" (click)="downloadReport()">Trade Dispute Report</button>
+      <h2>Past Order Activity</h2>
     </div>
 
     <div class="table-container">
@@ -34,21 +24,21 @@
         <thead>
           <tr>
             <th>Transaction ID</th>
-            <th>Asset Symbol</th>
+            <th>Instrument Name</th>
             <th>Order Type</th>
-            <th>Total Amount</th>
+            <th>Quantity</th>
             <th>Order Status</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let tx of transactions">
+          <tr *ngFor="let tx of paginatedTransactions">
             <td class="tx-id">
               <div>{{ tx.id }}</div>
               <div class="tx-date">{{ tx.date }}</div>
             </td>
             <td>{{ tx.asset }}</td>
             <td>{{ tx.orderType }}</td>
-            <td>${{ tx.amount.toFixed(2) }}</td>
+            <td>{{ tx.quantity }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(tx.status)">
                 {{ tx.status }}
@@ -57,6 +47,28 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pagination-controls">
+      <span class="pagination-summary">
+        Page {{ currentPage }} of {{ totalPages }}
+      </span>
+      <div class="pagination-buttons">
+        <button
+          type="button"
+          class="pagination-btn"
+          (click)="goToPreviousPage()"
+          [disabled]="currentPage === 1">
+          Previous
+        </button>
+        <button
+          type="button"
+          class="pagination-btn"
+          (click)="goToNextPage()"
+          [disabled]="currentPage === totalPages">
+          Next
+        </button>
+      </div>
     </div>
   </div>
 </div>
