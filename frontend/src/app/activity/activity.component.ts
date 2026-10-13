@@ -19,6 +19,8 @@ interface Transaction {
 })
 export class ActivityComponent implements OnInit {
   transactions: Transaction[] = [];
+  readonly pageSize = 20;
+  currentPage = 1;
 
   stats = {
     allTimeExecutions: '2,841',
@@ -68,5 +70,26 @@ export class ActivityComponent implements OnInit {
 
   getStatusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
+  }
+
+  get paginatedTransactions(): Transaction[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.transactions.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.transactions.length / this.pageSize);
+  }
+
+  goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
   }
 }
