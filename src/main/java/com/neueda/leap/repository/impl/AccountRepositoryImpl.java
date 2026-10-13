@@ -41,6 +41,11 @@ public class AccountRepositoryImpl implements AccountRepository {
     }
 
     @Override
+    public void save(UUID clientId, String accountName, String status) {
+        accountMapper.insertAccountNamed(clientId, accountName, status);
+    }
+
+    @Override
     public void updateBalance(UUID accountId, BigDecimal balance) {
         accountMapper.updateAccountBalance(accountId, balance);
     }

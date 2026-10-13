@@ -44,7 +44,7 @@ Two products come out of this plan, sharing one backend/stack and one database:
   controller, with a contract-first, OpenAPI-documented REST API. The domain module has no Spring
   dependency at all.
 - **Persistence:** Postgres, with MyBatis mappers for SQL access and Flyway for migrations,
-  versioned in `/db/migrations` and applied automatically on service startup.
+  versioned in `/src/main/resources/db/migrations` and applied automatically on service startup.
 - **Auth service:** a separate Node/NestJS service issuing short-lived, revocable JWTs, carrying
   client ID and role, validated by the Spring Boot services via a shared JWT filter.
 - **Event backbone:** Kafka, decoupling order acceptance (published by the trade API) from order

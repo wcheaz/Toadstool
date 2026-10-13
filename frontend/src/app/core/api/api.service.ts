@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import {
   LoginResponse,
   RegisterRequest,
@@ -18,6 +17,7 @@ import {
   AdminLoginRequest,
   TokenValidationResponse
 } from './api.models';
+import { CashEventRequest } from './api.models';
 
 @Injectable({
   providedIn: 'root'
@@ -107,21 +107,22 @@ export class ApiService {
     );
   }
 
-  /**
-   * Get the first account for a client
-   */
-  getAccountByClientId(clientId: string): Observable<AccountResponse> {
-    return this.http.get<AccountResponse>(
-      `${this.apiUrl}/clients/${clientId}/accounts?limit=1&offset=0`
-    ).pipe(
-      // Map the paginated response to just the first account
-      map((response: any) => {
-        if (response.items && response.items.length > 0) {
-          return response.items[0];
-        }
-        throw new Error('No account found for client');
-      })
+  getAccountsByClientId(clientId: string): Observable<PaginatedResponse<AccountResponse>> {
+    return this.http.get<PaginatedResponse<AccountResponse>>(
+      `${this.apiUrl}/clients/${clientId}/accounts?limit=1000&offset=0`
     );
+  }
+
+  createAccount(clientId: string, accountName: string): Observable<AccountResponse> {
+    return this.http.post<AccountResponse>(`${this.apiUrl}/accounts`, { clientId, accountName });
+  }
+
+  getAccountById(accountId: string): Observable<AccountResponse> {
+    return this.http.get<AccountResponse>(`${this.apiUrl}/accounts/${accountId}`);
+  }
+
+  postCashEvent(accountId: string, request: CashEventRequest): Observable<AccountResponse> {
+    return this.http.post<AccountResponse>(`${this.apiUrl}/accounts/${accountId}/cash-events`, request);
   }
 
   /**

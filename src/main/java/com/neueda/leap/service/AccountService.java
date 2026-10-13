@@ -44,9 +44,14 @@ public class AccountService {
      * Create a new account for a client
      */
     public Account createAccount(UUID clientId) {
-        accountRepository.save(clientId, "ACTIVE");
-        // Retrieve the most recent account for this client
-        List<Account> accounts = accountRepository.findByClientId(clientId, 1, 0);
+        return createAccount(clientId, "Main Account");
+    }
+
+    public Account createAccount(UUID clientId, String accountName) {
+        String normalizedName = accountName == null || accountName.isBlank() ? "Main Account" : accountName.trim();
+        accountRepository.save(clientId, normalizedName, "ACTIVE");
+        int accountCount = accountRepository.countByClientId(clientId);
+        List<Account> accounts = accountRepository.findByClientId(clientId, 1, accountCount - 1);
         return accounts.isEmpty() ? null : accounts.get(0);
     }
 

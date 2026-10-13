@@ -98,8 +98,15 @@ export interface PaginatedResponse<T> {
 export interface AccountResponse {
   accountId: string;
   clientId: string;
+  accountName: string;
   status: string;
   openedAt: string;
+  balance: number;
+}
+
+export interface CashEventRequest {
+  eventType: 'DEPOSIT' | 'WITHDRAWAL';
+  amount: number;
 }
 
 export interface OrderResponse {

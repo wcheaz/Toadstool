@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS trading.clients (
     updated_at timestamptz NOT NULL DEFAULT now() -- Record last update timestamp
 );
 
--- Trading accounts owned by clients; one per client for now
+-- Trading accounts owned by clients; clients may own multiple accounts
 CREATE TABLE IF NOT EXISTS trading.accounts (
     account_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique account identifier
     client_id uuid NOT NULL REFERENCES trading.clients(client_id), -- Reference to account owner
