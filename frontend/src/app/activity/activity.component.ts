@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { timeout } from 'rxjs/operators';
+import { ApiService } from '../core/api/api.service';
+import { AuthService } from '../core/auth.service';
 
 interface Transaction {
   id: string;
@@ -23,12 +26,49 @@ export class ActivityComponent implements OnInit {
   currentPage = 1;
 
   stats = {
-    allTimeExecutions: '2,841',
+    allTimeExecutions: 'Loading...',
     successRate: '99.42%'
   };
 
+  constructor(
+    private apiService: ApiService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
   ngOnInit() {
+    console.log('[Activity] Initializing activity page');
     this.initializeTransactions();
+    this.loadTransactionCount();
+  }
+
+  private loadTransactionCount(): void {
+    const accountId = this.authService.getAccountId();
+    console.log('[Activity] Account ID:', accountId);
+    if (!accountId) {
+      console.warn('[Activity] No account ID found; cannot load transaction count');
+      this.stats.allTimeExecutions = 'Unavailable';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    console.log('[Activity] Loading transaction count from backend');
+    this.apiService.getOrders(accountId, 1, 0).pipe(timeout(5000)).subscribe({
+      next: (response) => {
+        console.log('[Activity] Orders response:', response);
+        const totalCount = response?.pagination?.totalCount;
+        this.stats.allTimeExecutions = typeof totalCount === 'number'
+          ? totalCount.toLocaleString()
+          : 'Unavailable';
+        this.cdr.detectChanges();
+        console.log('[Activity] Transaction count:', this.stats.allTimeExecutions);
+      },
+      error: (error) => {
+        console.error('[Activity] Failed to load transaction count:', error);
+        this.stats.allTimeExecutions = 'Unavailable';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private initializeTransactions() {
