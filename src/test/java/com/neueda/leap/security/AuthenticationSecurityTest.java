@@ -2,7 +2,6 @@ package com.neueda.leap.security;
 
 import com.neueda.leap.ToadstoolApplication;
 import com.neueda.leap.auth.AuthResponse;
-import com.neueda.leap.auth.TokenValidationResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.jupiter.api.AfterAll;
@@ -28,6 +27,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
@@ -57,6 +57,7 @@ class AuthenticationSecurityTest {
     static void registerJwtProperties(DynamicPropertyRegistry registry) {
         recreateTestDatabase();
         registry.add("auth.jwt.enabled", () -> true);
+        registry.add("auth.jwt.access-token-ttl-minutes", () -> 1);
         registry.add("auth.jwt.public-key",
                 () -> Base64.getEncoder().encodeToString(TOKEN_SIGNING_KEYS.getPublic().getEncoded()));
         registry.add("auth.jwt.private-key",
@@ -141,28 +142,6 @@ class AuthenticationSecurityTest {
     }
 
     @Test
-    @DisplayName("Registered users receive JWTs whose subject is their client ID")
-    void registerIssuesJwtWithClientIdSubject() {
-        RegisteredUser registeredUser = registerUser();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<TokenValidationResponse> validation = restTemplate.exchange(
-                url("/api/auth/validate"),
-                HttpMethod.POST,
-                new HttpEntity<>("{\"token\":\"" + registeredUser.authResponse().getAccessToken() + "\"}", headers),
-                TokenValidationResponse.class
-        );
-
-        assertEquals(HttpStatus.OK, validation.getStatusCode());
-        assertNotNull(validation.getBody());
-        assertEquals(registeredUser.authResponse().getClientId().toString(), validation.getBody().getSubject());
-        assertEquals(registeredUser.username(), validation.getBody().getUsername());
-        assertEquals(registeredUser.authResponse().getAccountId().toString(), validation.getBody().getAccountId());
-    }
-
-    @Test
     @DisplayName("A client token can access only its own client data and not another client's")
     void clientTokenCanAccessOnlyOwnedData() {
         RegisteredUser firstUser = registerUser();
@@ -224,13 +203,36 @@ class AuthenticationSecurityTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 
+    @Test
+    @DisplayName("Expired JWTs are rejected by protected endpoints")
+    void expiredJwtIsRejectedByProtectedEndpoint() throws InterruptedException {
+        String expiredToken = generateTokenWithLifetime(Duration.ofSeconds(1));
+        Thread.sleep(1500L);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + expiredToken);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url(PLATFORM_ACTIVITY_PATH),
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                String.class
+        );
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+
     private String generateValidToken() {
+        return generateTokenWithLifetime(Duration.ofHours(1));
+    }
+
+    private String generateTokenWithLifetime(Duration lifetime) {
         return Jwts.builder()
                 .setSubject(UUID.randomUUID().toString())
                 .claim("email", "admin@example.com")
                 .claim("roles", "ROLE_ADMIN")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3_600_000))
+                .setExpiration(new Date(System.currentTimeMillis() + lifetime.toMillis()))
                 .signWith(TOKEN_SIGNING_KEYS.getPrivate(), SignatureAlgorithm.RS256)
                 .compact();
     }

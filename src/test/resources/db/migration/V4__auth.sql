@@ -1,5 +1,7 @@
 BEGIN;
 
+CREATE SCHEMA IF NOT EXISTS trading;
+
 CREATE TABLE IF NOT EXISTS trading.account_credentials (
     credential_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id uuid NOT NULL REFERENCES trading.accounts(account_id) ON DELETE CASCADE,

@@ -202,7 +202,5 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
-    // Redirect to login
-    window.location.href = '/login';
   }
 }

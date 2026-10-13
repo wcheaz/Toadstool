@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthResponse } from './api/api.models';
+import { ApiService } from './api/api.service';
 
 /**
  * Handles the client session stored in localStorage.
@@ -8,6 +9,8 @@ import { AuthResponse } from './api/api.models';
   providedIn: 'root'
 })
 export class AuthService {
+  constructor(private apiService: ApiService) {}
+
   /**
    * Store client info in localStorage after login/registration
    */
@@ -28,6 +31,16 @@ export class AuthService {
   }
 
   logout(): void {
+    this.apiService.logout().subscribe({
+      next: () => this.finishLogout(),
+      error: (error) => {
+        console.error('Failed to revoke session during sign out:', error);
+        this.finishLogout();
+      }
+    });
+  }
+
+  private finishLogout(): void {
     localStorage.removeItem('clientName');
     localStorage.removeItem('clientId');
     localStorage.removeItem('clientEmail');
