@@ -52,7 +52,7 @@ export class AdminLoginComponent {
     }).subscribe({
       next: (response) => {
         this.authService.storeClientSession(response);
-        this.router.navigate(['/homepage']);
+        this.router.navigate(['/admin-dashboard']);
       },
       error: (error) => {
         this.isLoading = false;
