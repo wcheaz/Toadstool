@@ -17,6 +17,7 @@ import com.neueda.leap.pricing.FeeStrategyFactory;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,10 +76,22 @@ public class OrderService {
     }
 
     /**
+     * List all orders with an optional submission time range.
+     */
+    public List<Order> listAllOrders(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt,
+                                     int limit, int offset) {
+        return orderRepository.findAll(fromSubmittedAt, toSubmittedAt, limit, offset);
+    }
+
+    /**
      * Get total count of orders for an account
      */
     public int countOrdersByAccount(UUID accountId) {
         return orderRepository.countByAccountId(accountId);
+    }
+
+    public int countAllOrders(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt) {
+        return orderRepository.countAll(fromSubmittedAt, toSubmittedAt);
     }
 
     /**
