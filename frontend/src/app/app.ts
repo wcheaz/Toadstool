@@ -39,7 +39,7 @@ export class App implements OnInit {
 
   private updateLayoutVisibility(url: string) {
     // Hide sidebar and top-bar for auth pages
-    const authPages = ['/login', '/register', '/admin-login'];
+    const authPages = ['/login', '/register', '/admin-login', '/admin-dashboard', '/admin-client'];
     this.isShowingMainLayout = !authPages.some(page => url.startsWith(page));
   }
 
