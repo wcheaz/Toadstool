@@ -6,10 +6,14 @@ spring:
 
   datasource:
     # Uses env vars so test DB settings are machine-specific and not hardcoded.
-    url: jdbc:postgresql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:5432}/${TEST_DB_NAME:toadstool_db}
+    url: jdbc:postgresql://${TEST_DB_HOST:127.0.0.1}:${TEST_DB_PORT:5432}/${TEST_DB_NAME:toadstool_db}?connectTimeout=5&socketTimeout=5
     username: ${TEST_DB_USERNAME:toadstool_user}
     password: ${TEST_DB_PASSWORD:toadstool_password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 5000
+      initialization-fail-timeout: 5000
+      validation-timeout: 3000
 
   jpa:
     hibernate:
@@ -35,9 +39,10 @@ server:
 logging:
   level:
     root: INFO
-    com.neueda.leap: DEBUG
+    com.neueda.leap: INFO
     com.neueda.leap.mapper: INFO
-    org.springframework.web: DEBUG
+    com.neueda.leap.service.FauxnanceService: ERROR
+    org.springframework.web: INFO
 
 auth:
   jwt:

@@ -38,6 +38,6 @@ public interface FillMapper {
     @Select("SELECT COUNT(*) FROM trading.fills f JOIN trading.orders o ON f.order_id = o.order_id WHERE o.account_id = #{accountId}")
     int countFillsByAccountId(@Param("accountId") UUID accountId);
 
-    @Insert("INSERT INTO trading.fills (order_id, price, quantity, status) VALUES (#{orderId}, #{price}, #{quantity}, #{status})")
+    @Insert("INSERT INTO trading.fills (order_id, price, quantity, status) VALUES (#{orderId}, CAST(#{price} AS numeric), CAST(#{quantity} AS numeric), #{status})")
     void insertFill(@Param("orderId") UUID orderId, @Param("price") String price, @Param("quantity") String quantity, @Param("status") String status);
 }

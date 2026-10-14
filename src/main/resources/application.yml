@@ -47,8 +47,9 @@ server:
 logging:
   level:
     root: INFO
-    com.neueda.leap: DEBUG
-    org.springframework.web: DEBUG
+    com.neueda.leap: INFO
+    com.neueda.leap.service.FauxnanceService: ERROR
+    org.springframework.web: INFO
 
 auth:
   jwt:
