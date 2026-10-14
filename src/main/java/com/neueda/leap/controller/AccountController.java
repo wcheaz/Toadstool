@@ -167,12 +167,12 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            // TODO: Fetch actual positions from fills/trades
-            // For now, return empty holdings with live market data capability
             HoldingsResponse response = new HoldingsResponse(
                     accountId,
-                    List.of(),  // Empty holdings list (to be populated from fills)
-                    new HoldingsResponse.CashBalance("10000.0000000000", "USD"),  // Stub cash balance
+                    List.of(),  // Positions are populated separately from filled trades.
+                    new HoldingsResponse.CashBalance(
+                            account.getBalance() == null ? "0.00" : account.getBalance().toPlainString(),
+                            "USD"),
                     OffsetDateTime.now()
             );
 

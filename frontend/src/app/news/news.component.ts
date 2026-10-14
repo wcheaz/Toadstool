@@ -55,6 +55,7 @@ interface CalendarEvent {
 export class NewsComponent implements OnInit, OnDestroy {
   clientName: string = '';
   accountId: string = '';
+  accountBalance: number | null = null;
   activeTab: string = 'all-feed';
 
   // Trading modal state
@@ -145,6 +146,12 @@ export class NewsComponent implements OnInit, OnDestroy {
   constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private newsService: NewsService, private cdr: ChangeDetectorRef) {
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
+    if (this.accountId) {
+      this.apiService.getAccountById(this.accountId).subscribe({
+        next: (account) => this.accountBalance = account.balance,
+        error: (error) => console.error('Failed to load account balance:', error)
+      });
+    }
   }
 
   ngOnInit() {

@@ -21,6 +21,8 @@ import java.util.UUID;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * REST Controller for Order endpoints
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 public class OrderController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrderController.class);
 
     private final OrderService orderService;
     private final AccountService accountService;
@@ -97,12 +101,10 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToOrderResponse(order));
 
         } catch (IllegalArgumentException e) {
-            System.err.println("[OrderController] IllegalArgumentException: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.warn("Order placement rejected for account {}: {}", accountId, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
         } catch (Exception e) {
-            System.err.println("[OrderController] Exception: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Order placement failed for account {}", accountId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -147,8 +149,10 @@ public class OrderController {
             order = orderService.getOrderById(orderId);
             return ResponseEntity.ok(mapToOrderResponse(order));
         } catch (IllegalArgumentException e) {
+            LOGGER.warn("Order fill rejected for order {}: {}", orderId, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
         } catch (Exception e) {
+            LOGGER.error("Order fill failed for order {}", orderId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

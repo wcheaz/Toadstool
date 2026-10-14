@@ -64,6 +64,7 @@
       <!-- Right Panel: Order Ticket -->
       <app-order-ticket
         [selectedAsset]="selectedAsset"
+        [accountBalance]="accountBalance"
         (orderPreviewed)="onOrderPreviewed($event)">
       </app-order-ticket>
     </div>
