@@ -1,0 +1,52 @@
+<section class="admin-shell">
+  <app-sidebar [adminMode]="true"></app-sidebar>
+
+  <main class="admin-main">
+    <header class="topbar">
+      <button class="icon-button" type="button" aria-label="Notifications"><span class="notification-dot"></span></button>
+      <button class="profile-button" type="button" (click)="logout()" title="Sign out">
+        <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>{{ adminName }}</span>
+        <span class="chevron">⌄</span>
+      </button>
+    </header>
+
+    <div class="content">
+      <div class="page-heading">
+        <div><h1>Client oversight</h1><p>Find a client. View their account, portfolio, and activity.</p></div>
+      </div>
+
+      <section class="panel search-panel" aria-labelledby="find-client-heading">
+        <div class="panel-heading"><h2 id="find-client-heading">Find a client</h2><span>12,482 client accounts · Read-only access</span></div>
+        <div class="search-grid">
+          <label class="field search-field"><span>Client username</span><div class="input-wrap"><span class="search-icon"></span><input type="search" [(ngModel)]="searchTerm" (keyup.enter)="applySearch()" aria-label="Search by client name or username"><button type="button" class="clear-button" (click)="clearSearch()" aria-label="Clear search">×</button></div></label>
+          <label class="field"><span>Client selector</span><select [(ngModel)]="selectedClient" aria-label="Select a client"><option>All clients</option><option *ngFor="let client of clients">{{ client.name }}</option></select></label>
+          <button class="find-button" type="button" (click)="applySearch()"><span class="search-icon light"></span>Find client</button>
+        </div>
+        <p class="helper">Search by full or partial username, or choose a client from the dropdown. Results are read-only.</p>
+      </section>
+
+      <section class="panel results-panel" aria-labelledby="results-heading">
+        <div class="panel-heading results-heading"><div><h2 id="results-heading">Client results <small>{{ filteredClients.length }} VIEWABLE MATCHES</small></h2></div><span>Search contains “{{ appliedSearchTerm }}” · All accounts · Read-only results</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Account</th><th>Portfolio value</th><th>Cash balance</th><th>Latest activity</th><th>View</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let client of filteredClients">
+                <td><strong>{{ client.name }}</strong><span>{{ client.username }}</span></td>
+                <td><span>{{ client.account }}</span><b [class.review]="client.status === 'REVIEW'">{{ client.status }}</b></td>
+                <td class="amount">{{ client.portfolio }}</td><td class="amount">{{ client.cash }}</td>
+                <td><span>{{ client.activity }}</span><span>{{ client.activityTime }}</span></td>
+                <td><button class="details-button" type="button" (click)="viewDetails(client)">View details</button></td>
+              </tr>
+              <tr *ngIf="filteredClients.length === 0"><td colspan="6" class="empty-state">No clients match this search.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Portfolio value includes holdings + cash. Values as of 24 Oct 2024, 10:15 UTC. All data is read-only.</p>
+      </section>
+
+      <footer class="page-footer"><span>All timestamps in UTC · All values in USD · Read-only view</span><span>Admin access is recorded in the audit log · No management actions are available</span></footer>
+    </div>
+  </main>
+</section>

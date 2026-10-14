@@ -3,7 +3,7 @@
     <div class="sidebar-logo">T</div>
     <div class="sidebar-title">Toadstool Trader</div>
   </div>
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" *ngIf="!adminMode">
     <ul>
       <li>
         <button class="nav-button" (click)="navigateTo('dashboard')" title="Dashboard">
@@ -69,4 +69,11 @@
       </li>
     </ul>
   </nav>
+  <nav class="sidebar-nav admin-nav" *ngIf="adminMode">
+    <ul>
+      <li><button class="nav-button active" (click)="navigateTo('admin-dashboard')" title="Admin Dashboard"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg><span>Admin Dashboard</span></button></li>
+      <li><button class="nav-button" title="Audit Log"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"></path></svg><span>Audit Log</span></button></li>
+    </ul>
+  </nav>
+  <div class="admin-workspace" *ngIf="adminMode"><p>ADMIN WORKSPACE</p><span>Client data · Read-only oversight</span></div>
 </aside>

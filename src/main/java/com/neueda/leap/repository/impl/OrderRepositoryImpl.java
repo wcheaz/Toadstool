@@ -4,6 +4,7 @@ import com.neueda.leap.Order;
 import com.neueda.leap.repository.OrderRepository;
 import com.neueda.leap.mapper.OrderMapper;
 import org.springframework.stereotype.Repository;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +32,11 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
+    public List<Order> findAll(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt, int limit, int offset) {
+        return orderMapper.selectAllOrders(fromSubmittedAt, toSubmittedAt, limit, offset);
+    }
+
+    @Override
     public Order findByIdempotencyKey(UUID accountId, String idempotencyKey) {
         return orderMapper.selectOrderByIdempotencyKey(accountId, idempotencyKey);
     }
@@ -38,6 +44,11 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public int countByAccountId(UUID accountId) {
         return orderMapper.countOrdersByAccountId(accountId);
+    }
+
+    @Override
+    public int countAll(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt) {
+        return orderMapper.countAllOrders(fromSubmittedAt, toSubmittedAt);
     }
 
     @Override

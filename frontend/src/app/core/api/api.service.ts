@@ -159,6 +159,19 @@ export class ApiService {
   }
 
   /**
+   * Get paginated orders for an account.
+   */
+  getOrders(
+    accountId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Observable<PaginatedResponse<OrderResponse>> {
+    return this.http.get<PaginatedResponse<OrderResponse>>(
+      `${this.apiUrl}/accounts/${accountId}/orders?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  /**
    * Fill/execute an order at a specified price
    */
   fillOrder(orderId: string, price: number): Observable<OrderResponse> {

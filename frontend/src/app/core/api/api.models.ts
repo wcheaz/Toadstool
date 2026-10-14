@@ -110,7 +110,7 @@ export interface OrderResponse {
   quantity: string;
   idempotencyKey: string;
   status: string;
-  submittedAt: string;
+  submittedAt: string | number;
 }
 
 export interface DepthLevel {

@@ -40,6 +40,7 @@ export class LoginComponent {
     if (!this.username || !this.password) {
       this.errorMessage = 'Please enter your username and password';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 

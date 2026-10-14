@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -23,7 +23,8 @@ export class AdminLoginComponent {
   constructor(
     private router: Router,
     private apiService: ApiService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   onSubmit() {
@@ -34,12 +35,14 @@ export class AdminLoginComponent {
     if (!this.email || this.email.trim() === '') {
       this.errorMessage = 'Please enter your email';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (!this.password || this.password.trim() === '') {
       this.errorMessage = 'Please enter your password';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
@@ -49,7 +52,7 @@ export class AdminLoginComponent {
     }).subscribe({
       next: (response) => {
         this.authService.storeClientSession(response);
-        this.router.navigate(['/homepage']);
+        this.router.navigate(['/admin-dashboard']);
       },
       error: (error) => {
         this.isLoading = false;
@@ -64,6 +67,7 @@ export class AdminLoginComponent {
         } else {
           this.errorMessage = 'Admin login failed. Please try again in a moment.';
         }
+        this.cdr.detectChanges();
       }
     });
   }

@@ -1,14 +1,17 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent {
+  @Input() adminMode = false;
+
   constructor(private router: Router) {}
 
   navigateTo(section: string) {
@@ -30,6 +33,10 @@ export class SidebarComponent {
         break;
       case 'support':
         this.router.navigate(['/support']);
+        break;
+      case 'admin-dashboard':
+      case 'admin-clients':
+        this.router.navigate(['/admin-dashboard']);
         break;
       default:
         console.log('Unknown section:', section);

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -25,7 +25,7 @@ export class RegisterComponent {
   showPassword: boolean = false;
   showConfirmPassword: boolean = false;
 
-  constructor(private router: Router, private apiService: ApiService, private authService: AuthService) {}
+  constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {}
 
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
@@ -43,42 +43,56 @@ export class RegisterComponent {
     if (!this.displayName || this.displayName.trim() === '') {
       this.errorMessage = 'Please enter your display name';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (!this.username || this.username.trim() === '') {
       this.errorMessage = 'Please enter a username';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (!this.email || this.email.trim() === '') {
       this.errorMessage = 'Please enter your email';
       this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+      this.errorMessage = 'Please enter a valid email address';
+      this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (!this.password || this.password.trim() === '') {
       this.errorMessage = 'Please enter your password';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (this.password.length < 8) {
       this.errorMessage = 'Password must be at least 8 characters';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (this.password !== this.confirmPassword) {
       this.errorMessage = 'Passwords do not match';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
     if (!this.agreedToTerms) {
       this.errorMessage = 'Please agree to the Terms & Conditions';
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
@@ -111,6 +125,7 @@ export class RegisterComponent {
           this.errorMessage = 'Registration failed. Please try again in a moment.';
         }
         console.error('Registration error:', error);
+        this.cdr.detectChanges();
       }
     });
   }

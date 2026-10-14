@@ -18,11 +18,35 @@ public interface OrderMapper {
     @Select("SELECT order_id as orderId, account_id as accountId, instrument_id as instrumentId, side, quantity, idempotency_key as idempotencyKey, submitted_at as submittedAt FROM trading.orders WHERE account_id = #{accountId} ORDER BY submitted_at DESC LIMIT #{limit} OFFSET #{offset}")
     List<Order> selectOrdersByAccountId(@Param("accountId") UUID accountId, @Param("limit") int limit, @Param("offset") int offset);
 
+        @Select({"<script>",
+            "SELECT order_id as orderId, account_id as accountId, instrument_id as instrumentId, side, quantity, idempotency_key as idempotencyKey, submitted_at as submittedAt",
+            "FROM trading.orders",
+            "<where>",
+            "<if test='fromSubmittedAt != null'>submitted_at &gt;= #{fromSubmittedAt}</if>",
+            "<if test='toSubmittedAt != null'>AND submitted_at &lt; #{toSubmittedAt}</if>",
+            "</where>",
+            "ORDER BY submitted_at DESC LIMIT #{limit} OFFSET #{offset}",
+            "</script>"})
+        List<Order> selectAllOrders(@Param("fromSubmittedAt") java.time.OffsetDateTime fromSubmittedAt,
+                    @Param("toSubmittedAt") java.time.OffsetDateTime toSubmittedAt,
+                    @Param("limit") int limit,
+                    @Param("offset") int offset);
+
     @Select("SELECT order_id as orderId, account_id as accountId, instrument_id as instrumentId, side, quantity, idempotency_key as idempotencyKey, submitted_at as submittedAt FROM trading.orders WHERE account_id = #{accountId} AND idempotency_key = #{idempotencyKey}")
     Order selectOrderByIdempotencyKey(@Param("accountId") UUID accountId, @Param("idempotencyKey") String idempotencyKey);
 
     @Select("SELECT COUNT(*) FROM trading.orders WHERE account_id = #{accountId}")
     int countOrdersByAccountId(@Param("accountId") UUID accountId);
+
+        @Select({"<script>",
+            "SELECT COUNT(*) FROM trading.orders",
+            "<where>",
+            "<if test='fromSubmittedAt != null'>submitted_at &gt;= #{fromSubmittedAt}</if>",
+            "<if test='toSubmittedAt != null'>AND submitted_at &lt; #{toSubmittedAt}</if>",
+            "</where>",
+            "</script>"})
+        int countAllOrders(@Param("fromSubmittedAt") java.time.OffsetDateTime fromSubmittedAt,
+                   @Param("toSubmittedAt") java.time.OffsetDateTime toSubmittedAt);
 
     @Insert("INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempotency_key) VALUES (#{accountId}, #{instrumentId}, #{side}, CAST(#{quantity} AS numeric), #{idempotencyKey})")
     void insertOrder(@Param("accountId") UUID accountId, @Param("instrumentId") UUID instrumentId, 
