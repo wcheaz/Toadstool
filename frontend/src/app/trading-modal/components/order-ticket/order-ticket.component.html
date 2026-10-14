@@ -74,7 +74,14 @@
       </div>
     </div>
 
-    <p class="validation-error" *ngIf="validationError" role="alert">{{ validationError }}</p>
+    <p class="sell-limit" *ngIf="orderSide === 'sell' && selectedAsset"
+       [class.sell-limit-valid]="isSellQuantityValid"
+       [class.sell-limit-invalid]="!isSellQuantityValid">
+      You can sell at most {{ selectedAsset.holdings }} shares.
+    </p>
+    <p class="validation-error"
+       *ngIf="validationError && !(orderSide === 'sell' && selectedAsset && quantity > selectedAsset.holdings)"
+       role="alert">{{ validationError }}</p>
 
     <!-- Buttons -->
     <div class="button-group">

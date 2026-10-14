@@ -104,6 +104,22 @@ export interface AccountResponse {
   balance: number;
 }
 
+export interface HoldingsResponse {
+  accountId: string;
+  holdings: HoldingResponse[];
+  cash: {
+    balance: string;
+    currency: string;
+  };
+  asOfTimestamp: string;
+}
+
+export interface HoldingResponse {
+  instrumentId: string;
+  symbol: string;
+  quantity: string;
+}
+
 export interface CashEventRequest {
   eventType: 'DEPOSIT' | 'WITHDRAWAL';
   amount: number;

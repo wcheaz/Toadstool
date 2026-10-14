@@ -15,7 +15,8 @@ import {
   AuthResponse,
   LoginRequest,
   AdminLoginRequest,
-  TokenValidationResponse
+  TokenValidationResponse,
+  HoldingsResponse
 } from './api.models';
 import { CashEventRequest } from './api.models';
 
@@ -119,6 +120,12 @@ export class ApiService {
 
   getAccountById(accountId: string): Observable<AccountResponse> {
     return this.http.get<AccountResponse>(`${this.apiUrl}/accounts/${accountId}`);
+  }
+
+  getAccountHoldings(accountId: string): Observable<HoldingsResponse> {
+    return this.http.get<HoldingsResponse>(
+      `${this.apiUrl}/accounts/${accountId}/holdings`
+    );
   }
 
   postCashEvent(accountId: string, request: CashEventRequest): Observable<AccountResponse> {

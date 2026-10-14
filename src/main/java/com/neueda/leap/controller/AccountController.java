@@ -8,6 +8,9 @@ import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.ClientService;
 import com.neueda.leap.service.FauxnanceService;
+import com.neueda.leap.service.HoldingsService;
+import com.neueda.leap.service.InstrumentService;
+import com.neueda.leap.Holdings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,18 +32,27 @@ public class AccountController {
     private final AccountService accountService;
     private final ClientService clientService;
     private final CashEventService cashEventService;
+    private final HoldingsService holdingsService;
+    private final InstrumentService instrumentService;
     // private final FauxnanceService fauxnanceService;
 
     public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService) {
-        this(accountService, clientService, fauxnanceService, null);
+        this(accountService, clientService, fauxnanceService, null, null, null);
+    }
+
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService, CashEventService cashEventService) {
+        this(accountService, clientService, fauxnanceService, cashEventService, null, null);
     }
 
     @Autowired
-    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService, CashEventService cashEventService) {
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService,
+                             CashEventService cashEventService, HoldingsService holdingsService,
+                             InstrumentService instrumentService) {
         this.accountService = accountService;
         this.clientService = clientService;
         this.cashEventService = cashEventService;
-        // this.fauxnanceService = fauxnanceService;
+        this.holdingsService = holdingsService;
+        this.instrumentService = instrumentService;
     }
 
     /**
@@ -167,9 +179,15 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
+            List<HoldingsResponse.HoldingItem> positions = holdingsService == null || instrumentService == null
+                    ? List.of()
+                    : holdingsService.getAccountHoldings(accountId, Integer.MAX_VALUE, 0).stream()
+                    .map(this::mapToHoldingItem)
+                    .collect(Collectors.toList());
+
             HoldingsResponse response = new HoldingsResponse(
                     accountId,
-                    List.of(),  // Positions are populated separately from filled trades.
+                    positions,
                     new HoldingsResponse.CashBalance(
                             account.getBalance() == null ? "0.00" : account.getBalance().toPlainString(),
                             "USD"),
@@ -181,6 +199,15 @@ public class AccountController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private HoldingsResponse.HoldingItem mapToHoldingItem(Holdings holding) {
+        com.neueda.leap.Instrument instrument = instrumentService.getInstrumentById(holding.getInstrumentId());
+        String symbol = instrument == null ? "" : instrument.getSymbol();
+        return new HoldingsResponse.HoldingItem(
+                holding.getInstrumentId(),
+                symbol,
+                holding.getQuantity() == null ? "0" : holding.getQuantity().toPlainString());
     }
 
     /**
