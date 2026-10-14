@@ -8,6 +8,7 @@ import { NewsComponent } from './news/news.component';
 import { ActivityComponent } from './activity/activity.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { AdminClientDetailsComponent } from './admin-dashboard/admin-client-details.component';
+import { TradingComponent } from './trading/trading.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -19,4 +20,5 @@ export const routes: Routes = [
   { path: 'homepage', component: HomepageComponent, canActivate: [authGuard] },
   { path: 'news', component: NewsComponent, canActivate: [authGuard] },
   { path: 'activity', component: ActivityComponent, canActivate: [authGuard] }
+  ,{ path: 'trading', component: TradingComponent, canActivate: [authGuard] }
 ];
