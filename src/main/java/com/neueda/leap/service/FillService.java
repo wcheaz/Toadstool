@@ -1,6 +1,7 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.Fill;
+import com.neueda.leap.enums.FillStatus;
 import com.neueda.leap.repository.FillRepository;
 import com.neueda.leap.validator.FillValidator;
 import com.neueda.leap.validator.FillValidationRequest;
@@ -67,8 +68,13 @@ public class FillService {
     /**
      * Create a new fill (used by order execution engine)
      */
-    public void createFill(UUID orderId, String price, String quantity, String status) {
+    public Fill createFill(UUID orderId, String price, String quantity, String status) {
         fillValidator.validate(new FillValidationRequest(price, quantity, status));
         fillRepository.save(orderId, price, quantity, status);
+        List<Fill> fills = fillRepository.findByOrderId(orderId);
+        if (fills.isEmpty()) {
+            throw new IllegalStateException("Fill was not found after insertion for order: " + orderId);
+        }
+        return fills.get(fills.size() - 1);
     }
 }

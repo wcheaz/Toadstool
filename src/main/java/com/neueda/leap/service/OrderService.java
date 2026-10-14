@@ -7,6 +7,7 @@ import com.neueda.leap.Fill;
 import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.enums.OrderSide;
+import com.neueda.leap.enums.FillStatus;
 import com.neueda.leap.repository.OrderRepository;
 import com.neueda.leap.security.AuthenticatedUser;
 import com.neueda.leap.security.SecurityAccess;
@@ -190,6 +191,15 @@ public class OrderService {
         // Step 8: Calculate total order price
         BigDecimal totalPrice = orderValue.add(fee).setScale(5, RoundingMode.HALF_UP);
 
+        // Reject unaffordable BUY orders before they are persisted. The fill path
+        // performs the authoritative atomic debit again to handle concurrent orders.
+        if (OrderSide.BUY.equals(OrderSide.valueOf(side.toUpperCase()))
+                && (account.getBalance() == null
+                || account.getBalance().compareTo(totalPrice) < 0)) {
+            throw new IllegalArgumentException("Insufficient balance for BUY order. Required: "
+                    + totalPrice + ", Available: " + account.getBalance());
+        }
+
         // Step 9: Insert order into database
         orderRepository.save(accountId, instrumentId, side, quantity, idempotencyKey);
 
@@ -255,24 +265,28 @@ public class OrderService {
         if (order == null) {
             throw new IllegalArgumentException("Order not found: " + orderId);
         }
+        if (fillPrice == null || fillPrice.signum() <= 0) {
+            throw new IllegalArgumentException("Fill price must be greater than zero");
+        }
+        if (cashEventService == null) {
+            throw new IllegalStateException("Cash event service is not configured");
+        }
 
         BigDecimal fillQuantity = order.getQuantity();
-        BigDecimal fillAmount = fillPrice.multiply(fillQuantity);
-
-        // Update holdings
-        holdingsService.updateHoldingFromFill(order.getAccountId(), order.getInstrumentId(),
-                order.getSide(), fillQuantity);
+        BigDecimal fillAmount = fillPrice.multiply(fillQuantity).setScale(2, RoundingMode.HALF_UP);
 
         BigDecimal cashDelta = OrderSide.BUY.equals(order.getSide()) ? fillAmount.negate() : fillAmount;
         String cashEventType = OrderSide.BUY.equals(order.getSide()) ? "BUY" : "SELL";
+        // Apply the cash change first. The conditional account update rejects a BUY
+        // with insufficient funds; the surrounding transaction rolls back any
+        // subsequent holding or fill changes if execution fails.
         cashEventService.post(order.getAccountId(), order.getOrderId(), cashEventType, cashDelta, "{}");
 
+        holdingsService.updateHoldingFromFill(order.getAccountId(), order.getInstrumentId(),
+                order.getSide(), fillQuantity);
+
         // Create fill record
-        fillService.createFill(orderId, fillPrice.toPlainString(), fillQuantity.toPlainString(), "FILLED");
-
-        // Update order status to FILLED
-        updateOrderStatus(orderId, "FILLED");
-
-        return fillService.getFillById(UUID.randomUUID()); // Note: FillService needs to return the created fill
+        return fillService.createFill(orderId, fillPrice.toPlainString(), fillQuantity.toPlainString(),
+                FillStatus.Filled.name());
     }
 }

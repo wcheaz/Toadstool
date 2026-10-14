@@ -7,9 +7,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import javax.sql.DataSource;
 
 /**
- * Initializes the test database by running Flyway clean and migrate.
- * This runs before the Spring context is fully initialized, ensuring
- * a fresh database before any beans are created or tests run.
+ * Initializes the test database by applying pending Flyway migrations.
+ * Existing schemas and data are preserved between test runs.
  */
 public class FlywayTestInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -22,19 +21,12 @@ public class FlywayTestInitializer implements ApplicationContextInitializer<Conf
         Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migrations")
-                .cleanDisabled(false)
+                .cleanDisabled(true)
                 .validateOnMigrate(false)
                 .outOfOrder(true)
                 .load();
         
-        // Clean existing schema
-        try {
-            flyway.clean();
-        } catch (Exception e) {
-            // Schema doesn't exist yet, which is fine
-        }
-        
-        // Run all migrations
+        // Apply pending migrations without deleting existing data.
         flyway.migrate();
     }
 }

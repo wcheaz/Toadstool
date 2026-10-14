@@ -9,8 +9,8 @@ import org.springframework.test.context.support.AbstractTestExecutionListener;
 import javax.sql.DataSource;
 
 /**
- * Test execution listener that ensures Flyway cleans and migrates the database
- * before the first test method runs in the test suite.
+ * Test execution listener that ensures pending Flyway migrations are applied
+ * before the first test method runs in the suite.
  * 
  * This is automatically discovered and loaded by Spring's test framework.
  */
@@ -41,19 +41,12 @@ public class FlywayTestExecutionListener extends AbstractTestExecutionListener {
             Flyway flyway = Flyway.configure()
                     .dataSource(dataSource)
                     .locations("classpath:db/migrations")
-                    .cleanDisabled(false)
+                    .cleanDisabled(true)
                     .validateOnMigrate(false)
                     .outOfOrder(true)
                     .load();
             
-            // Clean existing schema
-            try {
-                flyway.clean();
-            } catch (Exception e) {
-                // Ignore if schema doesn't exist yet
-            }
-            
-            // Run migrations
+            // Apply pending migrations without deleting existing data.
             flyway.migrate();
             
             initialized = true;
