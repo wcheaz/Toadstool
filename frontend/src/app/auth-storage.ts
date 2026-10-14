@@ -33,8 +33,12 @@ export function storeAuthSession(response: AuthResponse): void {
     return;
   }
   storage.setItem(storageKeys.accessToken, response.accessToken);
-  storage.setItem(storageKeys.clientId, response.clientId);
-  storage.setItem(storageKeys.accountId, response.accountId);
+  if (response.clientId) {
+    storage.setItem(storageKeys.clientId, response.clientId);
+  }
+  if (response.accountId) {
+    storage.setItem(storageKeys.accountId, response.accountId);
+  }
   storage.setItem(storageKeys.clientEmail, response.email);
   storage.setItem(storageKeys.clientName, response.displayName);
   storage.setItem(storageKeys.username, response.username);

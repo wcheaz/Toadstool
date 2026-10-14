@@ -1,6 +1,7 @@
 package com.neueda.leap.controller;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,7 +17,13 @@ class AdminAnalyticsControllerTest {
 
     @BeforeEach
     void setUp() {
+        ControllerTestSupport.authenticateAdmin();
         mockMvc = ControllerTestSupport.buildMockMvc(new AdminAnalyticsController());
+    }
+
+    @AfterEach
+    void tearDown() {
+        ControllerTestSupport.clearAuthentication();
     }
 
     @Test

@@ -19,7 +19,7 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migrations
     table: flyway_schema_history
     validateOnMigrate: false
@@ -55,6 +55,6 @@ auth:
     public-key: ${AUTH_JWT_PUBLIC_KEY:BASE64_X509_PUBLIC_KEY}
     private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
     issuer: toadstool
-    access-token-ttl-minutes: 15
+    access-token-ttl-minutes: 1
     enabled: true
     require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

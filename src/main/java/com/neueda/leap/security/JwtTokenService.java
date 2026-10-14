@@ -1,7 +1,9 @@
 package com.neueda.leap.security;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.security.PrivateKey;
 import java.time.Duration;
@@ -26,39 +28,65 @@ public class JwtTokenService {
 
     public IssuedAccessToken issueAccessToken(UUID sessionKeyId, UUID clientId, UUID accountId,
                                               String username, String email, String role) {
+        return issueAccessToken(sessionKeyId, clientId, clientId, accountId, username, email, role);
+    }
+
+    public IssuedAccessToken issueAccessToken(UUID sessionKeyId, UUID subjectId, UUID clientId, UUID accountId,
+                                              String username, String email, String role) {
         if (!jwtProperties.isEnabled()) {
             return IssuedAccessToken.disabled();
+        }
+
+        if (subjectId == null) {
+            throw new IllegalArgumentException("JWT subject is required");
+        }
+        if (!StringUtils.hasText(username)) {
+            throw new IllegalArgumentException("JWT username claim is required");
+        }
+        if (!StringUtils.hasText(email)) {
+            throw new IllegalArgumentException("JWT email claim is required");
+        }
+        if (!StringUtils.hasText(role)) {
+            throw new IllegalArgumentException("JWT role claim is required");
         }
 
         Instant now = Instant.now();
         Instant accessExpiresAt = now.plus(Duration.ofMinutes(jwtProperties.getAccessTokenTtlMinutes()));
 
-        String accessToken = buildToken(sessionKeyId, clientId, accountId, username, email, role,
+        String accessToken = buildToken(sessionKeyId, subjectId, clientId, accountId, username, email, role,
                 "ACCESS", now, accessExpiresAt);
 
         return new IssuedAccessToken(accessToken, accessExpiresAt);
     }
 
-    private String buildToken(UUID sessionKeyId, UUID clientId, UUID accountId, String username, String email,
+    private String buildToken(UUID sessionKeyId, UUID subjectId, UUID clientId, UUID accountId, String username, String email,
                               String role, String tokenType, Instant issuedAt, Instant expiresAt) {
         if (signingKey == null) {
             throw new IllegalStateException("JWT signing is disabled");
         }
 
-        return Jwts.builder()
-                .setId(sessionKeyId.toString())
-                .setSubject(clientId.toString())
+        JwtBuilder jwtBuilder = Jwts.builder()
+                .setSubject(subjectId.toString())
                 .setIssuer(jwtProperties.getIssuer())
                 .setIssuedAt(Date.from(issuedAt))
                 .setExpiration(Date.from(expiresAt))
                 .claim("username", username)
-                .claim("clientId", clientId.toString())
-                .claim("accountId", accountId.toString())
                 .claim("email", email)
                 .claim("roles", "ROLE_" + role)
                 .claim("tokenType", tokenType)
-                .signWith(signingKey, JwtKeySupport.signatureAlgorithm(signingKey))
-                .compact();
+                .signWith(signingKey, JwtKeySupport.signatureAlgorithm(signingKey));
+
+        if (sessionKeyId != null) {
+            jwtBuilder.setId(sessionKeyId.toString());
+        }
+        if (clientId != null) {
+            jwtBuilder.claim("clientId", clientId.toString());
+        }
+        if (accountId != null) {
+            jwtBuilder.claim("accountId", accountId.toString());
+        }
+
+        return jwtBuilder.compact();
     }
 
     public static class IssuedAccessToken {

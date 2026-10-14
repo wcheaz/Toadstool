@@ -1,6 +1,7 @@
 package com.neueda.leap.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import org.springframework.stereotype.Component;
@@ -70,6 +71,8 @@ public class JwtTokenValidator {
                     claims.get("clientId", String.class),
                     claims.get("accountId", String.class)
             );
+        } catch (ExpiredJwtException e) {
+            throw e;
         } catch (JwtException | IllegalArgumentException e) {
             throw new JwtException("Invalid or expired JWT token", e);
         }

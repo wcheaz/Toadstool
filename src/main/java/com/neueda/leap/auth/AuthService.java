@@ -1,11 +1,16 @@
 package com.neueda.leap.auth;
 
 import com.neueda.leap.Account;
+import com.neueda.leap.AdminUser;
 import com.neueda.leap.Client;
+import com.neueda.leap.enums.AdminRole;
 import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.ClientStatus;
+import com.neueda.leap.enums.AdminUserStatus;
 import com.neueda.leap.mapper.AccountMapper;
+import com.neueda.leap.mapper.AdminUserMapper;
 import com.neueda.leap.mapper.ClientMapper;
+import com.neueda.leap.mapper.LoginEventMapper;
 import com.neueda.leap.security.JwtAuthenticationFilter;
 import com.neueda.leap.security.JwtTokenService.IssuedAccessToken;
 import com.neueda.leap.security.JwtTokenService;
@@ -17,33 +22,45 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.ExpiredJwtException;
 import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AuthService {
 
     private final ClientMapper clientMapper;
     private final AccountMapper accountMapper;
+    private final AdminUserMapper adminUserMapper;
     private final AuthCredentialMapper authCredentialMapper;
+    private final LoginEventMapper loginEventMapper;
     private final SessionKeyService sessionKeyService;
     private final JwtTokenService jwtTokenService;
     private final JwtTokenValidator jwtTokenValidator;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
-    public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AuthCredentialMapper authCredentialMapper,
+
+    public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AdminUserMapper adminUserMapper,
+                       AuthCredentialMapper authCredentialMapper, LoginEventMapper loginEventMapper, 
                        SessionKeyService sessionKeyService, JwtTokenService jwtTokenService,
                        JwtTokenValidator jwtTokenValidator, PasswordEncoder passwordEncoder) {
         this.clientMapper = clientMapper;
         this.accountMapper = accountMapper;
+        this.adminUserMapper = adminUserMapper;
         this.authCredentialMapper = authCredentialMapper;
+        this.loginEventMapper = loginEventMapper;
         this.sessionKeyService = sessionKeyService;
         this.jwtTokenService = jwtTokenService;
         this.jwtTokenValidator = jwtTokenValidator;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Transactional
@@ -51,9 +68,11 @@ public class AuthService {
         AuthRegisterRequest normalizedRequest = normalizeRegisterRequest(request);
         validateRegisterRequest(normalizedRequest);
         if (clientMapper.selectClientByEmail(normalizedRequest.getEmail()) != null) {
+            recordLoginEvent(null, normalizedRequest.getEmail(), "FAILURE", "Email already registered");
             throw new AuthApiException(HttpStatus.CONFLICT, "Email is already registered");
         }
         if (authCredentialMapper.selectByUsername(normalizedRequest.getUsername()) != null) {
+            recordLoginEvent(null, normalizedRequest.getEmail(), "FAILURE", "Username already registered");
             throw new AuthApiException(HttpStatus.CONFLICT, "Username is already registered");
         }
 
@@ -64,7 +83,7 @@ public class AuthService {
 
         clientMapper.insertClient(clientId, normalizedRequest.getEmail(), normalizedRequest.getDisplayName(), ClientStatus.ACTIVE.name());
         accountMapper.insertAccountWithId(accountId, clientId, AccountStatus.ACTIVE.name());
-        authCredentialMapper.insertCredential(credentialId, accountId, normalizedRequest.getUsername(), encodedPassword);
+        authCredentialMapper.insertCredential(credentialId, clientId, normalizedRequest.getUsername(), encodedPassword);
 
         Client client = new Client();
         client.setClientId(clientId);
@@ -76,24 +95,76 @@ public class AuthService {
         account.setAccountId(accountId);
         account.setClientId(clientId);
         account.setStatus(AccountStatus.ACTIVE);
+
+        recordLoginEvent(clientId, normalizedRequest.getEmail(), "SUCCESS", "Registration successful");
         return issueAuthResponse(client, account, normalizedRequest.getUsername(), credentialId);
     }
 
+    @Transactional
     public AuthResponse login(AuthLoginRequest request) {
         AuthLoginRequest normalizedRequest = normalizeLoginRequest(request);
         validateLoginRequest(normalizedRequest);
         AuthCredential credential = authCredentialMapper.selectByUsername(normalizedRequest.getUsername());
         if (credential == null || !passwordEncoder.matches(normalizedRequest.getPassword(), credential.getPasswordHash())) {
+            Client attemptedClient = credential != null ? clientMapper.selectClientById(credential.getClientId()) : null;
+            recordLoginEvent(attemptedClient != null ? attemptedClient.getClientId() : null,
+                           attemptedClient != null ? attemptedClient.getEmail() : normalizedRequest.getUsername(),
+                           "FAILURE", "Invalid username or password");
             throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
 
         authCredentialMapper.markLastLogin(credential.getCredentialId());
-        Account account = accountMapper.selectAccountById(credential.getAccountId());
-        if (account == null) {
+        Client client = clientMapper.selectClientById(credential.getClientId());
+        List<Account> accounts = accountMapper.selectAccountsByClientId(credential.getClientId(), 1, 0);
+        if (accounts.isEmpty()) {
+            recordLoginEvent(client.getClientId(), client.getEmail(), "FAILURE", "Account not found for credential");
             throw new IllegalStateException("Account not found for credential");
         }
-        Client client = clientMapper.selectClientById(account.getClientId());
+        Account account = accounts.get(0);
+        recordLoginEvent(client.getClientId(), client.getEmail(), "SUCCESS", null);
         return issueAuthResponse(client, account, credential.getUsername(), credential.getCredentialId());
+    }
+
+    public AuthResponse adminLogin(AdminLoginRequest request) {
+        AdminLoginRequest normalizedRequest = normalizeAdminLoginRequest(request);
+        validateAdminLoginRequest(normalizedRequest);
+
+        AdminUser adminUser = adminUserMapper.selectActiveAdminUserByEmail(normalizedRequest.getEmail());
+        if (adminUser == null || !passwordEncoder.matches(normalizedRequest.getPassword(), adminUser.getPasswordHash())) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid admin email or password");
+        }
+
+        if (adminUser.getRole() != AdminRole.ADMIN) {
+            throw new AuthApiException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+        if (adminUser.getStatus() != AdminUserStatus.ACTIVE) {
+            throw new AuthApiException(HttpStatus.FORBIDDEN, "Admin user is not active");
+        }
+
+        OffsetDateTime issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        IssuedAccessToken issuedAccessToken = jwtTokenService.issueAccessToken(
+                null,
+                adminUser.getAdminUserId(),
+                null,
+                adminUser.getEmail(),
+                adminUser.getEmail(),
+                "ADMIN"
+        );
+
+        if (issuedAccessToken.getAccessToken() == null) {
+            throw new IllegalStateException("JWT authentication is disabled");
+        }
+
+        return new AuthResponse(
+                issuedAccessToken.getAccessToken(),
+                Duration.between(issuedAt.toInstant(), issuedAccessToken.getAccessTokenExpiresAt()).getSeconds(),
+                null,
+                null,
+                adminUser.getDisplayName(),
+                adminUser.getEmail(),
+                adminUser.getEmail(),
+                "ADMIN"
+        );
     }
 
     private AuthResponse issueAuthResponse(Client client, Account account, String username, UUID credentialId) {
@@ -128,7 +199,7 @@ public class AuthService {
         sessionKeyService.createSession(
                 sessionKeyId,
                 credentialId,
-                account.getAccountId(),
+                client.getClientId(),
                 issuedAt,
                 OffsetDateTime.ofInstant(issuedAccessToken.getAccessTokenExpiresAt(), ZoneOffset.UTC)
         );
@@ -170,6 +241,13 @@ public class AuthService {
         }
     }
 
+    private void validateAdminLoginRequest(AdminLoginRequest request) {
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()
+                || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new AuthApiException(HttpStatus.BAD_REQUEST, "Admin email and password are required");
+        }
+    }
+
     public TokenValidationResponse validateToken(TokenValidationRequest request, String authorizationHeader) {
         String token = extractToken(request, authorizationHeader);
         try {
@@ -197,6 +275,9 @@ public class AuthService {
                     validatedToken.getAccountId(),
                     validatedToken.getIssuedAt()
             );
+        } catch (ExpiredJwtException exception) {
+            revokeExpiredSession(exception);
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
         } catch (JwtException exception) {
             throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
         } catch (IllegalArgumentException exception) {
@@ -204,16 +285,17 @@ public class AuthService {
         }
     }
 
-    public void logout(String authorizationHeader) {
-        String token = extractToken(null, authorizationHeader);
+    public void logout(TokenValidationRequest request, String authorizationHeader) {
+        String token = extractToken(request, authorizationHeader);
         try {
             ValidatedToken validatedToken = jwtTokenValidator.validateToken(token);
             if (!StringUtils.hasText(validatedToken.getTokenId())) {
                 throw new AuthApiException(HttpStatus.UNAUTHORIZED, "JWT session key is required for logout");
             }
-            if (!sessionKeyService.revokeSession(UUID.fromString(validatedToken.getTokenId()))) {
-                throw new AuthApiException(HttpStatus.UNAUTHORIZED, "JWT session is no longer active");
-            }
+            sessionKeyService.revokeSession(UUID.fromString(validatedToken.getTokenId()));
+        } catch (ExpiredJwtException exception) {
+            revokeExpiredSession(exception);
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
         } catch (JwtException exception) {
             throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
         } catch (IllegalArgumentException exception) {
@@ -229,6 +311,16 @@ public class AuthService {
             return authorizationHeader.substring(JwtAuthenticationFilter.BEARER_PREFIX.length()).trim();
         }
         throw new AuthApiException(HttpStatus.BAD_REQUEST, "JWT token is required");
+    }
+
+    private void revokeExpiredSession(ExpiredJwtException exception) {
+        if (exception.getClaims() == null || !StringUtils.hasText(exception.getClaims().getId())) {
+            return;
+        }
+        try {
+            sessionKeyService.revokeSession(UUID.fromString(exception.getClaims().getId()));
+        } catch (IllegalArgumentException ignored) {
+        }
     }
 
     private AuthRegisterRequest normalizeRegisterRequest(AuthRegisterRequest request) {
@@ -255,6 +347,17 @@ public class AuthService {
         return normalized;
     }
 
+    private AdminLoginRequest normalizeAdminLoginRequest(AdminLoginRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        AdminLoginRequest normalized = new AdminLoginRequest();
+        normalized.setEmail(trimToNull(request.getEmail()));
+        normalized.setPassword(request.getPassword());
+        return normalized;
+    }
+
     private String trimToNull(String value) {
         if (value == null) {
             return null;
@@ -262,6 +365,19 @@ public class AuthService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void recordLoginEvent(UUID clientId, String email, String outcome, String failureReason) {
+        try {
+            Map<String, Object> details = new HashMap<>();
+            if (failureReason != null) {
+                details.put("reason", failureReason);
+            }
+            String detailsJson = objectMapper.writeValueAsString(details);
+            loginEventMapper.insertLoginEvent(clientId, email, outcome, detailsJson);
+        } catch (Exception e) {
+            System.err.println("Failed to record login event: " + e.getMessage());
+        }
     }
 
 }

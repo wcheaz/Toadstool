@@ -7,7 +7,7 @@ public class AuthSession {
 
     private UUID sessionKeyId;
     private UUID credentialId;
-    private UUID accountId;
+    private UUID clientId;
     private OffsetDateTime issuedAt;
     private OffsetDateTime accessTokenExpiresAt;
     private OffsetDateTime revokedAt;
@@ -29,12 +29,12 @@ public class AuthSession {
         this.credentialId = credentialId;
     }
 
-    public UUID getAccountId() {
-        return accountId;
+    public UUID getClientId() {
+        return clientId;
     }
 
-    public void setAccountId(UUID accountId) {
-        this.accountId = accountId;
+    public void setClientId(UUID clientId) {
+        this.clientId = clientId;
     }
 
     public OffsetDateTime getIssuedAt() {

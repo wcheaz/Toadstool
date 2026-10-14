@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AuthResponse } from './api/api.models';
 import { ApiService } from './api/api.service';
+import { clearAuthSession, getAccessToken, getAccountId as readAccountId, getClientDisplayName, storeAuthSession } from '../auth-storage';
 
 /**
  * Handles the client session stored in localStorage.
@@ -15,23 +16,19 @@ export class AuthService {
    * Store client info in localStorage after login/registration
    */
   storeClientSession(response: AuthResponse): void {
-    localStorage.setItem('clientId', response.clientId);
-    localStorage.setItem('clientEmail', response.email);
-    localStorage.setItem('clientName', response.displayName);
-    localStorage.setItem('accountId', response.accountId);
-    localStorage.setItem('accessToken', response.accessToken);
+    storeAuthSession(response);
   }
 
   getClientName(): string {
-    return localStorage.getItem('clientName') || 'User';
+    return getClientDisplayName() || 'User';
   }
 
   getAccountId(): string {
-    return localStorage.getItem('accountId') || '';
+    return readAccountId() || '';
   }
 
   logout(): void {
-    this.apiService.logout().subscribe({
+    this.apiService.logout(getAccessToken()).subscribe({
       next: () => this.finishLogout(),
       error: (error) => {
         console.error('Failed to revoke session during sign out:', error);
@@ -40,12 +37,12 @@ export class AuthService {
     });
   }
 
+  forceLogout(): void {
+    this.finishLogout();
+  }
+
   private finishLogout(): void {
-    localStorage.removeItem('clientName');
-    localStorage.removeItem('clientId');
-    localStorage.removeItem('clientEmail');
-    localStorage.removeItem('accountId');
-    localStorage.removeItem('accessToken');
+    clearAuthSession();
     window.location.href = '/login';
   }
 }

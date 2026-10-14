@@ -3,6 +3,7 @@ package com.neueda.leap.auth;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -14,12 +15,12 @@ public class SessionKeyService {
         this.authSessionMapper = authSessionMapper;
     }
 
-    public void createSession(UUID sessionKeyId, UUID credentialId, UUID accountId,
+    public void createSession(UUID sessionKeyId, UUID credentialId, UUID clientId,
                               OffsetDateTime issuedAt, OffsetDateTime accessTokenExpiresAt) {
         authSessionMapper.insertSession(
                 sessionKeyId,
                 credentialId,
-                accountId,
+                clientId,
                 issuedAt,
                 accessTokenExpiresAt,
                 issuedAt
@@ -30,14 +31,30 @@ public class SessionKeyService {
         if (sessionKeyId == null || sessionKeyId.isBlank()) {
             return false;
         }
-        AuthSession session = authSessionMapper.selectBySessionKeyId(UUID.fromString(sessionKeyId));
+        UUID sessionId = UUID.fromString(sessionKeyId);
+        AuthSession session = authSessionMapper.selectActiveBySessionKeyId(sessionId);
         return session != null
-                && session.getRevokedAt() == null
                 && session.getAccessTokenExpiresAt() != null
-                && session.getAccessTokenExpiresAt().isAfter(OffsetDateTime.now());
+                && revokeIfExpired(sessionId, session);
     }
 
     public boolean revokeSession(UUID sessionKeyId) {
         return authSessionMapper.revokeSession(sessionKeyId) > 0;
+    }
+
+    public int revokeActiveSessionsByCredentialId(UUID credentialId) {
+        return authSessionMapper.revokeActiveSessionsByCredentialId(credentialId);
+    }
+
+    public int revokeExpiredSessions() {
+        return authSessionMapper.revokeExpiredSessions(OffsetDateTime.now(ZoneOffset.UTC));
+    }
+
+    private boolean revokeIfExpired(UUID sessionId, AuthSession session) {
+        if (session.getAccessTokenExpiresAt().isAfter(OffsetDateTime.now())) {
+            return true;
+        }
+        revokeSession(sessionId);
+        return false;
     }
 }
