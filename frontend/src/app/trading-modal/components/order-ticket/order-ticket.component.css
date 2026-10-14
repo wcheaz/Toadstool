@@ -224,6 +224,19 @@
   font-size: 12px;
 }
 
+.sell-limit {
+  margin: -8px 0 0;
+  font-size: 12px;
+}
+
+.sell-limit-valid {
+  color: #86efac;
+}
+
+.sell-limit-invalid {
+  color: #fca5a5;
+}
+
 /* Button Group */
 .button-group {
   display: flex;

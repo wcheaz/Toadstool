@@ -74,6 +74,13 @@ export class OrderTicketComponent {
     return this.validationError === '';
   }
 
+  get isSellQuantityValid(): boolean {
+    return !!this.selectedAsset &&
+      Number.isFinite(this.quantity) &&
+      this.quantity > 0 &&
+      this.quantity <= this.selectedAsset.holdings;
+  }
+
   get estFillPrice(): string {
     if (!this.selectedAsset) return '$0.00';
     if (this.orderType === 'limit') {
