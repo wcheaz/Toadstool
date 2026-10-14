@@ -1,0 +1,26 @@
+<div class="trading-page">
+  <section class="desk-heading"><div><h1>Trading Desk</h1><p>Execute instant market orders with live pipeline feeds</p></div><span class="market-status"><i></i> Updates hourly</span></section>
+
+  <div class="desk-grid">
+    <section class="panel recommendations-panel" aria-labelledby="recommendations-heading">
+      <div class="panel-title"><div><h2 id="recommendations-heading">Top 25 recommended stocks</h2><p>Find a stock by ticker or company name, then select it to open the trade popup.</p></div><span>{{ filteredStocks.length }} results</span></div>
+      <label class="search-box"><span class="search-icon"></span><input type="search" [(ngModel)]="searchTerm" placeholder="Search by ticker or company name" aria-label="Search stocks"><kbd>⌕</kbd></label>
+      <p class="disclaimer"><span>ⓘ</span> Illustrative quotes below are sample data and should not be used for live trading decisions.</p>
+      <div class="stock-list" *ngIf="!isLoading; else loadingState">
+        <button class="stock-row" type="button" *ngFor="let stock of filteredStocks" [class.selected]="selectedStock?.symbol === stock.symbol" (click)="selectStock(stock)">
+          <span class="stock-badge">{{ stock.symbol.slice(0, 2) }}</span><span class="stock-copy"><strong>{{ stock.name }}</strong><small>{{ stock.symbol }} · ${{ (quotes.get(stock.instrumentId)?.price ?? stock.price).toFixed(2) }}</small></span><span class="stock-change" [class.negative]="(quotes.get(stock.instrumentId)?.changePercent ?? stock.changePercent) < 0">{{ (quotes.get(stock.instrumentId)?.changePercent ?? stock.changePercent) >= 0 ? '+' : '' }}{{ (quotes.get(stock.instrumentId)?.changePercent ?? stock.changePercent).toFixed(2) }}%</span><span class="trade-button" (click)="$event.stopPropagation(); openTrade(stock)">Trade</span>
+        </button>
+        <p class="empty-state" *ngIf="filteredStocks.length === 0">No stocks match “{{ searchTerm }}”.</p>
+      </div>
+      <ng-template #loadingState><div class="loading-state">Loading market recommendations...</div></ng-template>
+    </section>
+
+    <aside class="panel news-panel" aria-labelledby="news-heading">
+      <div class="panel-title"><h2 id="news-heading">Market News &amp; Live Asset Tickers</h2><span class="live-label">Updates hourly</span></div>
+      <article class="news-card" [class.high-impact]="selectedNews.level === 'HIGH'"><div class="news-card-heading"><span>IMPACT LEVEL: {{ selectedNews.level }}</span><div class="ticker-bars"><i></i><i></i><i></i><i></i><i></i></div></div><h3>{{ selectedNews.headline }}</h3><p>{{ selectedNews.summary }}</p><small>{{ selectedNews.detail }}</small></article>
+      <article class="news-card secondary"><div class="news-card-heading"><span>SELECTED RECOMMENDATION</span><span class="pulse">● LIVE</span></div><h3>{{ selectedStock?.name || 'Choose a stock' }}</h3><p>Selected from your recommended watchlist. Open the trade popup to review the live order ticket.</p><small>Symbol: {{ selectedStock?.symbol || '--' }} · Market: Open · Fauxnance feed connected</small></article>
+    </aside>
+  </div>
+
+  <app-trading-modal [isOpen]="isTradeModalOpen" [selectedAsset]="selectedAsset" [accountId]="accountId" [candleData]="tradingChartData" [instrumentId]="selectedInstrumentId" (close)="closeTrade()"></app-trading-modal>
+</div>

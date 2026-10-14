@@ -38,7 +38,7 @@ export class App implements OnInit {
   }
 
   private updateLayoutVisibility(url: string) {
-    const mainLayoutPages = ['/homepage', '/news', '/activity'];
+    const mainLayoutPages = ['/homepage', '/news', '/activity', '/trading'];
     this.isShowingMainLayout = mainLayoutPages.some(page => url.startsWith(page));
   }
 
