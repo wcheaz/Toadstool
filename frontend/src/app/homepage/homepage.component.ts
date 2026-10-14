@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../core/api/api.service';
-import { Instrument, QuoteResponse, CandleResponse } from '../core/api/api.models';
+import { AccountResponse, Instrument, QuoteResponse, CandleResponse } from '../core/api/api.models';
 import { Asset } from '../shared/models/asset.model';
 import { AuthService } from '../core/auth.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
@@ -33,8 +33,10 @@ import { takeUntil } from 'rxjs/operators';
 export class HomepageComponent implements OnInit, OnDestroy {
   clientName: string = '';
   accountId: string = '';
-  currentBalance: number = 142384.50;
-  availableForTrading: number = 12450.00;
+  currentBalance: number = 0;
+  availableForTrading: number = 0;
+  accounts: AccountResponse[] = [];
+  isCreatingAccount: boolean = false;
   activeTab: string = 'overview';
   platformStatus: string = 'Platform live status: Standard Trading Hours';
 
@@ -78,10 +80,55 @@ export class HomepageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.loadAccounts();
     this.loadInstruments();
     interval(5000)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.refreshQuotes());
+  }
+
+  loadAccounts() {
+    const clientId = this.authService.getClientId();
+    if (!clientId) return;
+
+    this.apiService.getAccountsByClientId(clientId).subscribe({
+      next: (response) => {
+        this.accounts = response.items;
+        const selectedAccount = this.accounts.find(account => account.accountId === this.authService.getAccountId())
+          || this.accounts[0];
+        if (selectedAccount) this.selectAccount(selectedAccount);
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Failed to load accounts:', error)
+    });
+  }
+
+  selectAccount(account: AccountResponse) {
+    this.accountId = account.accountId;
+    this.currentBalance = account.balance;
+    this.availableForTrading = account.balance;
+    this.authService.setAccountId(account.accountId);
+  }
+
+  createAccount() {
+    const clientId = this.authService.getClientId();
+    if (!clientId || this.isCreatingAccount) return;
+    const accountName = window.prompt('Name this account', `Account ${this.accounts.length + 1}`)?.trim();
+    if (!accountName) return;
+
+    this.isCreatingAccount = true;
+    this.apiService.createAccount(clientId, accountName).subscribe({
+      next: (account) => {
+        this.accounts = [...this.accounts, account];
+        this.selectAccount(account);
+        this.isCreatingAccount = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Failed to create account:', error);
+        this.isCreatingAccount = false;
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -184,7 +231,12 @@ export class HomepageComponent implements OnInit, OnDestroy {
   }
 
   onWithdrawClicked() {
-    alert('Withdraw functionality coming soon');
+    const amount = Number(window.prompt('Withdrawal amount') || 0);
+    if (!amount || amount <= 0 || !this.accountId) return;
+    this.apiService.postCashEvent(this.accountId, { eventType: 'WITHDRAWAL', amount }).subscribe({
+      next: (account) => this.selectAccount(account),
+      error: () => alert('Withdrawal failed. Check the amount and available balance.')
+    });
   }
 
   onTransferClicked() {
@@ -192,12 +244,14 @@ export class HomepageComponent implements OnInit, OnDestroy {
   }
 
   onDepositSubmit(summary: any) {
-    console.log('Deposit submitted:', summary);
-    // Update account balance
-    this.currentBalance += summary.total;
-    this.availableForTrading += summary.amount;
-    // Show success message
-    alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.total)} initiated successfully!`);
+    if (!this.accountId) return;
+    this.apiService.postCashEvent(this.accountId, { eventType: 'DEPOSIT', amount: summary.amount }).subscribe({
+      next: (account) => {
+        this.selectAccount(account);
+        alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} completed successfully!`);
+      },
+      error: () => alert('Deposit failed. Please try again.')
+    });
   }
 
   logout() {

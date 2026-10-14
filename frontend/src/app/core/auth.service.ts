@@ -31,8 +31,16 @@ export class AuthService {
     return localStorage.getItem('clientName') || 'User';
   }
 
+  getClientId(): string {
+    return localStorage.getItem('clientId') || '';
+  }
+
   getAccountId(): string {
     return localStorage.getItem('accountId') || '';
+  }
+
+  setAccountId(accountId: string): void {
+    localStorage.setItem('accountId', accountId);
   }
 
   logout(): void {

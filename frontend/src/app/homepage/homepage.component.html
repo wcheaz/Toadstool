@@ -1,6 +1,22 @@
 <div class="homepage-content">
+  <section class="account-switcher" *ngIf="accounts.length > 0">
+    <div>
+      <span class="account-switcher-label">Active account</span>
+      <select [value]="accountId" (change)="selectAccount(accounts[$any($event.target).selectedIndex])">
+        <option *ngFor="let account of accounts" [value]="account.accountId">
+          {{ account.accountName }} | {{ account.balance | currency:'USD':'symbol':'1.2-2' }}
+        </option>
+      </select>
+    </div>
+    <button class="create-account-button" type="button" (click)="createAccount()" [disabled]="isCreatingAccount">
+      {{ isCreatingAccount ? 'Creating...' : 'Create account' }}
+    </button>
+  </section>
+
   <!-- Balance Widget -->
   <app-balance-widget
+    [currentBalance]="currentBalance"
+    [availableForTrading]="availableForTrading"
     (depositClicked)="openDepositModal()"
     (withdrawClicked)="onWithdrawClicked()"
     (transferClicked)="onTransferClicked()"></app-balance-widget>

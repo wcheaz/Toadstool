@@ -11,10 +11,13 @@ import com.neueda.leap.service.FauxnanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import com.neueda.leap.service.CashEventService;
 
 /**
  * REST Controller for Account endpoints
@@ -25,11 +28,18 @@ public class AccountController {
 
     private final AccountService accountService;
     private final ClientService clientService;
+    private final CashEventService cashEventService;
     // private final FauxnanceService fauxnanceService;
 
     public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService) {
+        this(accountService, clientService, fauxnanceService, null);
+    }
+
+    @Autowired
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService, CashEventService cashEventService) {
         this.accountService = accountService;
         this.clientService = clientService;
+        this.cashEventService = cashEventService;
         // this.fauxnanceService = fauxnanceService;
     }
 
@@ -54,12 +64,36 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            Account account = accountService.createAccount(clientId);
+                Account account = request.getAccountName() == null || request.getAccountName().isBlank()
+                    ? accountService.createAccount(clientId)
+                    : accountService.createAccount(clientId, request.getAccountName());
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(mapToAccountResponse(account));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/accounts/{accountId}/cash-events")
+    public ResponseEntity<AccountResponse> postCashEvent(@PathVariable UUID accountId, @RequestBody CashEventRequest request) {
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) return ResponseEntity.notFound().build();
+        if (!SecurityAccess.canAccessAccount(accountId, account.getClientId())) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            if (cashEventService == null) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+            if (request.getAmount() == null || request.getAmount().signum() <= 0) {
+                return ResponseEntity.badRequest().build();
+            }
+            BigDecimal amount = request.getAmount().abs();
+            if ("WITHDRAWAL".equals(request.getEventType())) amount = amount.negate();
+            if (!"DEPOSIT".equals(request.getEventType()) && !"WITHDRAWAL".equals(request.getEventType())) {
+                return ResponseEntity.badRequest().build();
+            }
+            cashEventService.post(accountId, null, request.getEventType(), amount, "{}");
+            return ResponseEntity.ok(mapToAccountResponse(accountService.getAccountById(accountId)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.unprocessableEntity().build();
         }
     }
 
@@ -156,13 +190,16 @@ public class AccountController {
         return new AccountResponse(
                 account.getAccountId(),
                 account.getClientId(),
+                account.getAccountName(),
                 account.getStatus() != null ? account.getStatus().toString() : "ACTIVE",
-                account.getOpenedAt()
+                account.getOpenedAt(),
+                account.getBalance()
         );
     }
 
     public static class CreateAccountRequest {
         private UUID clientId;
+        private String accountName;
 
         public UUID getClientId() {
             return clientId;
@@ -171,5 +208,17 @@ public class AccountController {
         public void setClientId(UUID clientId) {
             this.clientId = clientId;
         }
+
+        public String getAccountName() { return accountName; }
+        public void setAccountName(String accountName) { this.accountName = accountName; }
+    }
+
+    public static class CashEventRequest {
+        private String eventType;
+        private BigDecimal amount;
+        public String getEventType() { return eventType; }
+        public void setEventType(String eventType) { this.eventType = eventType; }
+        public BigDecimal getAmount() { return amount; }
+        public void setAmount(BigDecimal amount) { this.amount = amount; }
     }
 }

@@ -13,5 +13,6 @@ public interface AccountRepository {
     List<Account> findByClientId(UUID clientId, int limit, int offset);
     int countByClientId(UUID clientId);
     void save(UUID clientId, String status);
+    void save(UUID clientId, String accountName, String status);
     void updateBalance(UUID accountId, BigDecimal balance);
 }

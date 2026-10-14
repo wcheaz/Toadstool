@@ -20,10 +20,9 @@ This command drops all schemas, recreates the database structure, and inserts co
    - Inserts comprehensive test data (25 clients, 120 orders, ~96 fills)
    - Can be run with: `psql -U postgres -d Toadstool -f restart_database.sql`
 
-2. **V2__insert_test_data.sql** - Flyway migration script (optional)
-   - Use if integrating with Flyway for version control
-   - Runs automatically after V1__init.sql
-   - Inserts same test data as restart_database.sql
+2. **Flyway migrations** - The authoritative migration scripts live in
+   `src/main/resources/db/migrations/` and run automatically when the Spring Boot
+   application starts. They should not be duplicated in this folder.
 
 ## Data Summary
 
@@ -46,18 +45,18 @@ Each database reset provides:
 
 See the Quick Start command at the top of this file to run the script.
 
-### Flyway Migrations (Optional for CI/CD)
+### Flyway Migrations
 
-If using Flyway for version control:
-1. Keep `V1__init.sql` as your base schema
-2. `V2__insert_test_data.sql` automatically runs as next migration
-3. Flyway will execute on application startup
+Flyway uses `src/main/resources/db/migrations/` for version control and executes the
+pending migrations on application startup. To change seeded test data, edit the
+appropriate migration there; do not modify an already-applied migration in a shared
+database.
 
 ## Customizing Test Data
 
 To modify the test data, edit:
 - **restart_database.sql** - For direct SQL execution
-- **V2__insert_test_data.sql** - If using Flyway migrations
+- **src/main/resources/db/migrations/** - For Flyway-managed migrations
 
 ### Examples:
 

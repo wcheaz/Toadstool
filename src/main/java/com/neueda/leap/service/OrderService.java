@@ -15,6 +15,8 @@ import com.neueda.leap.validator.OrderValidationRequest;
 import com.neueda.leap.pricing.FeeStrategy;
 import com.neueda.leap.pricing.FeeStrategyFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -38,6 +40,7 @@ public class OrderService {
     private final FeeStrategyFactory feeStrategyFactory;
     private final FillService fillService;
     private final HoldingsService holdingsService;
+    private final CashEventService cashEventService;
 
     public OrderService(OrderRepository orderRepository,
                        InstrumentPricingService pricingService,
@@ -49,6 +52,22 @@ public class OrderService {
                        FeeStrategyFactory feeStrategyFactory,
                        FillService fillService,
                        HoldingsService holdingsService) {
+        this(orderRepository, pricingService, marketStatusService, accountService, instrumentService,
+                tradeEventService, orderValidator, feeStrategyFactory, fillService, holdingsService, null);
+    }
+
+    @Autowired
+    public OrderService(OrderRepository orderRepository,
+                       InstrumentPricingService pricingService,
+                       MarketStatusService marketStatusService,
+                       AccountService accountService,
+                       InstrumentService instrumentService,
+                       TradeEventService tradeEventService,
+                       OrderValidator orderValidator,
+                       FeeStrategyFactory feeStrategyFactory,
+                       FillService fillService,
+                       HoldingsService holdingsService,
+                       CashEventService cashEventService) {
         this.orderRepository = orderRepository;
         this.pricingService = pricingService;
         this.marketStatusService = marketStatusService;
@@ -59,6 +78,7 @@ public class OrderService {
         this.feeStrategyFactory = feeStrategyFactory;
         this.fillService = fillService;
         this.holdingsService = holdingsService;
+        this.cashEventService = cashEventService;
     }
 
     /**
@@ -229,6 +249,7 @@ public class OrderService {
      * @return The created Fill
      * @throws IllegalArgumentException if order not found
      */
+    @Transactional
     public Fill fillOrder(UUID orderId, BigDecimal fillPrice) {
         Order order = getOrderById(orderId);
         if (order == null) {
@@ -242,22 +263,9 @@ public class OrderService {
         holdingsService.updateHoldingFromFill(order.getAccountId(), order.getInstrumentId(),
                 order.getSide(), fillQuantity);
 
-        // Update account balance
-        Account account = accountService.getAccountById(order.getAccountId());
-        if (account != null) {
-            BigDecimal currentBalance = BigDecimal.ZERO;
-            BigDecimal newBalance;
-
-            if (OrderSide.BUY.equals(order.getSide())) {
-                newBalance = currentBalance.subtract(fillAmount);
-            } else if (OrderSide.SELL.equals(order.getSide())) {
-                newBalance = currentBalance.add(fillAmount);
-            } else {
-                throw new IllegalArgumentException("Invalid order side: " + order.getSide());
-            }
-
-            accountService.updateAccountBalance(order.getAccountId(), newBalance);
-        }
+        BigDecimal cashDelta = OrderSide.BUY.equals(order.getSide()) ? fillAmount.negate() : fillAmount;
+        String cashEventType = OrderSide.BUY.equals(order.getSide()) ? "BUY" : "SELL";
+        cashEventService.post(order.getAccountId(), order.getOrderId(), cashEventType, cashDelta, "{}");
 
         // Create fill record
         fillService.createFill(orderId, fillPrice.toPlainString(), fillQuantity.toPlainString(), "FILLED");
