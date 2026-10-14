@@ -218,6 +218,12 @@
   color: #f3f4f6;
 }
 
+.validation-error {
+  margin: -8px 0 0;
+  color: #fca5a5;
+  font-size: 12px;
+}
+
 /* Button Group */
 .button-group {
   display: flex;
@@ -246,6 +252,11 @@
 
 .btn-preview:hover {
   background: rgba(71, 85, 105, 0.3);
+}
+
+.btn-preview:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-place {

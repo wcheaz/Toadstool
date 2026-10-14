@@ -29,6 +29,7 @@ export class TradingModalComponent implements OnChanges {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
   @Input() accountId: string = '';
+  @Input() accountBalance: number | null = null;
   @Input() candleData: CandleResponse[] = [];
   @Input() instrumentId: string = '';
   @Input() apiError: string = '';
@@ -125,6 +126,13 @@ export class TradingModalComponent implements OnChanges {
     const ticket = this.pendingTicket;
     if (!ticket) return;
 
+    const validationError = this.validateTicket(ticket);
+    if (validationError) {
+      this.errorMessage = validationError;
+      this.isErrorOpen = true;
+      return;
+    }
+
     if (!ticket.agreedToTerms) {
       this.errorMessage = 'Please agree to market conditions before placing an order';
       this.isErrorOpen = true;
@@ -196,6 +204,29 @@ export class TradingModalComponent implements OnChanges {
         this.isErrorOpen = true;
       }
     });
+  }
+
+  private validateTicket(ticket: OrderTicketValue): string {
+    if (!this.selectedAsset) return 'Select an asset before placing an order.';
+    if (!Number.isFinite(ticket.quantity) || ticket.quantity <= 0) {
+      return 'Quantity must be greater than zero.';
+    }
+    if (!Number.isFinite(this.selectedAsset.price) || this.selectedAsset.price <= 0) {
+      return 'The selected asset does not have a valid market price.';
+    }
+    if (ticket.orderType === 'limit' && (!Number.isFinite(ticket.limitPrice) || ticket.limitPrice <= 0)) {
+      return 'Limit price must be greater than zero.';
+    }
+    if (ticket.orderSide === 'sell' && ticket.quantity > this.selectedAsset.holdings) {
+      return `You can sell at most ${this.selectedAsset.holdings} shares.`;
+    }
+    const price = ticket.orderType === 'limit' ? ticket.limitPrice : this.selectedAsset.price;
+    const total = ticket.quantity * price;
+    if (ticket.orderSide === 'buy' && this.accountBalance !== null &&
+        (!Number.isFinite(this.accountBalance) || total > this.accountBalance)) {
+      return `This order exceeds your available balance of $${this.accountBalance.toFixed(2)}.`;
+    }
+    return '';
   }
 
   private fillOrder(orderId: string, fillPrice: number) {
