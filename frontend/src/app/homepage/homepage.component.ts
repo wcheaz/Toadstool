@@ -197,6 +197,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.selectedTimeframeForChart = '90'; // default to 3M
     this.tradingChartData = [];
     this.isTradeModalOpen = true;
+    this.loadHoldingForSelectedAsset(instrument.instrumentId);
 
     this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
       next: (candles: CandleResponse[]) => {
@@ -208,6 +209,21 @@ export class HomepageComponent implements OnInit, OnDestroy {
         console.error('Failed to load chart data:', e);
         console.error('Error details:', e.status, e.statusText, e.message);
       }
+    });
+  }
+
+  private loadHoldingForSelectedAsset(instrumentId: string): void {
+    if (!this.accountId) return;
+    this.apiService.getAccountHoldings(this.accountId).subscribe({
+      next: (response) => {
+        const holding = response.holdings.find(item => item.instrumentId === instrumentId);
+        if (this.selectedAsset?.instrumentId === instrumentId) {
+          const quantity = holding ? Number(holding.quantity) : 0;
+          this.selectedAsset = { ...this.selectedAsset, holdings: Number.isFinite(quantity) ? Math.max(0, quantity) : 0 };
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => console.error('Failed to load account holdings:', error)
     });
   }
 

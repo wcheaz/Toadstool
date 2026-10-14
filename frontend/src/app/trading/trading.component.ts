@@ -119,9 +119,25 @@ export class TradingComponent implements OnInit, OnDestroy {
     this.selectedInstrumentId = stock.instrumentId;
     this.tradingChartData = [];
     this.isTradeModalOpen = true;
+    this.loadHoldingForSelectedAsset(stock.instrumentId);
     this.apiService.getCandles(stock.instrumentId, 90).subscribe({
       next: (candles) => { this.tradingChartData = candles; this.cdr.detectChanges(); },
       error: () => this.cdr.detectChanges()
+    });
+  }
+
+  private loadHoldingForSelectedAsset(instrumentId: string): void {
+    if (!this.accountId) return;
+    this.apiService.getAccountHoldings(this.accountId).subscribe({
+      next: (response) => {
+        const holding = response.holdings.find(item => item.instrumentId === instrumentId);
+        if (this.selectedAsset?.instrumentId === instrumentId) {
+          const quantity = holding ? Number(holding.quantity) : 0;
+          this.selectedAsset = { ...this.selectedAsset, holdings: Number.isFinite(quantity) ? Math.max(0, quantity) : 0 };
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => console.error('Failed to load account holdings:', error)
     });
   }
 
