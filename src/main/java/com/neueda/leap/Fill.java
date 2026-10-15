@@ -13,6 +13,7 @@ public class Fill {
     private BigDecimal quantity;
     private FillStatus status;
     private OffsetDateTime executedAt;
+    private BigDecimal fee = BigDecimal.ZERO;
 
     // Constructors
     public Fill() {
@@ -81,5 +82,13 @@ public class Fill {
 
     public void setExecutedAt(OffsetDateTime executedAt) {
         this.executedAt = executedAt;
+    }
+
+    public BigDecimal getFee() {
+        return fee;
+    }
+
+    public void setFee(BigDecimal fee) {
+        this.fee = fee;
     }
 }

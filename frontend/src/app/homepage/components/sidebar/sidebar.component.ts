@@ -11,6 +11,8 @@ import { Router } from '@angular/router';
 })
 export class SidebarComponent {
   @Input() adminMode = false;
+  /** Highlights the matching admin nav item, e.g. 'admin-dashboard' or 'admin-audit'. */
+  @Input() activeSection = '';
 
   constructor(private router: Router) {}
 
@@ -37,6 +39,9 @@ export class SidebarComponent {
       case 'admin-dashboard':
       case 'admin-clients':
         this.router.navigate(['/admin-dashboard']);
+        break;
+      case 'admin-audit':
+        this.router.navigate(['/admin-audit']);
         break;
       default:
         console.log('Unknown section:', section);

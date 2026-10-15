@@ -10,7 +10,6 @@ public class AdminUser {
     private UUID adminUserId;
     private String email;
     private String displayName;
-    private String passwordHash;
     private AdminRole role;
     private AdminUserStatus status;
     private OffsetDateTime createdAt;
@@ -60,14 +59,6 @@ public class AdminUser {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
     }
 
     public AdminRole getRole() {

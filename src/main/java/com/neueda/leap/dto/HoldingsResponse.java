@@ -66,6 +66,8 @@ public class HoldingsResponse {
         private UUID instrumentId;
         private String symbol;
         private String quantity;
+        private String name;
+        private String assetClass;
 
         public HoldingItem() {
         }
@@ -98,6 +100,22 @@ public class HoldingsResponse {
 
         public void setQuantity(String quantity) {
             this.quantity = quantity;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getAssetClass() {
+            return assetClass;
+        }
+
+        public void setAssetClass(String assetClass) {
+            this.assetClass = assetClass;
         }
     }
 

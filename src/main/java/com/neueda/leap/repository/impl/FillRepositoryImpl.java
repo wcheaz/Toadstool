@@ -50,7 +50,7 @@ public class FillRepositoryImpl implements FillRepository {
     }
 
     @Override
-    public void save(UUID orderId, String price, String quantity, String status) {
-        fillMapper.insertFill(orderId, price, quantity, status);
+    public void save(UUID orderId, String price, String quantity, String status, String fee) {
+        fillMapper.insertFill(orderId, price, quantity, status, fee);
     }
 }

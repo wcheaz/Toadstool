@@ -45,30 +45,6 @@
 
     <!-- Right Section - Market Widgets -->
     <aside class="right-sidebar">
-      <!-- Live Market Sentiment -->
-      <div class="widget market-sentiment-widget">
-        <h3 class="widget-title">Live Market Sentiment</h3>
-        <div class="sentiment-content">
-          <div class="sentiment-bars">
-            <div class="sentiment-bar bullish">
-              <span class="sentiment-label">{{ marketSentiment.bullish }}% Bullish</span>
-              <div class="bar-container">
-                <div class="bar-fill bullish" [style.width.%]="marketSentiment.bullish"></div>
-              </div>
-            </div>
-            <div class="sentiment-bar bearish">
-              <span class="sentiment-label">{{ marketSentiment.bearish }}% Bearish</span>
-              <div class="bar-container">
-                <div class="bar-fill bearish" [style.width.%]="marketSentiment.bearish"></div>
-              </div>
-            </div>
-          </div>
-          <p class="sentiment-description">
-            Aggregate calculation derived from 150 buy signal histories, policy feeds, and commodity indices
-          </p>
-        </div>
-      </div>
-
       <!-- Trading Assets -->
       <div class="widget trading-assets-widget">
         <h3 class="widget-title">Trading Assets</h3>
@@ -138,6 +114,7 @@
     [candleData]="tradingChartData"
     [instrumentId]="selectedInstrumentId"
     [apiError]="apiError"
+    (orderCompleted)="refreshAccount()"
     (close)="closeTradeModal()">
   </app-trading-modal>
 </div>

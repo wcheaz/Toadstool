@@ -29,14 +29,24 @@ public interface LoginEventMapper {
     @Select("SELECT COUNT(*) FROM trading.login_events WHERE client_id = #{clientId}")
     int countLoginEventsByClientId(@Param("clientId") UUID clientId);
 
-    @Select("SELECT login_event_id as loginEventId, client_id as clientId, " +
-            "email_attempted as emailAttempted, outcome, occurred_at as occurredAt, details " +
-            "FROM trading.login_events " +
-            "ORDER BY occurred_at DESC LIMIT #{limit} OFFSET #{offset}")
-    List<LoginEvent> selectAllLoginEvents(@Param("limit") int limit, @Param("offset") int offset);
+    String LOGIN_EVENT_FILTER = "<where>"
+            + "<if test='clientId != null'>client_id = #{clientId}</if>"
+            + "<if test='outcome != null'> AND outcome = #{outcome}</if>"
+            + "<if test='emailAttempted != null'> AND email_attempted ILIKE '%' || #{emailAttempted} || '%'</if>"
+            + "</where>";
 
-    @Select("SELECT COUNT(*) FROM trading.login_events")
-    int countAllLoginEvents();
+    @Select({"<script>",
+            "SELECT login_event_id as loginEventId, client_id as clientId,",
+            "email_attempted as emailAttempted, outcome, occurred_at as occurredAt, details",
+            "FROM trading.login_events", LOGIN_EVENT_FILTER,
+            "ORDER BY occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
+    List<LoginEvent> selectLoginEvents(@Param("clientId") UUID clientId, @Param("outcome") String outcome,
+                                       @Param("emailAttempted") String emailAttempted,
+                                       @Param("limit") int limit, @Param("offset") int offset);
+
+    @Select({"<script>", "SELECT COUNT(*) FROM trading.login_events", LOGIN_EVENT_FILTER, "</script>"})
+    int countLoginEvents(@Param("clientId") UUID clientId, @Param("outcome") String outcome,
+                         @Param("emailAttempted") String emailAttempted);
 
     @Insert("INSERT INTO trading.login_events (client_id, email_attempted, outcome, details) " +
             "VALUES (#{clientId}, #{emailAttempted}, #{outcome}, #{details}::jsonb)")

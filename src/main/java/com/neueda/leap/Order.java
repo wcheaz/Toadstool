@@ -15,6 +15,7 @@ public class Order {
     private String idempotencyKey;
     private OffsetDateTime submittedAt;
     private BigDecimal totalPrice;
+    private String status;
 
     // Constructors
     public Order() {
@@ -101,5 +102,14 @@ public class Order {
 
     public void setTotalPrice(BigDecimal totalPrice) {
         this.totalPrice = totalPrice;
+    }
+
+    /** Derived from the order's latest fill: FILLED, FAILED, PENDING, or SUBMITTED when unfilled. */
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

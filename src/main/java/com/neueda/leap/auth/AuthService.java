@@ -39,6 +39,7 @@ public class AuthService {
     private final AccountMapper accountMapper;
     private final AdminUserMapper adminUserMapper;
     private final AuthCredentialMapper authCredentialMapper;
+    private final AdminCredentialMapper adminCredentialMapper;
     private final LoginEventMapper loginEventMapper;
     private final SessionKeyService sessionKeyService;
     private final JwtTokenService jwtTokenService;
@@ -48,13 +49,15 @@ public class AuthService {
 
 
     public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AdminUserMapper adminUserMapper,
-                       AuthCredentialMapper authCredentialMapper, LoginEventMapper loginEventMapper, 
+                       AuthCredentialMapper authCredentialMapper, AdminCredentialMapper adminCredentialMapper,
+                       LoginEventMapper loginEventMapper,
                        SessionKeyService sessionKeyService, JwtTokenService jwtTokenService,
                        JwtTokenValidator jwtTokenValidator, PasswordEncoder passwordEncoder) {
         this.clientMapper = clientMapper;
         this.accountMapper = accountMapper;
         this.adminUserMapper = adminUserMapper;
         this.authCredentialMapper = authCredentialMapper;
+        this.adminCredentialMapper = adminCredentialMapper;
         this.loginEventMapper = loginEventMapper;
         this.sessionKeyService = sessionKeyService;
         this.jwtTokenService = jwtTokenService;
@@ -128,8 +131,13 @@ public class AuthService {
         AdminLoginRequest normalizedRequest = normalizeAdminLoginRequest(request);
         validateAdminLoginRequest(normalizedRequest);
 
-        AdminUser adminUser = adminUserMapper.selectActiveAdminUserByEmail(normalizedRequest.getEmail());
-        if (adminUser == null || !passwordEncoder.matches(normalizedRequest.getPassword(), adminUser.getPasswordHash())) {
+        AdminCredential credential = adminCredentialMapper.selectByUsername(normalizedRequest.getEmail());
+        if (credential == null || !passwordEncoder.matches(normalizedRequest.getPassword(), credential.getPasswordHash())) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid admin email or password");
+        }
+
+        AdminUser adminUser = adminUserMapper.selectAdminUserById(credential.getAdminUserId());
+        if (adminUser == null) {
             throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid admin email or password");
         }
 
@@ -140,9 +148,10 @@ public class AuthService {
             throw new AuthApiException(HttpStatus.FORBIDDEN, "Admin user is not active");
         }
 
+        UUID sessionKeyId = UUID.randomUUID();
         OffsetDateTime issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
         IssuedAccessToken issuedAccessToken = jwtTokenService.issueAccessToken(
-                null,
+                sessionKeyId,
                 adminUser.getAdminUserId(),
                 null,
                 adminUser.getEmail(),
@@ -153,6 +162,14 @@ public class AuthService {
         if (issuedAccessToken.getAccessToken() == null) {
             throw new IllegalStateException("JWT authentication is disabled");
         }
+
+        sessionKeyService.createAdminSession(
+                sessionKeyId,
+                credential.getCredentialId(),
+                adminUser.getAdminUserId(),
+                issuedAt,
+                OffsetDateTime.ofInstant(issuedAccessToken.getAccessTokenExpiresAt(), ZoneOffset.UTC)
+        );
 
         return new AuthResponse(
                 issuedAccessToken.getAccessToken(),

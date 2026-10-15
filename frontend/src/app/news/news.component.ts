@@ -56,6 +56,8 @@ export class NewsComponent implements OnInit, OnDestroy {
   clientName: string = '';
   accountId: string = '';
   accountBalance: number | null = null;
+  /** Quantity held per instrumentId for the active account. */
+  private holdings: Map<string, number> = new Map();
   activeTab: string = 'all-feed';
 
   // Trading modal state
@@ -80,12 +82,6 @@ export class NewsComponent implements OnInit, OnDestroy {
   rawNewsData: NewsResponse[] = [];
 
   private newsRefreshSubscription: Subscription | null = null;
-
-  // Live Market Sentiment
-  marketSentiment = {
-    bullish: 64,
-    bearish: 36
-  };
 
   // Trading Assets
   tradingAssets: MarketData[] = [
@@ -146,12 +142,26 @@ export class NewsComponent implements OnInit, OnDestroy {
   constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private newsService: NewsService, private cdr: ChangeDetectorRef) {
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
-    if (this.accountId) {
-      this.apiService.getAccountById(this.accountId).subscribe({
-        next: (account) => this.accountBalance = account.balance,
-        error: (error) => console.error('Failed to load account balance:', error)
-      });
-    }
+    this.refreshAccount();
+  }
+
+  /** Load cash and holdings for the active account; also called after each trade. */
+  refreshAccount() {
+    if (!this.accountId) return;
+    this.apiService.getAccountById(this.accountId).subscribe({
+      next: (account) => this.accountBalance = account.balance,
+      error: (error) => console.error('Failed to load account balance:', error)
+    });
+    this.apiService.getAccountHoldings(this.accountId).subscribe({
+      next: (response) => {
+        this.holdings = new Map(response.holdings.map(item => [item.instrumentId, Number(item.quantity)]));
+        if (this.selectedAsset) {
+          this.selectedAsset = { ...this.selectedAsset, holdings: this.holdings.get(this.selectedAsset.instrumentId) ?? 0 };
+        }
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Failed to load holdings:', error)
+    });
   }
 
   ngOnInit() {
@@ -285,6 +295,7 @@ export class NewsComponent implements OnInit, OnDestroy {
       change: 0,
       holdings: 0
     };
+    this.selectedAsset.holdings = this.holdings.get(this.selectedAsset.instrumentId) ?? 0;
     this.selectedInstrumentId = this.selectedAsset.instrumentId;
     this.selectedTimeframeForChart = '90';
     this.isTradeModalOpen = true;

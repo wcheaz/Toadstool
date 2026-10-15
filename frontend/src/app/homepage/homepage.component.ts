@@ -64,6 +64,10 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   instruments: Instrument[] = [];
   instrumentQuotes: Map<string, QuoteResponse> = new Map();
+  /** Quantity held per instrumentId for the active account. */
+  holdings: Map<string, number> = new Map();
+  private heldInstruments: Instrument[] = [];
+  private tradableInstruments: Instrument[] = [];
   loadingInstruments: boolean = false;
 
   // Trading modal state
@@ -104,10 +108,69 @@ export class HomepageComponent implements OnInit, OnDestroy {
   }
 
   selectAccount(account: AccountResponse) {
+    const switched = account.accountId !== this.accountId || this.holdings.size === 0;
     this.accountId = account.accountId;
     this.currentBalance = account.balance;
     this.availableForTrading = account.balance;
     this.authService.setAccountId(account.accountId);
+    this.accounts = this.accounts.map(existing => existing.accountId === account.accountId ? account : existing);
+    if (switched) {
+      // Don't show the previous account's positions while the new ones load.
+      this.holdings = new Map();
+      this.heldInstruments = [];
+      this.mergeInstruments();
+      this.loadHoldings();
+    }
+  }
+
+  /** Load the active account's positions and surface them at the top of the market assets table. */
+  loadHoldings() {
+    const accountId = this.accountId;
+    if (!accountId) return;
+
+    this.apiService.getAccountHoldings(accountId).subscribe({
+      next: (response) => {
+        if (accountId !== this.accountId) return;
+        this.holdings = new Map(response.holdings.map(item => [item.instrumentId, Number(item.quantity)]));
+        this.heldInstruments = response.holdings.map(item => ({
+          instrumentId: item.instrumentId,
+          symbol: item.symbol ?? '',
+          name: item.name ?? '',
+          assetClass: item.assetClass ?? '',
+          status: 'TRADABLE'
+        }));
+        this.mergeInstruments();
+        this.cdr.detectChanges();
+        this.refreshQuotes();
+      },
+      error: (error) => console.error('Failed to load holdings:', error)
+    });
+  }
+
+  /** Re-read cash and holdings after a trade so the dashboard reflects it immediately. */
+  onOrderCompleted() {
+    if (!this.accountId) return;
+    this.apiService.getAccountById(this.accountId).subscribe({
+      next: (account) => {
+        this.selectAccount(account);
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Failed to refresh account after order:', error)
+    });
+    this.loadHoldings();
+  }
+
+  /** Held instruments first (largest position first), then the rest of the tradable list. */
+  private mergeInstruments() {
+    const byId = new Map<string, Instrument>();
+    this.tradableInstruments.forEach(instrument => byId.set(instrument.instrumentId, instrument));
+    this.heldInstruments.forEach(instrument => {
+      if (!byId.has(instrument.instrumentId)) byId.set(instrument.instrumentId, instrument);
+    });
+    const all = Array.from(byId.values());
+    const held = all.filter(instrument => (this.holdings.get(instrument.instrumentId) ?? 0) > 0);
+    const rest = all.filter(instrument => (this.holdings.get(instrument.instrumentId) ?? 0) <= 0);
+    this.instruments = [...held, ...rest];
   }
 
   createAccount() {
@@ -140,7 +203,8 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.loadingInstruments = true;
     this.apiService.getInstruments(25, 0).subscribe({
       next: (response) => {
-        this.instruments = response.items;
+        this.tradableInstruments = response.items;
+        this.mergeInstruments();
         this.loadingInstruments = false;
         this.cdr.detectChanges();
         this.refreshQuotes();
@@ -155,7 +219,8 @@ export class HomepageComponent implements OnInit, OnDestroy {
   refreshQuotes() {
     if (this.instruments.length === 0) return;
 
-    const instrumentIds = this.instruments.map(i => i.instrumentId);
+    // The batch endpoint accepts at most 25 ids; held positions are first in the list.
+    const instrumentIds = this.instruments.map(i => i.instrumentId).slice(0, 25);
     this.apiService.getBatchQuotes(instrumentIds).subscribe({
       next: (quotes) => {
         this.instrumentQuotes = new Map(Object.entries(quotes));
@@ -191,7 +256,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
       name: instrument.name,
       price: quote.price,
       change: quote.changePercent,
-      holdings: 0
+      holdings: this.holdings.get(instrument.instrumentId) ?? 0
     };
     this.selectedInstrumentId = instrument.instrumentId;
     this.selectedTimeframeForChart = '90'; // default to 3M

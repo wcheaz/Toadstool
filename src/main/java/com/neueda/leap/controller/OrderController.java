@@ -1,5 +1,7 @@
 package com.neueda.leap.controller;
 
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.neueda.leap.Order;
 import com.neueda.leap.Account;
 import com.neueda.leap.Holdings;
@@ -264,7 +266,7 @@ public class OrderController {
                 sideStr,
                 order.getQuantity().toPlainString(),
                 order.getIdempotencyKey(),
-                "SUBMITTED",  // Default status for newly created orders
+                order.getStatus() != null ? order.getStatus() : "SUBMITTED",
                 order.getSubmittedAt()
         );
     }
@@ -279,6 +281,7 @@ public class OrderController {
         private String quantity;
         private String indicativePrice;
         private String estimatedTotal;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
         private OffsetDateTime timestamp;
         private String notes;
 

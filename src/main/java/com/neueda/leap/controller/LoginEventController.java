@@ -1,5 +1,7 @@
 package com.neueda.leap.controller;
 
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.neueda.leap.LoginEvent;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.security.SecurityAccess;
@@ -89,8 +91,8 @@ public class LoginEventController {
                 return ResponseEntity.badRequest().build();
             }
 
-            List<LoginEvent> events = loginEventService.listAllLoginEvents(limit, offset);
-            int totalCount = loginEventService.countAllLoginEvents();
+            List<LoginEvent> events = loginEventService.listLoginEvents(clientId, outcome, emailAttempted, limit, offset);
+            int totalCount = loginEventService.countLoginEvents(clientId, outcome, emailAttempted);
 
             List<LoginEventDto> eventDtos = events.stream()
                     .map(this::mapToLoginEventDto)
@@ -128,6 +130,7 @@ public class LoginEventController {
         private UUID clientId;
         private String emailAttempted;
         private String outcome;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
         private OffsetDateTime occurredAt;
         private String details;
 
