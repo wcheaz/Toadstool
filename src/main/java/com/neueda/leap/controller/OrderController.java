@@ -145,6 +145,14 @@ public class OrderController {
                 return ResponseEntity.notFound().build();
             }
 
+            Account account = accountService.getAccountById(order.getAccountId());
+            if (account == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
             orderService.fillOrder(orderId, price);
             order = orderService.getOrderById(orderId);
             return ResponseEntity.ok(mapToOrderResponse(order));
