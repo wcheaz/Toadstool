@@ -36,6 +36,7 @@
             [instruments]="instruments"
             [quotes]="instrumentQuotes"
             [loading]="loadingInstruments"
+            [holdings]="holdings"
             (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
           </app-market-assets-table>
 
@@ -54,6 +55,7 @@
     [accountBalance]="currentBalance"
     [candleData]="tradingChartData"
     [instrumentId]="selectedInstrumentId"
+    (orderCompleted)="onOrderCompleted()"
     (close)="closeTradeModal()">
   </app-trading-modal>
 

@@ -223,13 +223,6 @@ public class OrderService {
         return order;
     }
 
-    /**
-     * Update order status (used internally for state transitions)
-     */
-    public void updateOrderStatus(UUID orderId, String status) {
-        orderRepository.updateStatus(orderId, status);
-    }
-
     private String buildOrderEventDetails(UUID ownerClientId, UUID accountId, UUID instrumentId,
                                           String side, String quantity, String idempotencyKey) {
         AuthenticatedUser authenticatedUser = SecurityAccess.currentUser();
@@ -274,8 +267,12 @@ public class OrderService {
 
         BigDecimal fillQuantity = order.getQuantity();
         BigDecimal fillAmount = fillPrice.multiply(fillQuantity).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal fee = calculateFillFee(order.getInstrumentId(), fillAmount);
 
-        BigDecimal cashDelta = OrderSide.BUY.equals(order.getSide()) ? fillAmount.negate() : fillAmount;
+        // BUY pays value + fee; SELL receives value - fee.
+        BigDecimal cashDelta = OrderSide.BUY.equals(order.getSide())
+                ? fillAmount.add(fee).negate()
+                : fillAmount.subtract(fee);
         String cashEventType = OrderSide.BUY.equals(order.getSide()) ? "BUY" : "SELL";
         // Apply the cash change first. The conditional account update rejects a BUY
         // with insufficient funds; the surrounding transaction rolls back any
@@ -287,6 +284,18 @@ public class OrderService {
 
         // Create fill record
         return fillService.createFill(orderId, fillPrice.toPlainString(), fillQuantity.toPlainString(),
-                FillStatus.Filled.name());
+                FillStatus.Filled.name(), fee.toPlainString());
+    }
+
+    private BigDecimal calculateFillFee(UUID instrumentId, BigDecimal fillAmount) {
+        Instrument instrument = instrumentService.getInstrumentById(instrumentId);
+        if (instrument == null || instrument.getAssetClass() == null) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        FeeStrategy feeStrategy = feeStrategyFactory.getStrategy(instrument.getAssetClass());
+        if (feeStrategy == null) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        return feeStrategy.calculateFee(fillAmount).setScale(2, RoundingMode.HALF_UP);
     }
 }

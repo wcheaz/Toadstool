@@ -55,9 +55,4 @@ public class OrderRepositoryImpl implements OrderRepository {
     public void save(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey) {
         orderMapper.insertOrder(accountId, instrumentId, side, quantity, idempotencyKey);
     }
-
-    @Override
-    public void updateStatus(UUID orderId, String status) {
-        orderMapper.updateOrderStatus(orderId, status);
-    }
 }

@@ -1,24 +1,123 @@
 <section class="details-shell">
-  <app-sidebar [adminMode]="true"></app-sidebar>
+  <app-sidebar [adminMode]="true" activeSection="admin-dashboard"></app-sidebar>
 
   <main class="admin-main">
-    <header class="topbar"><button class="icon-button" type="button" aria-label="Notifications"><span class="notification-dot"></span></button><button class="profile-button" type="button" (click)="logout()" title="Sign out"><svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>{{ adminName }}</span><span class="chevron">⌄</span></button></header>
+    <header class="topbar"><button class="profile-button" type="button" (click)="logout()" title="Sign out"><svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>{{ adminName }}</span><span class="chevron">⌄</span></button></header>
     <div class="content">
-      <button class="breadcrumb" type="button" (click)="backToClients()"><span>←</span> Client oversight <b>/</b> {{ client.username }}</button>
-      <div class="page-heading"><h1>Client details</h1><p>Account, portfolio and trading history · As of 24 Oct 2024, 10:15 UTC</p></div>
+      <button class="breadcrumb" type="button" (click)="backToClients()"><span>←</span> Client oversight <b>/</b> {{ client ? (client.username ? '@' + client.username : client.displayName) : 'Client' }}</button>
+      <div class="page-heading"><h1>Client details</h1><p>Account, portfolio and trading history · As of {{ asOfLabel }}</p></div>
 
-      <section class="panel identity-panel"><div class="identity"><span class="client-avatar">{{ initials }}</span><div><h2>{{ client.name }} <span class="status">{{ client.status }}</span><span class="verified">KYC VERIFIED</span></h2><p>{{ client.username }} · {{ client.email }}</p></div></div><div class="identity-facts"><div><small>Account ID</small><span>{{ client.account }}</span></div><div><small>Account type</small><span>{{ client.accountType }}</span></div><div><small>Member since</small><span>{{ client.memberSince }}</span></div><div><small>Security</small><span>{{ client.security }}</span></div><div><small>Last sign-in</small><span>Today, 09:05 UTC</span></div></div></section>
+      <section class="panel state-panel" *ngIf="loading">Loading client…</section>
+      <section class="panel state-panel error" *ngIf="!loading && error">{{ error }}</section>
 
-      <section class="metric-grid"><article class="metric-card"><small>PORTFOLIO VALUE</small><strong class="green">{{ client.portfolio }}</strong><span>Holdings + cash balance</span></article><article class="metric-card"><small>HOLDINGS VALUE</small><strong>{{ holdingsValue }}</strong><span>3 assets · Current market value</span></article><article class="metric-card"><small>CASH BALANCE</small><strong>{{ client.cash }}</strong><span>USD · Fully settled</span></article><article class="metric-card"><small>BUYING POWER</small><strong>{{ buyingPower }}</strong><span>$1,001.00 reserved for open order</span></article></section>
+      <ng-container *ngIf="!loading && client">
+        <section class="panel identity-panel">
+          <div class="identity">
+            <span class="client-avatar">{{ clientInitials }}</span>
+            <div>
+              <h2>{{ client.displayName }} <span class="status" [class.suspended]="client.status !== 'ACTIVE'">{{ client.status }}</span></h2>
+              <p>{{ client.username ? '@' + client.username + ' · ' : '' }}{{ client.email }}</p>
+            </div>
+            <label class="account-picker" *ngIf="detail && detail.accounts.length > 1">
+              <small>Account</small>
+              <select [ngModel]="selectedAccountId" (ngModelChange)="selectAccount($event)" aria-label="Select account">
+                <option *ngFor="let account of detail.accounts" [value]="account.accountId">{{ account.accountName || 'Account' }} · {{ formatMoney(account.balance) }}</option>
+              </select>
+            </label>
+          </div>
+          <div class="identity-facts">
+            <div><small>Client ID</small><span title="{{ client.clientId }}">{{ client.clientId.slice(0, 8) }}…</span></div>
+            <div><small>Account</small><span>{{ selectedAccount?.accountName || 'No account' }}<ng-container *ngIf="selectedAccount"> · {{ selectedAccount.status }}</ng-container></span></div>
+            <div><small>Member since</small><span>{{ formatDate(client.createdAt) }}</span></div>
+            <div><small>Accounts</small><span>{{ client.accountCount }}</span></div>
+            <div><small>Last sign-in</small><span>{{ formatDateTime(client.lastLoginAt) }}</span></div>
+          </div>
+        </section>
 
-      <section class="overview-grid"><article class="panel chart-panel"><div class="section-heading"><h2>Portfolio value over time</h2><div class="range-tabs"><button>10 D</button><button>7 D</button><button class="selected">30 D</button><button>90 D</button><button>1 Y</button></div></div><p class="chart-summary">+{{ client.portfolio }} (+4.69%) over 30 days</p><div class="chart"><div class="grid-line line-one"></div><div class="grid-line line-two"></div><div class="grid-line line-three"></div><svg viewBox="0 0 600 145" preserveAspectRatio="none" aria-label="Portfolio value trend"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4b9f4a" stop-opacity=".28"/><stop offset="1" stop-color="#4b9f4a" stop-opacity="0"/></linearGradient></defs><path d="M0 124 L25 116 L48 120 L70 108 L94 111 L120 101 L145 88 L170 100 L195 83 L220 79 L244 86 L270 67 L294 74 L320 56 L346 62 L371 48 L396 54 L421 38 L446 45 L472 29 L496 39 L521 20 L548 32 L575 14 L600 23 L600 145 L0 145 Z" fill="url(#chartFill)"/><path d="M0 124 L25 116 L48 120 L70 108 L94 111 L120 101 L145 88 L170 100 L195 83 L220 79 L244 86 L270 67 L294 74 L320 56 L346 62 L371 48 L396 54 L421 38 L446 45 L472 29 L496 39 L521 20 L548 32 L575 14 L600 23" fill="none" stroke="#58b548" stroke-width="2"/></svg><span class="chart-label label-start">$135k</span><span class="chart-label label-end">$145k</span></div><div class="chart-legend"><span></span> Holdings + USD cash · Daily closing values; latest point at 10:15 UTC</div></article><article class="panel trading-card"><h2>Trading overview</h2><small>01-24 Oct 2024</small><dl><dt>Filled trades</dt><dd>24</dd><dt>Gross traded volume</dt><dd>$18,420.00</dd><dt>Open orders</dt><dd>1</dd><dt>Fees paid</dt><dd>$18.42</dd></dl><p class="restriction">◉ No account restrictions</p></article></section>
+        <section class="panel state-panel" *ngIf="!selectedAccount">This client has no trading accounts yet.</section>
 
-      <section class="panel table-panel"><div class="section-heading"><h2>Current holdings</h2><span>Total market value: {{ holdingsValue }}</span></div><table><thead><tr><th>Asset</th><th>Quantity [units]</th><th>Market price</th><th>Market value</th><th>Day change</th><th>Allocation</th></tr></thead><tbody><tr *ngFor="let holding of holdingRows"><td><strong>{{ holding.asset }}</strong><span>{{ holding.description }}</span></td><td>{{ holding.quantity }}</td><td>{{ holding.price }}</td><td>{{ holding.value }}</td><td [class.negative]="holding.change.startsWith('-')">{{ holding.change }}</td><td>{{ holding.allocation }}</td></tr></tbody></table><p class="table-note">USD cash is shown separately. USDT is a dollar-pegged stablecoin; its cash-equivalent value is included in the portfolio.</p></section>
+        <ng-container *ngIf="selectedAccount">
+          <section class="metric-grid">
+            <article class="metric-card"><small>PORTFOLIO VALUE</small><strong class="green">{{ accountLoading ? '…' : formatMoney(portfolioValue) }}</strong><span>Holdings + cash balance{{ pricedHoldings ? '' : ' · some prices unavailable' }}</span></article>
+            <article class="metric-card"><small>HOLDINGS VALUE</small><strong>{{ accountLoading ? '…' : formatMoney(holdingsValue) }}</strong><span>{{ holdings.length }} {{ holdings.length === 1 ? 'asset' : 'assets' }} · Current market value</span></article>
+            <article class="metric-card"><small>CASH BALANCE</small><strong>{{ formatMoney(cashBalance) }}</strong><span>USD · {{ selectedAccount.accountName || 'This account' }}</span></article>
+            <article class="metric-card"><small>CASH · ALL ACCOUNTS</small><strong>{{ formatMoney(client.totalCash) }}</strong><span>{{ client.accountCount }} {{ client.accountCount === 1 ? 'account' : 'accounts' }}</span></article>
+          </section>
 
-      <section class="panel table-panel journal"><div class="section-heading"><h2>Trade journal</h2></div><div class="filters"><button>01-24 Oct 2024⌄</button><button>All assets⌄</button><button>All sides⌄</button><button>All statuses⌄</button></div><table><thead><tr><th>Time / Order ID (UTC)</th><th>Asset</th><th>Side / type</th><th>Quantity</th><th>Price</th><th>Gross total</th><th>Fee?</th><th>Net cash?</th><th>Status</th></tr></thead><tbody><tr><td>24 Oct · 10:14:32<br><span>TR-10462</span></td><td>NEMS</td><td>Buy<br><span>Market</span></td><td>20.00</td><td>$140.00</td><td>$2,800.00</td><td>$2.80</td><td>-$2,802.80</td><td><b>FILLED</b></td></tr><tr><td>24 Oct · 09:42:11<br><span>TR-10471</span></td><td>BTC</td><td>Sell<br><span>Market</span></td><td>0.0500</td><td>$7,000.00</td><td>$3,350.00</td><td>$3.35</td><td>+$3,346.65</td><td><b>FILLED</b></td></tr><tr><td>23 Oct · 15:20:04<br><span>TR-10428</span></td><td>NEMS</td><td>Buy<br><span>Limit</span></td><td>10.00</td><td>$160.00</td><td>$1,600.00</td><td>$1.60 est.</td><td>--</td><td><b class="open">OPEN</b></td></tr></tbody></table><p class="table-note">Showing 1-5 of 28 orders · 24 filled, 1 open, 3 canceled <span class="pagination">← Previous &nbsp; 1 / 6 &nbsp; <b>Next →</b></span></p></section>
+          <section class="overview-grid">
+            <article class="panel chart-panel">
+              <div class="section-heading"><h2>Portfolio value over time</h2><div class="range-tabs"><button type="button" *ngFor="let days of chartRanges" [class.selected]="chartDays === days" (click)="setChartRange(days)">{{ days }} D</button></div></div>
+              <p class="chart-summary" *ngIf="chartChange as change" [class.negative]="change.amount < 0">{{ formatMoney(change.amount, true) }} ({{ formatPercent(change.percent) }}) over {{ chartDays }} days</p>
+              <div class="chart" *ngIf="chartLine; else noChart">
+                <div class="grid-line line-one"></div><div class="grid-line line-two"></div><div class="grid-line line-three"></div>
+                <svg viewBox="0 0 600 145" preserveAspectRatio="none" aria-label="Portfolio value trend"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4b9f4a" stop-opacity=".28"/><stop offset="1" stop-color="#4b9f4a" stop-opacity="0"/></linearGradient></defs><path [attr.d]="chartArea" fill="url(#chartFill)"/><path [attr.d]="chartLine" fill="none" stroke="#58b548" stroke-width="2"/></svg>
+                <span class="chart-label label-start">{{ formatMoney(chartMax) }}</span><span class="chart-label label-end">{{ formatMoney(chartMin) }}</span>
+              </div>
+              <ng-template #noChart><div class="chart chart-empty">{{ chartLoading || accountLoading ? 'Loading price history…' : 'Not enough history to chart this account yet.' }}</div></ng-template>
+              <div class="chart-legend"><span></span> Holdings + USD cash · Daily closing values, rebuilt from fills and cash events</div>
+            </article>
+            <article class="panel trading-card">
+              <h2>Trading overview</h2><small>All time · {{ selectedAccount.accountName || 'This account' }}</small>
+              <dl><dt>Filled trades</dt><dd>{{ filledTrades }}</dd><dt>Gross traded volume</dt><dd>{{ formatMoney(grossVolume) }}</dd><dt>Open orders</dt><dd>{{ openOrders }}</dd><dt>Fees paid</dt><dd>{{ formatMoney(feesPaid) }}</dd></dl>
+              <p class="restriction" [class.warn]="selectedAccount.status !== 'ACTIVE'">◉ {{ selectedAccount.status === 'ACTIVE' ? 'No account restrictions' : 'Account is ' + selectedAccount.status }}</p>
+            </article>
+          </section>
 
-      <section class="panel table-panel activities"><div class="section-heading"><h2>Recent account activities</h2></div><table><thead><tr><th>Time (UTC)</th><th>Activity</th><th>Details</th><th>Status</th></tr></thead><tbody><tr><td>24 Oct · 09:05</td><td>Successful sign-in</td><td>Web · London, UK · 2FA verified</td><td><b>SUCCESS</b></td></tr><tr><td>23 Oct · 08:30</td><td>Deposit completed</td><td>+$35,000.00 USD · Bank transfer · DEP-2011</td><td><b>SETTLED</b></td></tr><tr><td>21 Oct · 16:12</td><td>Security update</td><td>Authenticator app enabled · Client initiated</td><td><b>SUCCESS</b></td></tr></tbody></table></section>
-      <footer class="page-footer"><span>All timestamps in UTC · All values in USD</span><span>Read-only client data · Admin access is audited</span></footer>
+          <section class="panel table-panel">
+            <div class="section-heading"><h2>Current holdings</h2><span>Total market value: {{ formatMoney(holdingsValue) }}</span></div>
+            <table>
+              <thead><tr><th>Asset</th><th>Quantity [units]</th><th>Market price</th><th>Market value</th><th>Day change</th><th>Allocation</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let holding of holdings"><td><strong>{{ holding.symbol }}</strong><span>{{ holding.name }}</span></td><td>{{ formatQuantity(holding.quantity) }}</td><td>{{ holding.price !== null ? formatMoney(holding.price) : '--' }}</td><td>{{ holding.value !== null ? formatMoney(holding.value) : '--' }}</td><td [class.negative]="(holding.changePercent ?? 0) < 0">{{ formatPercent(holding.changePercent) }}</td><td>{{ holding.allocation !== null ? formatPercent(holding.allocation, false) : '--' }}</td></tr>
+                <tr *ngIf="!accountLoading && holdings.length === 0"><td colspan="6" class="empty-row">No open positions in this account.</td></tr>
+                <tr *ngIf="accountLoading"><td colspan="6" class="empty-row">Loading holdings…</td></tr>
+              </tbody>
+            </table>
+            <p class="table-note">USD cash is shown separately. Prices are live quotes; day change is versus the previous close.</p>
+          </section>
+
+          <section class="panel table-panel journal">
+            <div class="section-heading"><h2>Trade journal</h2></div>
+            <div class="filters">
+              <select [(ngModel)]="assetFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by asset"><option value="">All assets</option><option *ngFor="let symbol of assetOptions" [value]="symbol">{{ symbol }}</option></select>
+              <select [(ngModel)]="sideFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by side"><option value="">All sides</option><option value="BUY">Buy</option><option value="SELL">Sell</option></select>
+              <select [(ngModel)]="statusFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by status"><option value="">All statuses</option><option value="FILLED">Filled</option><option value="SUBMITTED">Submitted</option><option value="FAILED">Failed</option></select>
+            </div>
+            <table>
+              <thead><tr><th>Time / Order ID (UTC)</th><th>Asset</th><th>Side</th><th>Quantity</th><th>Price</th><th>Gross total</th><th>Fee</th><th>Net cash</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let row of journalPageRows">
+                  <td>{{ formatDateTime(row.submittedAt?.toISOString()) }}<br><span>{{ row.orderId.slice(0, 8) }}</span></td>
+                  <td>{{ row.symbol }}</td>
+                  <td>{{ humanize(row.side) }}<br><span>Market</span></td>
+                  <td>{{ formatQuantity(row.quantity) }}</td>
+                  <td>{{ row.price !== null ? formatMoney(row.price) : '--' }}</td>
+                  <td>{{ row.gross !== null ? formatMoney(row.gross) : '--' }}</td>
+                  <td>{{ row.fee !== null ? formatMoney(row.fee) : '--' }}</td>
+                  <td [class.negative]="(row.net ?? 0) < 0">{{ row.net !== null ? formatMoney(row.net, true) : '--' }}</td>
+                  <td><b [class.open]="row.status !== 'FILLED'">{{ row.status }}</b></td>
+                </tr>
+                <tr *ngIf="!accountLoading && journalPageRows.length === 0"><td colspan="9" class="empty-row">No orders match these filters.</td></tr>
+              </tbody>
+            </table>
+            <p class="table-note">{{ journalRangeLabel }} · {{ filledTrades }} filled, {{ openOrders }} open
+              <span class="pagination"><button type="button" (click)="previousJournalPage()" [disabled]="journalPage === 0">← Previous</button> &nbsp; {{ journalPage + 1 }} / {{ journalPageCount }} &nbsp; <button type="button" (click)="nextJournalPage()" [disabled]="journalPage >= journalPageCount - 1"><b>Next →</b></button></span>
+            </p>
+          </section>
+        </ng-container>
+
+        <section class="panel table-panel activities">
+          <div class="section-heading"><h2>Recent account activities</h2></div>
+          <table>
+            <thead><tr><th>Time (UTC)</th><th>Activity</th><th>Details</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let row of activities"><td>{{ formatDateTime(row.at?.toISOString()) }}</td><td>{{ row.activity }}</td><td>{{ row.details }}</td><td><b [class.open]="row.tone === 'warn'" [class.neutral]="row.tone === 'neutral'">{{ row.status }}</b></td></tr>
+              <tr *ngIf="activities.length === 0"><td colspan="4" class="empty-row">No recorded activity.</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </ng-container>
+      <footer class="page-footer"><span>All timestamps in UTC · All values in USD</span><span>Read-only client data · This view was recorded in the admin audit log</span></footer>
     </div>
   </main>
 </section>

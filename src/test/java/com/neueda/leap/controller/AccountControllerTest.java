@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -100,20 +101,20 @@ class AccountControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/accounts/{accountId}/holdings returns the stub holdings schema from the YAML")
-    void getHoldingsReturnsStubHoldingsPayload() throws Exception {
+    @DisplayName("GET /api/accounts/{accountId}/holdings returns the account's cash balance")
+    void getHoldingsReturnsAccountCashBalance() throws Exception {
         UUID accountId = UUID.fromString("55555555-5555-5555-5555-555555555555");
         UUID clientId = UUID.fromString("66666666-6666-6666-6666-666666666666");
         ControllerTestSupport.authenticateClient(clientId, accountId);
 
         when(accountService.getAccountById(accountId))
-                .thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, OPENED_AT));
+                .thenReturn(new Account(accountId, clientId, AccountStatus.ACTIVE, OPENED_AT, new BigDecimal("2500.5000")));
 
         mockMvc.perform(get("/api/accounts/{accountId}/holdings", accountId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").value(accountId.toString()))
                 .andExpect(jsonPath("$.holdings.length()").value(0))
-                .andExpect(jsonPath("$.cash.balance").value("10000.0000000000"))
+                .andExpect(jsonPath("$.cash.balance").value("2500.5000"))
                 .andExpect(jsonPath("$.cash.currency").value("USD"))
                 .andExpect(jsonPath("$.asOfTimestamp").exists());
     }

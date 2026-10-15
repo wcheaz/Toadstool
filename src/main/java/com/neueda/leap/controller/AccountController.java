@@ -21,6 +21,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import com.neueda.leap.service.CashEventService;
+import com.neueda.leap.Instrument;
+import com.neueda.leap.dto.CashEventResponse;
 
 /**
  * REST Controller for Account endpoints
@@ -110,6 +112,28 @@ public class AccountController {
     }
 
     /**
+     * GET /api/accounts/{accountId}/cash-events
+     * Deposits, withdrawals and trade settlements for an account, newest first
+     */
+    @GetMapping("/accounts/{accountId}/cash-events")
+    public ResponseEntity<PaginatedResponse<CashEventResponse>> listCashEvents(
+            @PathVariable UUID accountId,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        if (limit < 1 || limit > 1000 || offset < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) return ResponseEntity.notFound().build();
+        if (!SecurityAccess.canAccessAccount(accountId, account.getClientId())) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (cashEventService == null) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+
+        List<CashEventResponse> events = cashEventService.listByAccount(accountId, limit, offset);
+        int totalCount = cashEventService.countByAccount(accountId);
+        return ResponseEntity.ok(new PaginatedResponse<>(events, limit, offset, totalCount));
+    }
+
+    /**
      * GET /api/accounts/{accountId}
      * Retrieve account details
      */
@@ -179,15 +203,9 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            List<HoldingsResponse.HoldingItem> positions = holdingsService == null || instrumentService == null
-                    ? List.of()
-                    : holdingsService.getAccountHoldings(accountId, Integer.MAX_VALUE, 0).stream()
-                    .map(this::mapToHoldingItem)
-                    .collect(Collectors.toList());
-
             HoldingsResponse response = new HoldingsResponse(
                     accountId,
-                    positions,
+                    loadHoldingItems(accountId),
                     new HoldingsResponse.CashBalance(
                             account.getBalance() == null ? "0.00" : account.getBalance().toPlainString(),
                             "USD"),
@@ -201,13 +219,27 @@ public class AccountController {
         }
     }
 
-    private HoldingsResponse.HoldingItem mapToHoldingItem(Holdings holding) {
-        com.neueda.leap.Instrument instrument = instrumentService.getInstrumentById(holding.getInstrumentId());
-        String symbol = instrument == null ? "" : instrument.getSymbol();
-        return new HoldingsResponse.HoldingItem(
+    private List<HoldingsResponse.HoldingItem> loadHoldingItems(UUID accountId) {
+        if (holdingsService == null) {
+            return List.of();
+        }
+        return holdingsService.getAccountHoldings(accountId, 1000, 0).stream()
+                .filter(holding -> holding.getQuantity() != null && holding.getQuantity().signum() > 0)
+                .map(this::toHoldingItem)
+                .collect(Collectors.toList());
+    }
+
+    private HoldingsResponse.HoldingItem toHoldingItem(Holdings holding) {
+        Instrument instrument = instrumentService != null ? instrumentService.getInstrumentById(holding.getInstrumentId()) : null;
+        HoldingsResponse.HoldingItem item = new HoldingsResponse.HoldingItem(
                 holding.getInstrumentId(),
-                symbol,
-                holding.getQuantity() == null ? "0" : holding.getQuantity().toPlainString());
+                instrument != null ? instrument.getSymbol() : null,
+                holding.getQuantity().stripTrailingZeros().toPlainString());
+        if (instrument != null) {
+            item.setName(instrument.getName());
+            item.setAssetClass(instrument.getAssetClass() != null ? instrument.getAssetClass().name() : null);
+        }
+        return item;
     }
 
     /**

@@ -168,13 +168,63 @@ class OrderServiceTest {
 
         service.fillOrder(orderId, new BigDecimal("10.00"));
 
+        // 2 x 10.00 plus the default 1.00 EQUITY fee stubbed in setUp
         verify(cashEventService).post(
-                accountId, orderId, "BUY", new BigDecimal("-20.00"), "{}");
+                accountId, orderId, "BUY", new BigDecimal("-21.00"), "{}");
         verify(holdingsService).updateHoldingFromFill(
                 accountId, instrumentId, OrderSide.BUY, new BigDecimal("2"));
-        verify(orderRepository, never()).updateStatus(orderId, "FILLED");
         verify(fillService).createFill(
-                orderId, "10.00", "2", "Filled");
+                orderId, "10.00", "2", "Filled", "1.00");
+    }
+
+    @Test
+    @DisplayName("fillOrder charges the asset-class fee on top of a BUY and records it on the fill")
+    void testFillOrderChargesAndRecordsFee() {
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.BUY,
+                new BigDecimal("2"), "fill-fee", OffsetDateTime.now());
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(instrumentId);
+        instrument.setAssetClass(AssetClass.EQUITY);
+        when(orderRepository.findById(orderId)).thenReturn(order);
+        when(instrumentService.getInstrumentById(instrumentId)).thenReturn(instrument);
+        when(feeStrategyFactory.getStrategy(AssetClass.EQUITY)).thenReturn(feeStrategy);
+        when(feeStrategy.calculateFee(new BigDecimal("20.00"))).thenReturn(new BigDecimal("1.5"));
+
+        OrderService service = new OrderService(
+                orderRepository, pricingService, marketStatusService, accountService,
+                instrumentService, tradeEventService, orderValidator, feeStrategyFactory,
+                fillService, holdingsService, cashEventService);
+
+        service.fillOrder(orderId, new BigDecimal("10.00"));
+
+        verify(cashEventService).post(
+                accountId, orderId, "BUY", new BigDecimal("-21.50"), "{}");
+        verify(fillService).createFill(
+                orderId, "10.00", "2", "Filled", "1.50");
+    }
+
+    @Test
+    @DisplayName("fillOrder deducts the fee from SELL proceeds")
+    void testFillOrderDeductsFeeFromSellProceeds() {
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.SELL,
+                new BigDecimal("2"), "fill-sell-fee", OffsetDateTime.now());
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(instrumentId);
+        instrument.setAssetClass(AssetClass.EQUITY);
+        when(orderRepository.findById(orderId)).thenReturn(order);
+        when(instrumentService.getInstrumentById(instrumentId)).thenReturn(instrument);
+        when(feeStrategyFactory.getStrategy(AssetClass.EQUITY)).thenReturn(feeStrategy);
+        when(feeStrategy.calculateFee(new BigDecimal("20.00"))).thenReturn(new BigDecimal("1.5"));
+
+        OrderService service = new OrderService(
+                orderRepository, pricingService, marketStatusService, accountService,
+                instrumentService, tradeEventService, orderValidator, feeStrategyFactory,
+                fillService, holdingsService, cashEventService);
+
+        service.fillOrder(orderId, new BigDecimal("10.00"));
+
+        verify(cashEventService).post(
+                accountId, orderId, "SELL", new BigDecimal("18.50"), "{}");
     }
 
     @Test
@@ -185,7 +235,7 @@ class OrderServiceTest {
         when(orderRepository.findById(orderId)).thenReturn(order);
         doThrow(new IllegalArgumentException("Insufficient balance or account not found"))
                 .when(cashEventService).post(
-                        accountId, orderId, "BUY", new BigDecimal("-20.00"), "{}");
+                        accountId, orderId, "BUY", new BigDecimal("-21.00"), "{}");
 
         OrderService service = new OrderService(
                 orderRepository, pricingService, marketStatusService, accountService,
@@ -196,7 +246,7 @@ class OrderServiceTest {
                 () -> service.fillOrder(orderId, new BigDecimal("10.00")));
         verify(holdingsService, never()).updateHoldingFromFill(
                 accountId, instrumentId, OrderSide.BUY, new BigDecimal("2"));
-        verify(fillService, never()).createFill(any(), anyString(), anyString(), anyString());
+        verify(fillService, never()).createFill(any(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test

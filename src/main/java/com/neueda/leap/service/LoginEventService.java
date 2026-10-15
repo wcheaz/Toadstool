@@ -43,14 +43,29 @@ public class LoginEventService {
      * List all login events (admin-only) with pagination
      */
     public List<LoginEvent> listAllLoginEvents(int limit, int offset) {
-        return loginEventMapper.selectAllLoginEvents(limit, offset);
+        return listLoginEvents(null, null, null, limit, offset);
     }
 
     /**
      * Count all login events
      */
     public int countAllLoginEvents() {
-        return loginEventMapper.countAllLoginEvents();
+        return countLoginEvents(null, null, null);
+    }
+
+    /**
+     * List login events filtered by client, outcome and/or a partial email; null filters are ignored
+     */
+    public List<LoginEvent> listLoginEvents(UUID clientId, String outcome, String emailAttempted, int limit, int offset) {
+        return loginEventMapper.selectLoginEvents(clientId, blankToNull(outcome), blankToNull(emailAttempted), limit, offset);
+    }
+
+    public int countLoginEvents(UUID clientId, String outcome, String emailAttempted) {
+        return loginEventMapper.countLoginEvents(clientId, blankToNull(outcome), blankToNull(emailAttempted));
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     /**

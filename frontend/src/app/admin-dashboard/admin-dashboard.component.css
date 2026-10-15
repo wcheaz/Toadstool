@@ -39,3 +39,56 @@ nav { display: grid; gap: 7px; }.nav-item, .subnav { border: 0; color: #858ca0; 
 	.details-button { padding: 8px 10px; font-size: 10px; }
 	.page-footer { margin-top: 22px; font-size: 9px; }
 }
+/* Live platform overview, pagination and insights */
+.overview-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.overview-card, .insight { padding: 12px 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.overview-card small, .insight small { display: block; color: var(--muted); font-size: 7px; letter-spacing: .3px; }
+.overview-card strong, .insight strong { display: block; margin: 6px 0 3px; color: var(--text); font-size: 15px; font-weight: 600; }
+.overview-card span, .insight span { color: var(--muted); font-size: 7px; }
+.overview-card.alert strong { color: #e4c52e; }
+.table-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 11px; }
+.table-footer .table-note { margin: 0; }
+.pager { display: flex; gap: 6px; }
+.details-button:disabled { opacity: .4; cursor: default; border-color: #2b3041; }
+.error-state { color: #e88a8a; }
+.insights-panel { padding: 15px; margin-top: 14px; }
+.insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.insight { background: var(--surface-2); }
+@media (max-width: 700px) {
+	.overview-strip { grid-template-columns: 1fr 1fr; }
+	.table-footer { flex-direction: column; align-items: flex-start; }
+}
+@media (min-width: 701px) {
+	.overview-strip { gap: 14px; margin-bottom: 20px; }
+	.overview-card, .insight { padding: 16px 18px; border-radius: 8px; }
+	.overview-card small, .insight small { font-size: 10px; }
+	.overview-card strong, .insight strong { font-size: 21px; }
+	.overview-card span, .insight span { font-size: 11px; }
+	.insights-panel { padding: 22px; margin-top: 20px; }
+	.insight-grid { gap: 14px; }
+}
+
+/* Readable type scale (overrides the compact sizes above; also used by the audit page). */
+.profile-button { font-size: 13px; }
+.page-heading h1 { font-size: 26px; }
+.page-heading p { font-size: 14px; }
+.panel-heading h2 { font-size: 16px; }
+.panel-heading > span, .results-heading small { font-size: 12px; }
+.field { font-size: 12px; }
+.field input, .field select, .find-button { height: 40px; font-size: 14px; }
+.field input { padding-left: 38px; }
+.search-icon { left: 13px; top: 13px; width: 11px; height: 11px; }
+.clear-button { top: 6px; font-size: 21px; }
+.helper, .table-note { font-size: 12px; }
+table { font-size: 14px; }
+th { font-size: 12px; padding: 10px 8px 12px; }
+td { height: 60px; padding: 10px 8px; }
+td strong { font-size: 15px; }
+td span:not(:first-child) { font-size: 12px; }
+td b { font-size: 10px; padding: 3px 6px; }
+.details-button { padding: 8px 12px; font-size: 12px; }
+.overview-card small, .insight small { font-size: 11px; }
+.overview-card strong, .insight strong { font-size: 22px; }
+.overview-card span, .insight span { font-size: 12px; }
+.page-footer { font-size: 11px; }
+.empty-state { font-size: 14px; }

@@ -34,6 +34,8 @@ export class TradingModalComponent implements OnChanges {
   @Input() instrumentId: string = '';
   @Input() apiError: string = '';
   @Output() close = new EventEmitter<void>();
+  /** Emitted once an order is accepted (and filled, for market orders) so the parent can refresh holdings and cash. */
+  @Output() orderCompleted = new EventEmitter<void>();
 
   selectedTimeframe: string = '3M';
   loadingCandles: boolean = true;
@@ -178,6 +180,7 @@ export class TradingModalComponent implements OnChanges {
             // Limit price not met, order stays pending
             this.isSubmitting = false;
             this.isSuccessOpen = true;
+            this.orderCompleted.emit();
             console.log('Limit order placed. Waiting for price to reach', ticket.limitPrice);
           }
         }
@@ -235,6 +238,7 @@ export class TradingModalComponent implements OnChanges {
       next: () => {
         this.isSubmitting = false;
         this.isSuccessOpen = true;
+        this.orderCompleted.emit();
         console.log('Order filled at price:', fillPrice);
       },
       error: (error) => {

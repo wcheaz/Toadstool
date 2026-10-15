@@ -69,8 +69,12 @@ public class FillService {
      * Create a new fill (used by order execution engine)
      */
     public Fill createFill(UUID orderId, String price, String quantity, String status) {
+        return createFill(orderId, price, quantity, status, "0");
+    }
+
+    public Fill createFill(UUID orderId, String price, String quantity, String status, String fee) {
         fillValidator.validate(new FillValidationRequest(price, quantity, status));
-        fillRepository.save(orderId, price, quantity, status);
+        fillRepository.save(orderId, price, quantity, status, fee);
         List<Fill> fills = fillRepository.findByOrderId(orderId);
         if (fills.isEmpty()) {
             throw new IllegalStateException("Fill was not found after insertion for order: " + orderId);

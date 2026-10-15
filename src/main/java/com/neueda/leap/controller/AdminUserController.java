@@ -1,5 +1,7 @@
 package com.neueda.leap.controller;
 
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.neueda.leap.AdminUser;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.security.SecurityAccess;
@@ -180,7 +182,9 @@ public class AdminUserController {
         private String displayName;
         private String role;
         private String status;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
         private OffsetDateTime createdAt;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
         private OffsetDateTime updatedAt;
 
         public AdminUserDto(UUID adminUserId, String email, String displayName, String role,

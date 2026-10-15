@@ -1,5 +1,7 @@
 package com.neueda.leap.controller;
 
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.neueda.leap.TradeEvent;
 import com.neueda.leap.Account;
 import com.neueda.leap.Order;
@@ -138,6 +140,7 @@ public class TradeEventController {
         private String entityType;
         private UUID entityId;
         private String action;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
         private OffsetDateTime occurredAt;
         private String details;
 

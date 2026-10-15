@@ -1,10 +1,12 @@
 package com.neueda.leap.service;
 
+import com.neueda.leap.dto.CashEventResponse;
 import com.neueda.leap.mapper.AccountMapper;
 import com.neueda.leap.mapper.CashEventMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,5 +28,13 @@ public class CashEventService {
             throw new IllegalArgumentException("Insufficient balance or account not found");
         }
         cashEventMapper.insert(accountId, orderId, eventType, amount, details == null ? "{}" : details);
+    }
+
+    public List<CashEventResponse> listByAccount(UUID accountId, int limit, int offset) {
+        return cashEventMapper.selectByAccountId(accountId, limit, offset);
+    }
+
+    public int countByAccount(UUID accountId) {
+        return cashEventMapper.countByAccountId(accountId);
     }
 }
