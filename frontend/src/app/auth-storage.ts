@@ -18,12 +18,8 @@ function localStorageOrNull(): Storage | null {
   return typeof window === 'undefined' ? null : window.localStorage;
 }
 
-function readStoredItem(key: string): string | null {
-  const sessionValue = sessionStorageOrNull()?.getItem(key);
-  if (sessionValue) {
-    return sessionValue;
-  }
-  return localStorageOrNull()?.getItem(key) ?? null;
+function readSessionItem(key: string): string | null {
+  return sessionStorageOrNull()?.getItem(key) ?? null;
 }
 
 export function storeAuthSession(response: AuthResponse): void {
@@ -56,15 +52,15 @@ export function clearAuthSession(): void {
 }
 
 export function getAccessToken(): string | null {
-  return readStoredItem(storageKeys.accessToken);
+  return readSessionItem(storageKeys.accessToken);
 }
 
 export function getClientDisplayName(): string | null {
-  return readStoredItem(storageKeys.clientName) ?? readStoredItem(storageKeys.username);
+  return readSessionItem(storageKeys.clientName) ?? readSessionItem(storageKeys.username);
 }
 
 export function getAccountId(): string | null {
-  return readStoredItem(storageKeys.accountId);
+  return readSessionItem(storageKeys.accountId);
 }
 
 export function isAuthenticated(): boolean {

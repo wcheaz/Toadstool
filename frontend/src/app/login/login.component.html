@@ -22,6 +22,7 @@
           [(ngModel)]="username"
           name="username"
           placeholder="Enter your username"
+          autocomplete="username"
           [disabled]="isLoading"
           required
         />
@@ -37,6 +38,7 @@
             [(ngModel)]="password"
             name="password"
             placeholder="Enter your password"
+            autocomplete="current-password"
             [disabled]="isLoading"
             required
           />
@@ -52,16 +54,6 @@
       </div>
 
       <div class="form-options">
-        <div class="checkbox-group">
-          <input
-            type="checkbox"
-            id="rememberMe"
-            [(ngModel)]="rememberMe"
-            name="rememberMe"
-            [disabled]="isLoading"
-          />
-          <label for="rememberMe" class="checkbox-label">Remember Me</label>
-        </div>
         <a href="#" class="forgot-password">Forgot Password?</a>
       </div>
 

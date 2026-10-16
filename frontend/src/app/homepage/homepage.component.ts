@@ -78,7 +78,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
-    // Get client info from localStorage
+    // Get client info from the current session
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
   }
@@ -337,7 +337,5 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
-    // Redirect to login
-    window.location.href = '/login';
   }
 }

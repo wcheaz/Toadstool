@@ -49,6 +49,7 @@
           [(ngModel)]="username"
           name="username"
           placeholder="Choose a username"
+          autocomplete="username"
           [disabled]="isLoading"
           required
         />
@@ -64,6 +65,7 @@
             [(ngModel)]="password"
             name="password"
             placeholder="Minimum 8 characters"
+            autocomplete="new-password"
             [disabled]="isLoading"
             required
           />
@@ -88,6 +90,7 @@
             [(ngModel)]="confirmPassword"
             name="confirmPassword"
             placeholder="Repeat your password"
+            autocomplete="new-password"
             [disabled]="isLoading"
             required
           />
