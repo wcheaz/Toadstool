@@ -3,13 +3,12 @@
   min-height: 100%;
   --desk-bg: #24272a;
   --panel: rgba(45, 49, 53, 0.86);
-  --line: rgba(148, 163, 184, 0.32);
+  --line: rgba(148, 163, 184, 0.28);
   --text: #f2f4f8;
-  --text-secondary: #c9ced3;
   --muted: #aeb5bb;
   --green: #00744A;
   --green-text: #55b990;
-  --red-text: #ff7b72;
+  --red-text: #f0645a;
   color: var(--text);
   font-family: 'Avenir Next', 'Segoe UI', sans-serif;
   font-size: 14px;
@@ -43,7 +42,7 @@
 }
 
 .market-status {
-  color: var(--green-text);
+  color: #2f9e70;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -112,7 +111,7 @@
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  color: var(--text-secondary);
+  color: #c5cad7;
   font-size: 13px;
 }
 
@@ -141,7 +140,7 @@
 
 .search-box:focus-within {
   border-color: #00744A;
-  box-shadow: 0 0 0 2px rgba(0, 116, 74, 0.18);
+  box-shadow: 0 0 0 2px rgba(0, 116, 74, 0.12);
 }
 
 .search-box input {
@@ -185,7 +184,7 @@
   padding: 3px 7px;
   border: 1px solid #4a5055;
   border-radius: 4px;
-  color: var(--muted);
+  color: #b5bdc3;
   background: #2d3135;
   font-size: 13px;
 }
@@ -194,7 +193,7 @@
   display: flex;
   gap: 8px;
   margin: 0 0 14px;
-  color: var(--muted);
+  color: #a0a8ae;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -270,7 +269,7 @@
 
 .stock-copy small {
   margin-top: 3px;
-  color: var(--text-secondary);
+  color: #a0a8ae;
   font-size: 13px;
 }
 
@@ -314,9 +313,9 @@
 .error-state {
   margin: 0 0 14px;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 123, 114, 0.4);
+  border: 1px solid rgba(240, 100, 90, 0.4);
   border-radius: 6px;
-  background: rgba(255, 123, 114, 0.08);
+  background: rgba(240, 100, 90, 0.08);
   color: var(--red-text);
   font-size: 14px;
 }
@@ -350,7 +349,7 @@
 }
 
 .secondary .news-card-heading {
-  color: var(--text-secondary);
+  color: #b5bdc3;
 }
 
 .news-card h3 {
@@ -362,14 +361,14 @@
 
 .news-card p {
   margin: 0 0 12px;
-  color: var(--text-secondary);
+  color: var(--muted);
   font-size: 15px;
   line-height: 1.55;
 }
 
 .news-card small {
   display: block;
-  color: var(--muted);
+  color: #9aa2a8;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -424,7 +423,7 @@
 /* Selected asset news */
 .news-list-heading {
   margin: 22px 0 10px;
-  color: var(--text-secondary);
+  color: #b5bdc3;
   font-size: 14px;
   font-weight: 600;
 }
