@@ -27,8 +27,8 @@
 }
 
 .profile-modal {
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: linear-gradient(135deg, #2d3135 0%, #24272a 100%);
+  border: 1px solid rgba(0, 116, 74, 0.2);
   border-radius: 12px;
   width: 90%;
   max-width: 900px;
@@ -101,7 +101,7 @@
   width: 80px;
   height: 80px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, #00744A 0%, #005c3a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,7 +129,7 @@
 
 .profile-status {
   font-size: 12px;
-  color: #22c55e;
+  color: #00744A;
   font-weight: 600;
 }
 
@@ -152,13 +152,13 @@
 }
 
 .btn-edit-profile {
-  background-color: #22c55e;
+  background-color: #00744A;
   color: white;
 }
 
 .btn-edit-profile:hover {
-  background-color: #16a34a;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+  background-color: #005c3a;
+  box-shadow: 0 0 12px rgba(0, 116, 74, 0.3);
 }
 
 .btn-secondary {
@@ -251,17 +251,17 @@
 }
 
 .status-active {
-  color: #22c55e;
+  color: #00744A;
   font-weight: 600;
 }
 
 .verification-badge {
   font-size: 12px;
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.1);
+  color: #00744A;
+  background: rgba(0, 116, 74, 0.1);
   padding: 6px 12px;
   border-radius: 4px;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(0, 116, 74, 0.3);
 }
 
 .security-badge {
@@ -272,8 +272,8 @@
 }
 
 .security-badge.enabled {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: rgba(0, 116, 74, 0.15);
+  color: #00744A;
 }
 
 .time-device {
@@ -377,7 +377,7 @@
 .avatar-placeholder {
   width: 120px;
   height: 120px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, #00744A 0%, #005c3a 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -435,13 +435,13 @@
 }
 
 .btn-primary {
-  background-color: #22c55e;
+  background-color: #00744A;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #16a34a;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+  background-color: #005c3a;
+  box-shadow: 0 0 12px rgba(0, 116, 74, 0.3);
 }
 
 .btn-secondary {
@@ -457,13 +457,13 @@
 
 .btn-outline {
   background-color: transparent;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+  border: 1px solid rgba(0, 116, 74, 0.3);
+  color: #00744A;
 }
 
 .btn-outline:hover {
-  background-color: rgba(34, 197, 94, 0.1);
-  border-color: #22c55e;
+  background-color: rgba(0, 116, 74, 0.1);
+  border-color: #00744A;
 }
 
 /* Stats Section */
@@ -494,8 +494,8 @@
 }
 
 .stat-box:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.1);
+  border-color: rgba(0, 116, 74, 0.3);
+  box-shadow: 0 0 12px rgba(0, 116, 74, 0.1);
 }
 
 .stat-label {
@@ -510,7 +510,7 @@
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #22c55e;
+  color: #00744A;
 }
 
 /* Actions Section */

@@ -23,7 +23,7 @@
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
+  background: linear-gradient(135deg, #2d3135 0%, #24272a 100%);
   border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 12px;
   max-width: 900px;
@@ -61,7 +61,7 @@
 }
 
 .modal-close:hover {
-  color: #22c55e;
+  color: #00744A;
 }
 
 .modal-body {
@@ -94,7 +94,7 @@
 
 .modal-source {
   font-weight: 600;
-  color: #22c55e;
+  color: #00744A;
 }
 
 .modal-image {
@@ -116,7 +116,7 @@
 .modal-read-more {
   display: inline-block;
   margin-top: 16px;
-  color: #22c55e;
+  color: #00744A;
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
@@ -124,7 +124,7 @@
 }
 
 .modal-read-more:hover {
-  color: #16a34a;
+  color: #005c3a;
 }
 
 @media (max-width: 768px) {

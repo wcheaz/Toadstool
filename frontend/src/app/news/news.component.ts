@@ -286,8 +286,7 @@ export class NewsComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    localStorage.clear();
-    this.router.navigate(['/login']);
+    this.authService.logout();
   }
 
   openTradeModal(row: TradingAssetRow) {

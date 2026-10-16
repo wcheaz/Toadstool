@@ -21,10 +21,6 @@ export class TopBarComponent {
     this.profileClicked.emit();
   }
 
-  openNotifications() {
-    alert('Notifications settings coming soon');
-  }
-
   logout() {
     this.authService.logout();
   }

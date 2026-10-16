@@ -56,17 +56,6 @@
           <span>Settings</span>
         </button>
       </li>
-      <li>
-        <button class="nav-button" (click)="navigateTo('support')" title="Support">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            <circle cx="9" cy="10" r="1"></circle>
-            <circle cx="12" cy="10" r="1"></circle>
-            <circle cx="15" cy="10" r="1"></circle>
-          </svg>
-          <span>Support</span>
-        </button>
-      </li>
     </ul>
   </nav>
   <nav class="sidebar-nav admin-nav" *ngIf="adminMode">
@@ -76,4 +65,39 @@
     </ul>
   </nav>
   <div class="admin-workspace" *ngIf="adminMode"><p>ADMIN WORKSPACE</p><span>Client data · Read-only oversight</span></div>
+  <section class="account-panel" *ngIf="!adminMode">
+    <div class="account-panel-heading">
+      <span class="account-panel-kicker">Trading account</span>
+      <span class="account-status-dot" aria-hidden="true"></span>
+    </div>
+    <details class="account-menu" [open]="isAccountMenuOpen" (toggle)="isAccountMenuOpen = $any($event.target).open">
+      <summary class="account-menu-trigger">
+        <span class="account-avatar">{{ (selectedAccount?.accountName || 'A').charAt(0).toUpperCase() }}</span>
+        <span class="account-menu-current">
+          <strong>{{ selectedAccount?.accountName || 'No account selected' }}</strong>
+          <small>{{ selectedAccount ? (selectedAccount.balance | currency:'USD':'symbol':'1.2-2') : 'Account unavailable' }}</small>
+        </span>
+        <span class="account-chevron">v</span>
+      </summary>
+      <div class="account-menu-list">
+        <div class="account-empty" *ngIf="accounts.length === 0">No accounts available</div>
+        <button class="account-option" type="button" *ngFor="let account of accounts" (click)="selectAccount(account)">
+          <span>
+            <strong>{{ account.accountName }}</strong>
+            <small>{{ account.balance | currency:'USD':'symbol':'1.2-2' }}</small>
+          </span>
+          <span class="account-check" *ngIf="account.accountId === selectedAccount?.accountId">*</span>
+        </button>
+        <div class="account-menu-divider"></div>
+        <button class="account-action" type="button" (click)="manageAccounts()">
+          <span class="action-icon">+</span>
+          Manage accounts
+        </button>
+        <button class="account-action account-action-primary" type="button" (click)="createAccount()" [disabled]="isCreatingAccount">
+          <span class="action-icon">+</span>
+          {{ isCreatingAccount ? 'Creating...' : 'Create account' }}
+        </button>
+      </div>
+    </details>
+  </section>
 </aside>

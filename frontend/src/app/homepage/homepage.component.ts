@@ -11,6 +11,7 @@ import { BalanceWidgetComponent } from './components/balance-widget/balance-widg
 import { NewsFeedComponent } from './components/news-feed/news-feed.component';
 import { MarketAssetsTableComponent } from './components/market-assets-table/market-assets-table.component';
 import { FeaturesGridComponent } from './components/features-grid/features-grid.component';
+import { AccountStateService } from '../core/account-state.service';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -33,10 +34,11 @@ import { takeUntil } from 'rxjs/operators';
 export class HomepageComponent implements OnInit, OnDestroy {
   clientName: string = '';
   accountId: string = '';
+  accountName: string = '';
   currentBalance: number = 0;
   availableForTrading: number = 0;
+  portfolioValue: number = 0;
   accounts: AccountResponse[] = [];
-  isCreatingAccount: boolean = false;
   activeTab: string = 'overview';
   platformStatus: string = 'Platform live status: Standard Trading Hours';
 
@@ -77,42 +79,36 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
-    // Get client info from localStorage
+  constructor(
+    private apiService: ApiService,
+    private authService: AuthService,
+    private accountState: AccountStateService,
+    private cdr: ChangeDetectorRef
+  ) {
+    // Get client info from the current session
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
   }
 
   ngOnInit() {
-    this.loadAccounts();
+    this.accountState.accounts$.subscribe(accounts => this.accounts = accounts);
+    this.accountState.selectedAccount$.subscribe(account => {
+      if (account) this.selectAccount(account);
+    });
+    this.accountState.loadAccounts();
     this.loadInstruments();
     interval(5000)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.refreshQuotes());
   }
 
-  loadAccounts() {
-    const clientId = this.authService.getClientId();
-    if (!clientId) return;
-
-    this.apiService.getAccountsByClientId(clientId).subscribe({
-      next: (response) => {
-        this.accounts = response.items;
-        const selectedAccount = this.accounts.find(account => account.accountId === this.authService.getAccountId())
-          || this.accounts[0];
-        if (selectedAccount) this.selectAccount(selectedAccount);
-        this.cdr.detectChanges();
-      },
-      error: (error) => console.error('Failed to load accounts:', error)
-    });
-  }
-
   selectAccount(account: AccountResponse) {
     const switched = account.accountId !== this.accountId || this.holdings.size === 0;
     this.accountId = account.accountId;
+    this.accountName = account.accountName;
     this.currentBalance = account.balance;
     this.availableForTrading = account.balance;
-    this.authService.setAccountId(account.accountId);
+    this.updatePortfolioValue();
     this.accounts = this.accounts.map(existing => existing.accountId === account.accountId ? account : existing);
     if (switched) {
       // Don't show the previous account's positions while the new ones load.
@@ -152,7 +148,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     if (!this.accountId) return;
     this.apiService.getAccountById(this.accountId).subscribe({
       next: (account) => {
-        this.selectAccount(account);
+        this.accountState.updateAccount(account);
         this.cdr.detectChanges();
       },
       error: (error) => console.error('Failed to refresh account after order:', error)
@@ -171,27 +167,6 @@ export class HomepageComponent implements OnInit, OnDestroy {
     const held = all.filter(instrument => (this.holdings.get(instrument.instrumentId) ?? 0) > 0);
     const rest = all.filter(instrument => (this.holdings.get(instrument.instrumentId) ?? 0) <= 0);
     this.instruments = [...held, ...rest];
-  }
-
-  createAccount() {
-    const clientId = this.authService.getClientId();
-    if (!clientId || this.isCreatingAccount) return;
-    const accountName = window.prompt('Name this account', `Account ${this.accounts.length + 1}`)?.trim();
-    if (!accountName) return;
-
-    this.isCreatingAccount = true;
-    this.apiService.createAccount(clientId, accountName).subscribe({
-      next: (account) => {
-        this.accounts = [...this.accounts, account];
-        this.selectAccount(account);
-        this.isCreatingAccount = false;
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Failed to create account:', error);
-        this.isCreatingAccount = false;
-      }
-    });
   }
 
   ngOnDestroy() {
@@ -224,6 +199,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.apiService.getBatchQuotes(instrumentIds).subscribe({
       next: (quotes) => {
         this.instrumentQuotes = new Map(Object.entries(quotes));
+        this.updatePortfolioValue();
         this.loadingInstruments = false;
         this.cdr.detectChanges();
         console.log('Batch quotes refreshed for', this.instruments.length, 'instruments');
@@ -233,6 +209,14 @@ export class HomepageComponent implements OnInit, OnDestroy {
         this.loadingInstruments = false;
       }
     });
+  }
+
+  private updatePortfolioValue() {
+    const holdingsValue = Array.from(this.holdings.entries()).reduce((total, [instrumentId, quantity]) => {
+      const price = this.instrumentQuotes.get(instrumentId)?.price ?? 0;
+      return total + quantity * price;
+    }, 0);
+    this.portfolioValue = this.availableForTrading + holdingsValue;
   }
 
   setActiveTab(tab: string) {
@@ -315,7 +299,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     const amount = Number(window.prompt('Withdrawal amount') || 0);
     if (!amount || amount <= 0 || !this.accountId) return;
     this.apiService.postCashEvent(this.accountId, { eventType: 'WITHDRAWAL', amount }).subscribe({
-      next: (account) => this.selectAccount(account),
+      next: (account) => this.accountState.updateAccount(account),
       error: () => alert('Withdrawal failed. Check the amount and available balance.')
     });
   }
@@ -328,7 +312,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     if (!this.accountId) return;
     this.apiService.postCashEvent(this.accountId, { eventType: 'DEPOSIT', amount: summary.amount }).subscribe({
       next: (account) => {
-        this.selectAccount(account);
+        this.accountState.updateAccount(account);
         alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} completed successfully!`);
       },
       error: () => alert('Deposit failed. Please try again.')
@@ -337,7 +321,5 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
-    // Redirect to login
-    window.location.href = '/login';
   }
 }

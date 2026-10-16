@@ -15,7 +15,6 @@ import { AuthService } from '../core/auth.service';
 export class AdminLoginComponent {
   email: string = '';
   password: string = '';
-  rememberMe: boolean = false;
   submitted: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
@@ -75,7 +74,6 @@ export class AdminLoginComponent {
   resetForm() {
     this.email = '';
     this.password = '';
-    this.rememberMe = false;
     this.submitted = false;
     this.errorMessage = '';
     this.isLoading = false;

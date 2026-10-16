@@ -12,8 +12,8 @@
 }
 
 .news-article:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(0, 116, 74, 0.3);
+  background: rgba(0, 116, 74, 0.05);
 }
 
 .article-header {
@@ -32,8 +32,8 @@
 }
 
 .category-tag {
-  background-color: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background-color: rgba(0, 116, 74, 0.15);
+  color: #00744A;
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;

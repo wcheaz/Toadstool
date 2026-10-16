@@ -15,7 +15,6 @@ import { AuthService } from '../core/auth.service';
 export class LoginComponent {
   username: string = '';
   password: string = '';
-  rememberMe: boolean = false;
   submitted: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
@@ -49,7 +48,7 @@ export class LoginComponent {
       password: this.password
     }).subscribe({
       next: (response) => {
-        // Login successful - store client info in localStorage
+        // Login successful - store client info for the current session
         this.authService.storeClientSession(response);
         console.log('Login successful:', response);
         

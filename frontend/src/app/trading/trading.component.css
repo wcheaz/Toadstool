@@ -1,14 +1,14 @@
 :host {
   display: block;
   min-height: 100%;
-  --desk-bg: #0f111a;
-  --panel: rgba(23, 27, 42, 0.86);
-  --line: rgba(71, 85, 105, 0.35);
+  --desk-bg: #24272a;
+  --panel: rgba(45, 49, 53, 0.86);
+  --line: rgba(148, 163, 184, 0.32);
   --text: #f2f4f8;
-  --text-secondary: #c3c9d6;
-  --muted: #a3abbd;
-  --green: #4fc437;
-  --green-text: #6fd65a;
+  --text-secondary: #c9ced3;
+  --muted: #aeb5bb;
+  --green: #00744A;
+  --green-text: #55b990;
   --red-text: #ff7b72;
   color: var(--text);
   font-family: 'Avenir Next', 'Segoe UI', sans-serif;
@@ -18,7 +18,7 @@
 .trading-page {
   min-height: 100%;
   padding: 0 40px 40px;
-  background: radial-gradient(circle at 78% 5%, rgba(40, 75, 61, 0.12), transparent 28%), var(--desk-bg);
+  background: radial-gradient(circle at 78% 5%, rgba(0, 116, 74, 0.12), transparent 28%), var(--desk-bg);
 }
 
 /* Heading */
@@ -56,7 +56,7 @@
   margin-right: 8px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 10px rgba(79, 196, 55, 0.7);
+  box-shadow: 0 0 10px rgba(0, 116, 74, 0.7);
 }
 
 /* Layout */
@@ -134,14 +134,14 @@
   position: relative;
   height: 46px;
   margin: 18px 0 12px;
-  border: 1px solid #3a4560;
+  border: 1px solid #4a5055;
   border-radius: 8px;
-  background: #0e121d;
+  background: #24272a;
 }
 
 .search-box:focus-within {
-  border-color: #4d8743;
-  box-shadow: 0 0 0 2px rgba(79, 196, 55, 0.18);
+  border-color: #00744A;
+  box-shadow: 0 0 0 2px rgba(0, 116, 74, 0.18);
 }
 
 .search-box input {
@@ -157,7 +157,7 @@
 }
 
 .search-box input::placeholder {
-  color: #8d96ab;
+  color: #9aa2a8;
 }
 
 .search-icon {
@@ -165,7 +165,7 @@
   left: 16px;
   width: 13px;
   height: 13px;
-  border: 2px solid #a3abbd;
+  border: 2px solid #aeb5bb;
   border-radius: 50%;
 }
 
@@ -175,7 +175,7 @@
   right: -5px;
   bottom: -3px;
   width: 6px;
-  border-top: 2px solid #a3abbd;
+  border-top: 2px solid #aeb5bb;
   transform: rotate(45deg);
 }
 
@@ -183,10 +183,10 @@
   position: absolute;
   right: 12px;
   padding: 3px 7px;
-  border: 1px solid #3a4560;
+  border: 1px solid #4a5055;
   border-radius: 4px;
   color: var(--muted);
-  background: #161b29;
+  background: #2d3135;
   font-size: 13px;
 }
 
@@ -204,7 +204,7 @@
   max-height: 640px;
   overflow-y: auto;
   padding-right: 6px;
-  scrollbar-color: #374158 transparent;
+  scrollbar-color: #4a5055 transparent;
   scrollbar-width: thin;
 }
 
@@ -217,9 +217,9 @@
   min-height: 62px;
   margin-bottom: 8px;
   padding: 10px 12px;
-  border: 1px solid #2a3245;
+  border: 1px solid #3a4045;
   border-radius: 8px;
-  background: #111521;
+  background: #1e2124;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -229,8 +229,8 @@
 
 .stock-row:hover,
 .stock-row.selected {
-  border-color: rgba(79, 196, 55, 0.65);
-  background: #17221d;
+  border-color: rgba(0, 116, 74, 0.65);
+  background: #20352c;
 }
 
 .stock-row:focus-visible {
@@ -245,7 +245,7 @@
   height: 38px;
   border-radius: 8px;
   color: var(--green-text);
-  background: #113620;
+  background: #17382b;
   font-size: 13px;
   font-weight: 700;
 }
@@ -294,7 +294,7 @@
   place-items: center;
   min-height: 34px;
   border-radius: 6px;
-  background: #3a9a28;
+  background: #00744A;
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -302,11 +302,11 @@
 }
 
 .trade-button:hover {
-  background: #47b332;
+  background: #005c3a;
 }
 
 .trade-button.disabled {
-  background: #2a3245;
+  background: #3a4045;
   color: var(--muted);
   pointer-events: none;
 }
@@ -333,9 +333,9 @@
 .news-card {
   margin-top: 18px;
   padding: 20px;
-  border: 1px solid #2f3a52;
+  border: 1px solid #3a4045;
   border-radius: 8px;
-  background: #191e2c;
+  background: #2d3135;
 }
 
 .news-card-heading {
@@ -409,7 +409,7 @@
   padding: 11px 16px;
   border: 0;
   border-radius: 6px;
-  background: #3a9a28;
+  background: #00744A;
   color: #fff;
   font: inherit;
   font-size: 15px;
@@ -418,7 +418,7 @@
 }
 
 .open-trade-button:hover {
-  background: #47b332;
+  background: #005c3a;
 }
 
 /* Selected asset news */
@@ -452,7 +452,7 @@
 
 .trading-page ::-webkit-scrollbar-thumb {
   border-radius: 4px;
-  background: #354059;
+  background: #4a5055;
 }
 
 /* Responsive */
