@@ -7,6 +7,7 @@ import org.mybatis.spring.annotation.MapperScan;
 
 @SpringBootApplication
 @MapperScan({"com.neueda.leap.mapper", "com.neueda.leap.auth"})
+@EnableScheduling
 public class ToadstoolApplication {
 
 	public static void main(String[] args) {

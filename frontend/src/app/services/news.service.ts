@@ -16,6 +16,18 @@ export interface NewsResponse {
   batchId: string;
 }
 
+export interface EarningsEvent {
+  symbol: string;
+  /** yyyy-MM-dd */
+  date: string;
+  /** 'bmo' (before open), 'amc' (after close), 'dmh' (during hours) or '' */
+  hour: string;
+  quarter: number | null;
+  year: number | null;
+  epsEstimate: number | null;
+  revenueEstimate: number | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -36,7 +48,11 @@ export class NewsService {
     return this.http.get<NewsResponse[]>(`${this.apiUrl}/market`);
   }
 
-  refreshNews(): Observable<{ success: boolean; message: string; timestamp: number }> {
+  getEarningsCalendar(): Observable<EarningsEvent[]> {
+    return this.http.get<EarningsEvent[]>(`${this.apiUrl}/calendar`);
+  }
+
+  refreshNews():Observable<{ success: boolean; message: string; timestamp: number }> {
     return this.http.get<{ success: boolean; message: string; timestamp: number }>(`${this.apiUrl}/refresh`);
   }
 }

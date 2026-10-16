@@ -6,83 +6,71 @@ import { takeUntil } from 'rxjs/operators';
 import { ApiService } from '../core/api/api.service';
 import { CandleResponse, Instrument, QuoteResponse } from '../core/api/api.models';
 import { AuthService } from '../core/auth.service';
+import { NewsResponse, NewsService } from '../services/news.service';
 import { Asset } from '../shared/models/asset.model';
+import { NewsArticle, toNewsArticle } from '../shared/models/news-article.model';
+import { NewsCardComponent } from '../shared/components/news-card/news-card.component';
+import { NewsDetailModalComponent } from '../shared/components/news-detail-modal/news-detail-modal.component';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 
-interface RecommendedStock {
-  symbol: string;
-  name: string;
-  assetClass: string;
-  instrumentId: string;
-  price: number;
-  change: number;
-  changePercent: number;
+interface RecommendedAsset {
+  instrument: Instrument;
+  /** Articles mentioning this symbol in the current news batch; used for ranking. */
+  articleCount: number;
 }
 
-interface NewsItem {
-  level: 'HIGH' | 'MEDIUM' | 'LOW';
-  headline: string;
-  summary: string;
-  detail: string;
-}
+/** The batch quote endpoint accepts at most 25 ids. */
+const MAX_ASSETS = 25;
+const MAX_SELECTED_ARTICLES = 3;
+const QUOTE_REFRESH_MS = 5000;
+const NEWS_REFRESH_MS = 300000;
 
 @Component({
   selector: 'app-trading',
   standalone: true,
-  imports: [CommonModule, FormsModule, TradingModalComponent],
+  imports: [CommonModule, FormsModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent],
   templateUrl: './trading.component.html',
   styleUrl: './trading.component.css'
 })
 export class TradingComponent implements OnInit, OnDestroy {
   searchTerm = '';
-  selectedStock: RecommendedStock | null = null;
-  stocks: RecommendedStock[] = [];
+  assets: RecommendedAsset[] = [];
+  selectedAsset: RecommendedAsset | null = null;
   quotes = new Map<string, QuoteResponse>();
   accountId = '';
+  accountBalance: number | null = null;
   isLoading = true;
   apiError = '';
+
+  // News for the selected asset
+  private news: NewsResponse[] = [];
+  isLoadingNews = true;
+  selectedNewsArticle: NewsArticle | null = null;
+
+  // Trade modal state
   isTradeModalOpen = false;
-  selectedAsset: Asset | null = null;
+  tradeAsset: Asset | null = null;
   selectedInstrumentId = '';
   tradingChartData: CandleResponse[] = [];
 
+  private instruments: Instrument[] = [];
   private readonly destroy$ = new Subject<void>();
 
-  private readonly curatedStocks: RecommendedStock[] = [
-    this.curated('AAPL', 'Apple Inc.', 227.52, 2.84, 1.26),
-    this.curated('MSFT', 'Microsoft Corp.', 416.32, 3.41, 0.83),
-    this.curated('AMZN', 'Amazon.com Inc.', 187.54, 1.92, 1.03),
-    this.curated('GOOGL', 'Alphabet Inc.', 162.14, -0.71, -0.44),
-    this.curated('META', 'Meta Platforms', 567.78, 8.91, 1.59),
-    this.curated('NFLX', 'Netflix Inc.', 721.55, 5.48, 0.77),
-    this.curated('NVDA', 'NVIDIA Corp.', 138.20, 2.34, 1.72),
-    this.curated('TSLA', 'Tesla Inc.', 248.98, -3.86, -1.55),
-    this.curated('AVGO', 'Broadcom Inc.', 174.65, 1.44, 0.83),
-    this.curated('ORCL', 'Oracle Corp.', 177.23, 2.61, 1.50),
-    this.curated('AMD', 'Advanced Micro Devices', 164.12, -1.35, -0.82),
-    this.curated('CRM', 'Salesforce Inc.', 292.44, 4.22, 1.47),
-    this.curated('COST', 'Costco Wholesale', 886.11, 6.09, 0.69),
-    this.curated('JPM', 'JPMorgan Chase', 224.08, 0.84, 0.38),
-    this.curated('V', 'Visa Inc.', 289.44, 1.12, 0.39),
-    this.curated('WMT', 'Walmart Inc.', 81.74, 0.53, 0.65),
-    this.curated('DIS', 'Walt Disney Co.', 96.28, -0.92, -0.95),
-    this.curated('NKE', 'Nike Inc.', 81.50, 1.34, 1.67),
-    this.curated('KO', 'Coca-Cola Co.', 68.92, 0.28, 0.41),
-    this.curated('PEP', 'PepsiCo Inc.', 172.61, -0.47, -0.27),
-    this.curated('INTC', 'Intel Corp.', 23.71, 0.61, 2.64),
-    this.curated('SPOT', 'Spotify Technology', 386.43, 4.73, 1.24),
-    this.curated('UBER', 'Uber Technologies', 74.16, -0.36, -0.48),
-    this.curated('ADBE', 'Adobe Inc.', 496.27, 3.19, 0.65),
-    this.curated('PYPL', 'PayPal Holdings', 80.14, 1.08, 1.37)
-  ];
-
-  constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
+  constructor(
+    private apiService: ApiService,
+    private authService: AuthService,
+    private newsService: NewsService,
+    private cdr: ChangeDetectorRef
+  ) {
     this.accountId = this.authService.getAccountId();
   }
 
   ngOnInit(): void {
-    this.loadStocks();
-    interval(5000).pipe(takeUntil(this.destroy$)).subscribe(() => this.refreshQuotes());
+    this.loadInstruments();
+    this.loadNews();
+    this.refreshAccount();
+    interval(QUOTE_REFRESH_MS).pipe(takeUntil(this.destroy$)).subscribe(() => this.refreshQuotes());
+    interval(NEWS_REFRESH_MS).pipe(takeUntil(this.destroy$)).subscribe(() => this.loadNews());
   }
 
   ngOnDestroy(): void {
@@ -90,50 +78,90 @@ export class TradingComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  get filteredStocks(): RecommendedStock[] {
+  get filteredAssets(): RecommendedAsset[] {
     const query = this.searchTerm.trim().toLowerCase();
-    if (!query) return this.stocks;
-    return this.stocks.filter((stock) => `${stock.symbol} ${stock.name}`.toLowerCase().includes(query));
+    if (!query) return this.assets;
+    return this.assets.filter(({ instrument }) => `${instrument.symbol} ${instrument.name}`.toLowerCase().includes(query));
   }
 
-  get selectedNews(): NewsItem {
-    const stock = this.selectedStock ?? this.stocks[0];
-    if (!stock) return { level: 'LOW', headline: 'Market updates are loading', summary: 'Live headlines will appear when market data is available.', detail: 'Fauxnance news feed' };
-    const direction = stock.changePercent >= 0 ? 'gains' : 'pullback';
-    return {
-      level: Math.abs(stock.changePercent) > 1.5 ? 'HIGH' : 'MEDIUM',
-      headline: `${stock.name} ${direction} draw attention across the market`,
-      summary: `${stock.symbol} is moving ${stock.changePercent >= 0 ? 'higher' : 'lower'} as investors watch the latest market catalysts.`,
-      detail: `Asset: ${stock.symbol} · Price: $${stock.price.toFixed(2)} · Daily change: ${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%`
+  /** Latest articles for the selected asset, or general market news when it has none. */
+  get selectedArticles(): NewsArticle[] {
+    const symbol = this.selectedAsset?.instrument.symbol;
+    const forSymbol = this.news.filter(item => item.symbol === symbol);
+    const source = forSymbol.length > 0 ? forSymbol : this.news.filter(item => item.category === 'market');
+    return [...source]
+      .sort((a, b) => (b.publishedTimestamp ?? 0) - (a.publishedTimestamp ?? 0))
+      .slice(0, MAX_SELECTED_ARTICLES)
+      .map(toNewsArticle);
+  }
+
+  get showingMarketNews(): boolean {
+    const symbol = this.selectedAsset?.instrument.symbol;
+    return !this.news.some(item => item.symbol === symbol);
+  }
+
+  getQuote(asset: RecommendedAsset | null): QuoteResponse | undefined {
+    return asset ? this.quotes.get(asset.instrument.instrumentId) : undefined;
+  }
+
+  selectAsset(asset: RecommendedAsset): void {
+    this.selectedAsset = asset;
+  }
+
+  openTrade(asset: RecommendedAsset): void {
+    this.selectAsset(asset);
+    const quote = this.getQuote(asset);
+    if (!quote) return;
+
+    const instrument = asset.instrument;
+    this.tradeAsset = {
+      instrumentId: instrument.instrumentId,
+      symbol: instrument.symbol,
+      name: instrument.name,
+      price: quote.price,
+      change: quote.changePercent,
+      holdings: 0
     };
-  }
-
-  selectStock(stock: RecommendedStock): void {
-    this.selectedStock = stock;
-  }
-
-  openTrade(stock: RecommendedStock): void {
-    this.selectStock(stock);
-    const quote = this.quotes.get(stock.instrumentId) ?? this.toQuote(stock);
-    this.selectedAsset = { instrumentId: stock.instrumentId, symbol: stock.symbol, name: stock.name, price: quote.price, change: quote.changePercent, holdings: 0 };
-    this.selectedInstrumentId = stock.instrumentId;
+    this.selectedInstrumentId = instrument.instrumentId;
     this.tradingChartData = [];
     this.isTradeModalOpen = true;
-    this.loadHoldingForSelectedAsset(stock.instrumentId);
-    this.apiService.getCandles(stock.instrumentId, 90).subscribe({
+    this.loadHoldingForTradeAsset(instrument.instrumentId);
+    this.apiService.getCandles(instrument.instrumentId, 90).subscribe({
       next: (candles) => { this.tradingChartData = candles; this.cdr.detectChanges(); },
       error: () => this.cdr.detectChanges()
     });
   }
 
-  private loadHoldingForSelectedAsset(instrumentId: string): void {
+  closeTrade(): void {
+    this.isTradeModalOpen = false;
+    this.tradeAsset = null;
+  }
+
+  openNewsDetail(article: NewsArticle): void {
+    this.selectedNewsArticle = article;
+  }
+
+  closeNewsDetail(): void {
+    this.selectedNewsArticle = null;
+  }
+
+  /** Load cash for the active account; also called after each trade. */
+  refreshAccount(): void {
+    if (!this.accountId) return;
+    this.apiService.getAccountById(this.accountId).subscribe({
+      next: (account) => { this.accountBalance = account.balance; this.cdr.detectChanges(); },
+      error: (error) => console.error('Failed to load account balance:', error)
+    });
+  }
+
+  private loadHoldingForTradeAsset(instrumentId: string): void {
     if (!this.accountId) return;
     this.apiService.getAccountHoldings(this.accountId).subscribe({
       next: (response) => {
         const holding = response.holdings.find(item => item.instrumentId === instrumentId);
-        if (this.selectedAsset?.instrumentId === instrumentId) {
+        if (this.tradeAsset?.instrumentId === instrumentId) {
           const quantity = holding ? Number(holding.quantity) : 0;
-          this.selectedAsset = { ...this.selectedAsset, holdings: Number.isFinite(quantity) ? Math.max(0, quantity) : 0 };
+          this.tradeAsset = { ...this.tradeAsset, holdings: Number.isFinite(quantity) ? Math.max(0, quantity) : 0 };
           this.cdr.detectChanges();
         }
       },
@@ -141,56 +169,65 @@ export class TradingComponent implements OnInit, OnDestroy {
     });
   }
 
-  closeTrade(): void {
-    this.isTradeModalOpen = false;
-    this.selectedAsset = null;
-  }
-
-  private loadStocks(): void {
-    this.apiService.getInstruments(50, 0).subscribe({
+  private loadInstruments(): void {
+    this.apiService.getInstruments(MAX_ASSETS, 0).subscribe({
       next: (response) => {
-        const apiBySymbol = new Map(response.items.map((instrument) => [instrument.symbol.toUpperCase(), instrument]));
-        this.stocks = this.curatedStocks.map((stock) => this.mergeApiInstrument(stock, apiBySymbol.get(stock.symbol))).slice(0, 25);
+        this.instruments = response.items;
+        this.apiError = '';
         this.isLoading = false;
-        this.selectStock(this.stocks[0]);
+        this.rankAssets();
         this.refreshQuotes();
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.apiError = 'Live market data is unavailable. Showing the recommended watchlist.';
-        this.stocks = this.curatedStocks;
+      error: (error) => {
+        console.error('Failed to load instruments:', error);
+        this.apiError = 'Market data is unavailable right now. Please try again later.';
         this.isLoading = false;
-        this.selectStock(this.stocks[0]);
-        this.seedFallbackQuotes();
         this.cdr.detectChanges();
       }
     });
   }
 
+  private loadNews(): void {
+    this.newsService.getLatestNews().subscribe({
+      next: (news) => {
+        this.news = news;
+        this.isLoadingNews = false;
+        this.rankAssets();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Failed to load news:', error);
+        this.isLoadingNews = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /** Most-covered assets first; ties keep the instrument list order. */
+  private rankAssets(): void {
+    if (this.instruments.length === 0) return;
+
+    const articleCounts = new Map<string, number>();
+    this.news.forEach(item => articleCounts.set(item.symbol, (articleCounts.get(item.symbol) ?? 0) + 1));
+
+    this.assets = this.instruments
+      .map(instrument => ({ instrument, articleCount: articleCounts.get(instrument.symbol) ?? 0 }))
+      .sort((a, b) => b.articleCount - a.articleCount)
+      .slice(0, MAX_ASSETS);
+
+    const selectedId = this.selectedAsset?.instrument.instrumentId;
+    this.selectedAsset = this.assets.find(asset => asset.instrument.instrumentId === selectedId) ?? this.assets[0] ?? null;
+  }
+
   private refreshQuotes(): void {
-    if (!this.stocks.length) return;
-    this.apiService.getBatchQuotes(this.stocks.map((stock) => stock.instrumentId)).subscribe({
+    if (this.assets.length === 0) return;
+    this.apiService.getBatchQuotes(this.assets.map(asset => asset.instrument.instrumentId)).subscribe({
       next: (quotes) => {
         Object.entries(quotes).forEach(([instrumentId, quote]) => this.quotes.set(instrumentId, quote));
         this.cdr.detectChanges();
       },
-      error: () => this.seedFallbackQuotes()
+      error: (error) => console.error('Failed to refresh quotes:', error)
     });
-  }
-
-  private seedFallbackQuotes(): void {
-    this.stocks.forEach((stock) => this.quotes.set(stock.instrumentId, this.toQuote(stock)));
-  }
-
-  private mergeApiInstrument(stock: RecommendedStock, instrument?: Instrument): RecommendedStock {
-    return instrument ? { ...stock, instrumentId: instrument.instrumentId, name: instrument.name } : stock;
-  }
-
-  private toQuote(stock: RecommendedStock): QuoteResponse {
-    return { symbol: stock.symbol, price: stock.price, bid: stock.price - 0.02, ask: stock.price + 0.02, change: stock.change, changePercent: stock.changePercent, asOf: new Date().toISOString() };
-  }
-
-  private curated(symbol: string, name: string, price: number, change: number, changePercent: number): RecommendedStock {
-    return { symbol, name, price, change, changePercent, assetClass: 'EQUITY', instrumentId: `faux-${symbol.toLowerCase()}` };
   }
 }

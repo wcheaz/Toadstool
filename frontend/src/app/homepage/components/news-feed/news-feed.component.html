@@ -4,10 +4,11 @@
     <div class="module-handle">⋮⋮</div>
   </div>
   <div class="news-section">
-    <div class="news-item" *ngFor="let item of newsItems">
-      <p class="news-date">{{ item.date }}</p>
-      <h4 class="news-title">{{ item.title }}</h4>
-      <p class="news-description">{{ item.description }}</p>
-    </div>
+    <p class="news-status" *ngIf="loading">Loading news...</p>
+    <p class="news-status" *ngIf="error">{{ error }}</p>
+    <p class="news-status" *ngIf="!loading && !error && newsArticles.length === 0">No news available yet.</p>
+    <app-news-card *ngFor="let article of newsArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
   </div>
 </div>
+
+<app-news-detail-modal [article]="selectedNewsArticle" (close)="closeNewsDetail()"></app-news-detail-modal>
