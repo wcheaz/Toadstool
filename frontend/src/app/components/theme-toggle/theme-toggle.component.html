@@ -1,0 +1,8 @@
+<button
+  class="theme-toggle"
+  type="button"
+  [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+  [attr.title]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+  (click)="themeService.toggle()">
+  <span aria-hidden="true">{{ themeService.theme() === 'dark' ? '☀' : '☾' }}</span>
+</button>

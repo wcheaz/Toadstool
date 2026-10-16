@@ -70,10 +70,10 @@ label {
 .form-control {
   width: 100%;
   padding: 12px 14px;
-  background-color: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.5);
+  background-color: var(--color-surface-input);
+  border: 1px solid var(--color-border-input);
   border-radius: 6px;
-  color: #e2e8f0;
+  color: var(--color-text);
   font-size: 14px;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -82,12 +82,12 @@ label {
 .form-control:focus {
   outline: none;
   border-color: #00744A;
-  background-color: rgba(15, 23, 42, 0.8);
+  background-color: var(--color-surface-input-focus);
   box-shadow: 0 0 0 3px rgba(0, 116, 74, 0.15);
 }
 
 .form-control::placeholder {
-  color: #64748b;
+  color: var(--color-text-subtle);
 }
 
 .form-options {
