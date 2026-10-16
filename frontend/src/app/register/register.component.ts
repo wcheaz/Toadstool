@@ -103,7 +103,7 @@ export class RegisterComponent {
       password: this.password
     }).subscribe({
       next: (response) => {
-        // Registration successful - store client info in localStorage
+        // Registration successful - store client info for the current session
         this.authService.storeClientSession(response);
 
         console.log('Registration successful:', response);
