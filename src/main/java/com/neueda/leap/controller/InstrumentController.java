@@ -241,20 +241,20 @@ public class InstrumentController {
                 return ResponseEntity.badRequest().build();
             }
 
-            java.util.List<UUID> instrumentIds = new java.util.ArrayList<>();
+            java.util.List<UUID> parsedInstrumentIds = new java.util.ArrayList<>();
 
             for (String idStr : ids) {
                 try {
                     UUID id = UUID.fromString(idStr.trim());
-                    instrumentIds.add(id);
+                    parsedInstrumentIds.add(id);
                 } catch (IllegalArgumentException e) {
                     logger.warn("Invalid instrument ID format: {}", idStr);
                 }
             }
 
             java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
-            if (!instrumentIds.isEmpty()) {
-                List<Instrument> instruments = instrumentService.getInstrumentsByIds(instrumentIds);
+            if (!parsedInstrumentIds.isEmpty()) {
+                List<Instrument> instruments = instrumentService.getInstrumentsByIds(parsedInstrumentIds);
                 java.util.List<String> symbols = instruments.stream()
                         .map(Instrument::getSymbol)
                         .collect(Collectors.toList());

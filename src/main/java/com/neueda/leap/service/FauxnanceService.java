@@ -44,7 +44,7 @@ public class FauxnanceService {
     }
 
     public QuoteResponse getQuote(String symbol) {
-        String cacheKey = "quote:" + symbol;
+        String cacheKey = quoteCacheKey(symbol);
         CacheEntry<?> cached = cache.get(cacheKey);
         if (cached != null && !cached.isExpired(CACHE_TTL_MS)) {
             return (QuoteResponse) cached.value;
@@ -52,24 +52,55 @@ public class FauxnanceService {
 
         QuoteResponse quote = fetchQuote(symbol);
         if (quote != null) {
-            cache.put(cacheKey, new CacheEntry<>(quote));
+            cacheQuote(symbol, quote);
         }
         return quote;
     }
 
-    @SuppressWarnings("unchecked")
     public List<QuoteResponse> getQuotes(List<String> symbols) {
-        String cacheKey = "quotes:" + String.join(",", symbols);
-        CacheEntry<?> cached = cache.get(cacheKey);
-        if (cached != null && !cached.isExpired(CACHE_TTL_MS)) {
-            return (List<QuoteResponse>) cached.value;
+        if (symbols == null || symbols.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        List<QuoteResponse> quotes = fetchQuotes(symbols);
-        if (quotes != null) {
-            cache.put(cacheKey, new CacheEntry<>(quotes));
+        List<String> requestedSymbols = symbols.stream()
+                .filter(Objects::nonNull)
+                .map(this::extractBaseSymbol)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<String, QuoteResponse> quotesBySymbol = new HashMap<>();
+        List<String> missingSymbols = new ArrayList<>();
+
+        for (String symbol : requestedSymbols) {
+            CacheEntry<?> cached = cache.get(quoteCacheKey(symbol));
+            if (cached != null && !cached.isExpired(CACHE_TTL_MS)) {
+                QuoteResponse quote = (QuoteResponse) cached.value;
+                quotesBySymbol.put(symbol, quote);
+            } else {
+                missingSymbols.add(symbol);
+            }
         }
-        return quotes;
+
+        if (!missingSymbols.isEmpty()) {
+            List<QuoteResponse> fetchedQuotes = fetchQuotes(missingSymbols);
+            for (QuoteResponse quote : fetchedQuotes) {
+                cacheQuote(quote.getSymbol(), quote);
+                quotesBySymbol.put(extractBaseSymbol(quote.getSymbol()), quote);
+            }
+        }
+
+        return requestedSymbols.stream()
+                .map(quotesBySymbol::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private void cacheQuote(String requestedSymbol, QuoteResponse quote) {
+        cache.put(quoteCacheKey(requestedSymbol), new CacheEntry<>(quote));
+        cache.put(quoteCacheKey(quote.getSymbol()), new CacheEntry<>(quote));
+    }
+
+    private String quoteCacheKey(String symbol) {
+        return "quote:" + extractBaseSymbol(symbol);
     }
 
     @SuppressWarnings("unchecked")
@@ -345,4 +376,3 @@ public class FauxnanceService {
         public String getCurrency() { return currency; }
     }
 }
-
