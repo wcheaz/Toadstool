@@ -79,7 +79,12 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {
+  constructor(
+    private apiService: ApiService,
+    private authService: AuthService,
+    private accountState: AccountStateService,
+    private cdr: ChangeDetectorRef
+  ) {
     // Get client info from the current session
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
