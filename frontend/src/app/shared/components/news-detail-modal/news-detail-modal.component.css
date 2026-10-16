@@ -138,3 +138,24 @@
     font-size: 18px;
   }
 }
+
+/* Light mode (see ThemeService / styles.css) */
+:host-context([data-theme='light']) .modal-content {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:host-context([data-theme='light']) .modal-close,
+:host-context([data-theme='light']) .modal-title {
+  color: var(--color-text);
+}
+
+:host-context([data-theme='light']) .modal-meta,
+:host-context([data-theme='light']) .modal-description {
+  color: var(--color-text-muted);
+}
+
+:host-context([data-theme='light']) .modal-source,
+:host-context([data-theme='light']) .modal-read-more {
+  color: var(--color-primary);
+}

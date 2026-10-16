@@ -46,3 +46,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host-context([data-theme='light']) .news-status {
+  color: var(--color-text-muted);
+}

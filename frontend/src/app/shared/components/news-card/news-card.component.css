@@ -89,3 +89,32 @@
   text-overflow: ellipsis;
   min-width: 0;
 }
+
+/* Light mode (see ThemeService / styles.css) */
+:host-context([data-theme='light']) .news-article {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:host-context([data-theme='light']) .news-article:hover {
+  background: var(--color-primary-soft);
+}
+
+:host-context([data-theme='light']) .category-tag {
+  color: var(--color-primary);
+}
+
+:host-context([data-theme='light']) .article-title {
+  color: var(--color-text);
+}
+
+:host-context([data-theme='light']) .article-description,
+:host-context([data-theme='light']) .timestamp,
+:host-context([data-theme='light']) .market-info {
+  color: var(--color-text-muted);
+}
+
+:host-context([data-theme='light']) .asset-tag {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+}
