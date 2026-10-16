@@ -19,5 +19,6 @@ public class NewsRefreshJob {
     public void refreshNews() {
         logger.info("News refresh job triggered");
         newsService.refreshNewsForAllAccounts();
+        newsService.refreshEarningsCalendar();
     }
 }

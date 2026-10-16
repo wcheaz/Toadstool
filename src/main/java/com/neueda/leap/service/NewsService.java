@@ -2,7 +2,9 @@ package com.neueda.leap.service;
 
 import com.neueda.leap.Instrument;
 import com.neueda.leap.News;
+import com.neueda.leap.dto.EarningsEventResponse;
 import com.neueda.leap.dto.FinnhubNewsResponse;
+import com.neueda.leap.enums.AssetClass;
 import com.neueda.leap.repository.NewsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,10 @@ public class NewsService {
     private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final int MAX_NEWS_PER_SYMBOL = 5;
     private static final int MAX_GENERAL_NEWS = 5;
+    private static final int EARNINGS_LOOKAHEAD_DAYS = 30;
+
+    /** Upcoming earnings for tradable equities, refreshed hourly alongside the news. */
+    private volatile List<EarningsEventResponse> earningsCalendar = Collections.emptyList();
 
     public NewsService(FinnhubNewsService finnhubNewsService, NewsRepository newsRepository, InstrumentService instrumentService) {
         this.finnhubNewsService = finnhubNewsService;
@@ -35,13 +41,10 @@ public class NewsService {
             String batchId = String.valueOf(System.currentTimeMillis());
             List<News> allNews = new ArrayList<>();
 
-            // Get all tradable instruments from the trade side
-            List<Instrument> tradableInstruments = instrumentService.listAllInstruments();
-            List<String> symbols = tradableInstruments.stream()
-                    .map(Instrument::getSymbol)
-                    .collect(Collectors.toList());
+            // Finnhub company news only covers equities; crypto/FX are covered by the general news categories
+            List<String> symbols = getEquitySymbols();
 
-            logger.info("Found {} tradable instruments for news fetching", symbols.size());
+            logger.info("Found {} equity instruments for company news fetching", symbols.size());
 
             // Fetch company news for each symbol (max 5 per symbol)
             LocalDate today = LocalDate.now();
@@ -108,13 +111,13 @@ public class NewsService {
             }
             logger.info("Deduplicated {} articles down to {}", allNews.size(), deduplicatedNews.size());
 
-            // Delete old news and insert new batch
+            // Insert new batch, then delete previous batches (keeps old news if this fetch came back empty)
             if (!deduplicatedNews.isEmpty()) {
-                logger.info("Deleting old news batch");
-                newsRepository.deleteNewsByBatchId(batchId);
-
                 logger.info("Inserting {} new articles", deduplicatedNews.size());
                 newsRepository.insertNews(deduplicatedNews);
+
+                logger.info("Deleting previous news batches");
+                newsRepository.deleteNewsExceptBatchId(batchId);
 
                 logger.info("News refresh completed successfully. Total articles: {}", deduplicatedNews.size());
             } else {
@@ -124,6 +127,35 @@ public class NewsService {
         } catch (Exception e) {
             logger.error("Error during news refresh job: {}", e.getMessage(), e);
         }
+    }
+
+    public void refreshEarningsCalendar() {
+        try {
+            LocalDate today = LocalDate.now();
+            String from = today.format(dateFormatter);
+            String to = today.plusDays(EARNINGS_LOOKAHEAD_DAYS).format(dateFormatter);
+
+            List<EarningsEventResponse> events = new ArrayList<>();
+            for (String symbol : getEquitySymbols()) {
+                events.addAll(finnhubNewsService.fetchEarningsCalendar(symbol, from, to));
+            }
+            events.sort(Comparator.comparing(EarningsEventResponse::getDate));
+            earningsCalendar = List.copyOf(events);
+            logger.info("Earnings calendar refreshed with {} upcoming events", events.size());
+        } catch (Exception e) {
+            logger.error("Error during earnings calendar refresh: {}", e.getMessage(), e);
+        }
+    }
+
+    public List<EarningsEventResponse> getEarningsCalendar() {
+        return earningsCalendar;
+    }
+
+    private List<String> getEquitySymbols() {
+        return instrumentService.listAllInstruments().stream()
+                .filter(instrument -> instrument.getAssetClass() == AssetClass.EQUITY)
+                .map(Instrument::getSymbol)
+                .collect(Collectors.toList());
     }
 
     public List<News> getLatestNewsBySymbols(List<String> symbols) {

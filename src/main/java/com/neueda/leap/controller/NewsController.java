@@ -2,6 +2,7 @@ package com.neueda.leap.controller;
 
 import com.neueda.leap.Instrument;
 import com.neueda.leap.News;
+import com.neueda.leap.dto.EarningsEventResponse;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.NewsService;
 import org.slf4j.Logger;
@@ -79,10 +80,16 @@ public class NewsController {
         }
     }
 
+    @GetMapping("/calendar")
+    public ResponseEntity<List<EarningsEventResponse>> getEarningsCalendar() {
+        return ResponseEntity.ok(newsService.getEarningsCalendar());
+    }
+
     @GetMapping("/refresh")
     public ResponseEntity<Map<String, Object>> refreshNews() {
         try {
             newsService.refreshNewsForAllAccounts();
+            newsService.refreshEarningsCalendar();
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "News refreshed successfully");

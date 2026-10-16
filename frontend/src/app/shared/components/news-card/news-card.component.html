@@ -1,0 +1,18 @@
+<article class="news-article" (click)="open.emit(article)">
+  <div class="article-header">
+    <div class="article-meta">
+      <span class="category-tag">{{ article.category }}</span>
+      <span class="timestamp">{{ article.timestamp }}</span>
+    </div>
+  </div>
+
+  <h3 class="article-title">{{ article.title }}</h3>
+  <p class="article-description">{{ article.description }}</p>
+
+  <div class="article-footer">
+    <div class="article-assets">
+      <span *ngFor="let asset of article.assets" class="asset-tag">{{ asset }}</span>
+    </div>
+    <small class="market-info">{{ article.market }}</small>
+  </div>
+</article>
