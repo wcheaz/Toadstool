@@ -4,8 +4,13 @@
   --color-surface: #2d3135;
   --color-surface-raised: #1e2124;
   --color-surface-soft: rgba(45, 49, 53, 0.72);
+  --color-surface-input: #1e2124;
+  --color-surface-input-focus: #24272a;
+  --color-surface-admin: #1e2124;
+  --color-surface-admin-raised: #2d3135;
   --color-border: rgba(148, 163, 184, 0.2);
   --color-border-strong: rgba(148, 163, 184, 0.34);
+  --color-border-input: rgba(148, 163, 184, 0.5);
   --color-text: #f8fafc;
   --color-text-muted: #94a3b8;
   --color-text-subtle: #64748b;
@@ -16,12 +21,36 @@
   --color-warning: #fbbf24;
   --color-danger: #f87171;
   --color-danger-soft: rgba(239, 68, 68, 0.14);
+  --color-admin-muted: #aeb5bb;
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.2);
   --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
   --content-gutter: clamp(16px, 4vw, 40px);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #eef1ef;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f6f8f7;
+  --color-surface-soft: rgba(255, 255, 255, 0.78);
+  --color-surface-input: #ffffff;
+  --color-surface-input-focus: #f5faf7;
+  --color-surface-admin: #f6f8f7;
+  --color-surface-admin-raised: #ffffff;
+  --color-border: rgba(36, 39, 42, 0.16);
+  --color-border-strong: rgba(36, 39, 42, 0.28);
+  --color-border-input: rgba(36, 39, 42, 0.3);
+  --color-text: #24272a;
+  --color-text-muted: #596268;
+  --color-text-subtle: #737d83;
+  --color-primary: #005c3a;
+  --color-primary-strong: #00452c;
+  --color-primary-soft: rgba(0, 116, 74, 0.1);
+  --color-success: #00613e;
+  --color-admin-muted: #596268;
 }
 
 * {
@@ -92,4 +121,166 @@ a {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Keep the compressed admin page styles on the shared application palette. */
+.admin-shell,
+.details-shell {
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+.admin-sidebar,
+.details-shell .admin-sidebar {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+.admin-sidebar .nav-item:hover,
+.admin-sidebar .nav-item.active,
+.details-shell .nav-item:hover,
+.details-shell .nav-item.active {
+  background: var(--color-surface) !important;
+}
+
+.admin-shell .panel,
+.details-shell .panel,
+.admin-shell .overview-card,
+.admin-shell .insight,
+.details-shell .metric-card {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+.admin-shell .field input,
+.admin-shell .field select,
+.admin-shell .find-button,
+.admin-shell .details-button,
+.details-shell .filters select,
+.details-shell .account-picker select,
+.details-shell .filters button {
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+  color: var(--color-text) !important;
+}
+
+.admin-shell tbody tr:first-child,
+.admin-shell .insight,
+.details-shell .insight {
+  background: var(--color-surface-raised) !important;
+}
+
+.admin-shell .brand-mark,
+.details-shell .brand-mark,
+.details-shell .client-avatar {
+  background: var(--color-primary) !important;
+}
+
+.admin-shell .tab,
+.admin-shell .tab.active,
+.admin-shell .audit-table tr.clickable:hover {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+.admin-shell .tab.active,
+.admin-shell .field input,
+.details-shell .range-tabs .selected,
+.admin-shell td b,
+.details-shell .status,
+.details-shell .verified {
+  color: var(--color-success) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.admin-shell .table-wrap,
+.details-shell .table-wrap {
+  scrollbar-color: var(--color-border-strong) var(--color-surface-raised);
+}
+
+.top-bar {
+  padding-right: calc(var(--content-gutter) + 56px) !important;
+}
+
+.admin-shell .topbar,
+.details-shell .topbar {
+  padding-right: 80px !important;
+}
+
+:root[data-theme='light'] .top-bar .welcome-text,
+:root[data-theme='light'] .top-bar .icon-button {
+  color: var(--color-text);
+}
+
+:root[data-theme='light'] .sidebar-title,
+:root[data-theme='light'] .sidebar .nav-button,
+:root[data-theme='light'] .account-menu-trigger,
+:root[data-theme='light'] .account-menu-current strong,
+:root[data-theme='light'] .account-option strong,
+:root[data-theme='light'] .module-header h3,
+:root[data-theme='light'] .news-title,
+:root[data-theme='light'] .table-cell,
+:root[data-theme='light'] .login-card .brand-title,
+:root[data-theme='light'] .register-card .brand-title,
+:root[data-theme='light'] .admin-login-card .brand-title,
+:root[data-theme='light'] .welcome-title,
+:root[data-theme='light'] .brand-title,
+:root[data-theme='light'] label,
+:root[data-theme='light'] .checkbox-label,
+:root[data-theme='light'] .terms-label {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .account-panel,
+:root[data-theme='light'] .account-menu-list,
+:root[data-theme='light'] .dashboard-module,
+:root[data-theme='light'] .login-card,
+:root[data-theme='light'] .register-card,
+:root[data-theme='light'] .feature-card,
+:root[data-theme='light'] .news-item {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .module-header,
+:root[data-theme='light'] .table-header {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .account-menu-current small,
+:root[data-theme='light'] .account-option small,
+:root[data-theme='light'] .account-empty,
+:root[data-theme='light'] .news-date,
+:root[data-theme='light'] .news-description,
+:root[data-theme='light'] .asset-full,
+:root[data-theme='light'] .holding-value,
+:root[data-theme='light'] .form-footer,
+:root[data-theme='light'] .password-toggle-btn {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .account-option,
+:root[data-theme='light'] .account-action,
+:root[data-theme='light'] .account-action-primary,
+:root[data-theme='light'] .view-exchange,
+:root[data-theme='light'] .change-positive,
+:root[data-theme='light'] .terms-link,
+:root[data-theme='light'] .footer-link,
+:root[data-theme='light'] .register-link,
+:root[data-theme='light'] .admin-link {
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .account-option:hover,
+:root[data-theme='light'] .account-action:hover,
+:root[data-theme='light'] .table-row:hover,
+:root[data-theme='light'] .feature-card:hover,
+:root[data-theme='light'] .news-item:hover {
+  background: var(--color-primary-soft) !important;
+}
+
+:root[data-theme='light'] .login-card .logo-icon,
+:root[data-theme='light'] .register-card .logo-icon {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-strong) 100%) !important;
 }
