@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthResponse } from './api/api.models';
+import { ApiService } from './api/api.service';
 import { clearAuthSession, getAccountId, getClientDisplayName, storeAuthSession } from '../auth-storage';
 
 /**
@@ -9,6 +12,8 @@ import { clearAuthSession, getAccountId, getClientDisplayName, storeAuthSession 
   providedIn: 'root'
 })
 export class AuthService {
+  constructor(private apiService: ApiService, private router: Router) {}
+
   /**
    * Store client info in sessionStorage after login/registration.
    */
@@ -33,7 +38,17 @@ export class AuthService {
   }
 
   logout(): void {
-    clearAuthSession();
-    window.location.replace('/login');
+    this.apiService.logout()
+      .pipe(
+        finalize(() => {
+          clearAuthSession();
+          this.router.navigate(['/login'], { replaceUrl: true });
+        })
+      )
+      .subscribe({
+        error: (error) => {
+          console.error('Server logout failed; completing local logout:', error);
+        }
+      });
   }
 }
