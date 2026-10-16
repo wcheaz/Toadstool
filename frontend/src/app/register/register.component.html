@@ -114,7 +114,10 @@
           [disabled]="isLoading"
         />
         <label for="agreeTerms" class="terms-label">
-          I agree to the <a href="#" class="terms-link">Terms & Conditions</a> and the <a href="#" class="terms-link">Privacy Policy</a>
+          I agree to the
+          <button type="button" class="terms-link" (click)="openLegalDocument('terms')">Terms & Conditions</button>
+          and the
+          <button type="button" class="terms-link" (click)="openLegalDocument('privacy')">Privacy Policy</button>
         </label>
       </div>
 
@@ -131,4 +134,74 @@
       </div>
     </form>
   </div>
+</div>
+
+<div
+  *ngIf="activeLegalDocument"
+  class="legal-modal-backdrop"
+  role="presentation"
+  (click)="closeLegalDocument()"
+>
+  <section
+    class="legal-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="activeLegalDocument + '-title'"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="legal-modal-header">
+      <h2 [id]="activeLegalDocument + '-title'">
+        {{ activeLegalDocument === 'terms' ? 'Terms & Conditions' : 'Privacy Policy' }}
+      </h2>
+      <button
+        type="button"
+        class="legal-modal-close"
+        aria-label="Close"
+        (click)="closeLegalDocument()"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="legal-modal-content" *ngIf="activeLegalDocument === 'terms'">
+      <p>By creating an account, you agree to use Toadstool Trader lawfully and responsibly.</p>
+      <h3>Account responsibilities</h3>
+      <p>
+        Keep your account credentials secure and make sure the information you provide is
+        accurate and up to date. You are responsible for activity performed through your account.
+      </p>
+      <h3>Acceptable use</h3>
+      <p>
+        Do not use the service to violate applicable laws, interfere with the service, or
+        compromise another person’s account or data.
+      </p>
+      <h3>Changes to these terms</h3>
+      <p>
+        We may update these terms as the service changes. We will provide notice of material
+        changes where appropriate.
+      </p>
+    </div>
+
+    <div class="legal-modal-content" *ngIf="activeLegalDocument === 'privacy'">
+      <p>
+        Toadstool Trader uses the information you provide to create and manage your account and
+        provide the service.
+      </p>
+      <h3>Information we collect</h3>
+      <p>
+        This includes your display name, username, email address, and information you submit while
+        using the application.
+      </p>
+      <h3>How we use information</h3>
+      <p>
+        We use this information to authenticate you, operate your account, communicate with you,
+        and improve the application.
+      </p>
+      <h3>Your choices</h3>
+      <p>
+        Contact the Toadstool Trader team if you have questions about your information or want to
+        request an account update.
+      </p>
+    </div>
+  </section>
 </div>

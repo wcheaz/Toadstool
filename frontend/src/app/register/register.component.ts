@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -24,6 +24,7 @@ export class RegisterComponent {
   isLoading: boolean = false;
   showPassword: boolean = false;
   showConfirmPassword: boolean = false;
+  activeLegalDocument: 'terms' | 'privacy' | null = null;
 
   constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {}
 
@@ -33,6 +34,19 @@ export class RegisterComponent {
 
   toggleConfirmPasswordVisibility() {
     this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  openLegalDocument(document: 'terms' | 'privacy') {
+    this.activeLegalDocument = document;
+  }
+
+  closeLegalDocument() {
+    this.activeLegalDocument = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    this.closeLegalDocument();
   }
 
   onSubmit() {
