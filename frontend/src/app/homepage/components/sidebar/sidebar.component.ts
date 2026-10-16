@@ -74,9 +74,6 @@ export class SidebarComponent implements OnInit {
       case 'settings':
         this.router.navigate(['/settings']);
         break;
-      case 'support':
-        this.router.navigate(['/support']);
-        break;
       case 'admin-dashboard':
       case 'admin-clients':
         this.router.navigate(['/admin-dashboard']);

@@ -1,54 +1,54 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthResponse } from './api/api.models';
+import { ApiService } from './api/api.service';
+import { clearAuthSession, getAccountId, getClientDisplayName, storeAuthSession } from '../auth-storage';
 
 /**
- * Handles the client session stored in localStorage.
+ * Handles the client session stored for the current browser tab.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  constructor(private apiService: ApiService, private router: Router) {}
+
   /**
-   * Store client info in localStorage after login/registration
+   * Store client info in sessionStorage after login/registration.
    */
   storeClientSession(response: AuthResponse): void {
-    if (response.clientId) {
-      localStorage.setItem('clientId', response.clientId);
-    } else {
-      localStorage.removeItem('clientId');
-    }
-    localStorage.setItem('clientEmail', response.email);
-    localStorage.setItem('clientName', response.displayName);
-    if (response.accountId) {
-      localStorage.setItem('accountId', response.accountId);
-    } else {
-      localStorage.removeItem('accountId');
-    }
-    localStorage.setItem('accessToken', response.accessToken);
+    storeAuthSession(response);
   }
 
   getClientName(): string {
-    return localStorage.getItem('clientName') || 'User';
+    return getClientDisplayName() || 'User';
   }
 
   getClientId(): string {
-    return localStorage.getItem('clientId') || '';
+    return sessionStorage.getItem('clientId') || '';
   }
 
   getAccountId(): string {
-    return localStorage.getItem('accountId') || '';
+    return getAccountId() || '';
   }
 
   setAccountId(accountId: string): void {
-    localStorage.setItem('accountId', accountId);
+    sessionStorage.setItem('accountId', accountId);
   }
 
   logout(): void {
-    localStorage.removeItem('clientName');
-    localStorage.removeItem('clientId');
-    localStorage.removeItem('clientEmail');
-    localStorage.removeItem('accountId');
-    localStorage.removeItem('accessToken');
-    window.location.href = '/login';
+    this.apiService.logout()
+      .pipe(
+        finalize(() => {
+          clearAuthSession();
+          this.router.navigate(['/login'], { replaceUrl: true });
+        })
+      )
+      .subscribe({
+        error: (error) => {
+          console.error('Server logout failed; completing local logout:', error);
+        }
+      });
   }
 }
