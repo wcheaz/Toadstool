@@ -15,6 +15,18 @@ public interface InstrumentMapper {
     @Select("SELECT instrument_id as instrumentId, symbol, name, asset_class as assetClass, status FROM trading.instruments WHERE instrument_id = #{instrumentId}")
     Instrument selectInstrumentById(@Param("instrumentId") UUID instrumentId);
 
+    @Select({
+            "<script>",
+            "SELECT instrument_id as instrumentId, symbol, name, asset_class as assetClass, status",
+            "FROM trading.instruments",
+            "WHERE instrument_id IN",
+            "<foreach item='instrumentId' collection='instrumentIds' open='(' separator=',' close=')'>",
+            "#{instrumentId}",
+            "</foreach>",
+            "</script>"
+    })
+    List<Instrument> selectInstrumentsByIds(@Param("instrumentIds") List<UUID> instrumentIds);
+
     @Select("SELECT instrument_id as instrumentId, symbol, name, asset_class as assetClass, status FROM trading.instruments WHERE symbol = #{symbol}")
     Instrument selectInstrumentBySymbol(@Param("symbol") String symbol);
 

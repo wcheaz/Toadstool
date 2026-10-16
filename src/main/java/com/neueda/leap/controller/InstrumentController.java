@@ -241,24 +241,25 @@ public class InstrumentController {
                 return ResponseEntity.badRequest().build();
             }
 
-            java.util.List<String> symbols = new java.util.ArrayList<>();
-            java.util.Map<String, UUID> symbolToIdMap = new java.util.HashMap<>();
+            java.util.List<UUID> parsedInstrumentIds = new java.util.ArrayList<>();
 
             for (String idStr : ids) {
                 try {
                     UUID id = UUID.fromString(idStr.trim());
-                    Instrument instrument = instrumentService.getInstrumentById(id);
-                    if (instrument != null) {
-                        symbols.add(instrument.getSymbol());
-                        symbolToIdMap.put(instrument.getSymbol(), id);
-                    }
+                    parsedInstrumentIds.add(id);
                 } catch (IllegalArgumentException e) {
                     logger.warn("Invalid instrument ID format: {}", idStr);
                 }
             }
 
             java.util.Map<String, QuoteDto> quotes = new java.util.HashMap<>();
-            if (!symbols.isEmpty()) {
+            if (!parsedInstrumentIds.isEmpty()) {
+                List<Instrument> instruments = instrumentService.getInstrumentsByIds(parsedInstrumentIds);
+                java.util.List<String> symbols = instruments.stream()
+                        .map(Instrument::getSymbol)
+                        .collect(Collectors.toList());
+                java.util.Map<String, UUID> symbolToIdMap = instruments.stream()
+                        .collect(Collectors.toMap(Instrument::getSymbol, Instrument::getInstrumentId));
                 List<FauxnanceService.QuoteResponse> batchQuotes = fauxnanceService.getQuotes(symbols);
                 for (FauxnanceService.QuoteResponse quote : batchQuotes) {
                     UUID instrumentId = symbolToIdMap.get(quote.getSymbol());

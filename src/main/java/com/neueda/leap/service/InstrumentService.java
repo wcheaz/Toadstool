@@ -31,6 +31,16 @@ public class InstrumentService {
     }
 
     /**
+     * Get multiple instruments in one database query.
+     */
+    public List<Instrument> getInstrumentsByIds(List<UUID> instrumentIds) {
+        if (instrumentIds == null || instrumentIds.isEmpty()) {
+            return List.of();
+        }
+        return instrumentRepository.findByIds(instrumentIds);
+    }
+
+    /**
      * Get instrument by symbol
      */
     public Instrument getInstrumentBySymbol(String symbol) {
