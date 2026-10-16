@@ -223,14 +223,23 @@ public class AccountController {
         if (holdingsService == null) {
             return List.of();
         }
-        return holdingsService.getAccountHoldings(accountId, 1000, 0).stream()
+        List<Holdings> holdings = holdingsService.getAccountHoldings(accountId, 1000, 0).stream()
                 .filter(holding -> holding.getQuantity() != null && holding.getQuantity().signum() > 0)
-                .map(this::toHoldingItem)
+                .collect(Collectors.toList());
+        List<UUID> instrumentIds = holdings.stream()
+                .map(Holdings::getInstrumentId)
+                .collect(Collectors.toList());
+        java.util.Map<UUID, Instrument> instrumentsById = instrumentService == null
+                ? java.util.Map.of()
+                : instrumentService.getInstrumentsByIds(instrumentIds).stream()
+                        .collect(Collectors.toMap(Instrument::getInstrumentId, instrument -> instrument));
+
+        return holdings.stream()
+                .map(holding -> toHoldingItem(holding, instrumentsById.get(holding.getInstrumentId())))
                 .collect(Collectors.toList());
     }
 
-    private HoldingsResponse.HoldingItem toHoldingItem(Holdings holding) {
-        Instrument instrument = instrumentService != null ? instrumentService.getInstrumentById(holding.getInstrumentId()) : null;
+    private HoldingsResponse.HoldingItem toHoldingItem(Holdings holding, Instrument instrument) {
         HoldingsResponse.HoldingItem item = new HoldingsResponse.HoldingItem(
                 holding.getInstrumentId(),
                 instrument != null ? instrument.getSymbol() : null,

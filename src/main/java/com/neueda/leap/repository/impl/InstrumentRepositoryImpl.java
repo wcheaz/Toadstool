@@ -25,6 +25,11 @@ public class InstrumentRepositoryImpl implements InstrumentRepository {
     }
 
     @Override
+    public List<Instrument> findByIds(List<UUID> instrumentIds) {
+        return instrumentMapper.selectInstrumentsByIds(instrumentIds);
+    }
+
+    @Override
     public Instrument findBySymbol(String symbol) {
         return instrumentMapper.selectInstrumentBySymbol(symbol);
     }
