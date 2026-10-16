@@ -48,8 +48,8 @@
 }
 
 .tab-button.active {
-  color: #22c55e;
-  border-bottom-color: #22c55e;
+  color: #00744A;
+  border-bottom-color: #00744A;
 }
 
 /* News Feed */
@@ -111,8 +111,8 @@
 }
 
 .category-tag {
-  background-color: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background-color: rgba(0, 116, 74, 0.15);
+  color: #00744A;
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;
@@ -442,7 +442,7 @@
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
+  background: linear-gradient(135deg, #2d3135 0%, #24272a 100%);
   border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 12px;
   max-width: 900px;
@@ -480,7 +480,7 @@
 }
 
 .modal-close:hover {
-  color: #22c55e;
+  color: #00744A;
 }
 
 .modal-body {
@@ -513,7 +513,7 @@
 
 .modal-source {
   font-weight: 600;
-  color: #22c55e;
+  color: #00744A;
 }
 
 .modal-image {
@@ -535,7 +535,7 @@
 .modal-read-more {
   display: inline-block;
   margin-top: 16px;
-  color: #22c55e;
+  color: #00744A;
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
@@ -543,7 +543,7 @@
 }
 
 .modal-read-more:hover {
-  color: #16a34a;
+  color: #005c3a;
 }
 
 .modal-sidebar {
@@ -552,8 +552,8 @@
 }
 
 .stock-card {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: linear-gradient(135deg, rgba(0, 116, 74, 0.1) 0%, rgba(0, 116, 74, 0.05) 100%);
+  border: 1px solid rgba(0, 116, 74, 0.2);
   border-radius: 12px;
   padding: 24px;
   text-align: center;
@@ -564,7 +564,7 @@
 .stock-symbol {
   font-size: 28px;
   font-weight: 700;
-  color: #22c55e;
+  color: #00744A;
   margin: 0 0 20px 0;
 }
 
@@ -591,7 +591,7 @@
 .trade-button {
   width: 100%;
   padding: 14px 24px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, #00744A 0%, #005c3a 100%);
   border: none;
   border-radius: 8px;
   color: white;
@@ -603,7 +603,7 @@
 
 .trade-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 116, 74, 0.4);
 }
 
 .trade-button:active {
@@ -616,8 +616,8 @@
 }
 
 .news-article:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(0, 116, 74, 0.3);
+  background: rgba(0, 116, 74, 0.05);
 }
 
 @media (max-width: 768px) {

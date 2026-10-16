@@ -23,8 +23,8 @@
 }
 
 .order-confirmation-modal {
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: linear-gradient(135deg, #2d3135 0%, #24272a 100%);
+  border: 1px solid rgba(0, 116, 74, 0.2);
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
@@ -61,7 +61,7 @@
 }
 
 .close-btn:hover {
-  color: #22c55e;
+  color: #00744A;
 }
 
 /* Header */
@@ -73,8 +73,8 @@
 
 .order-badge {
   display: inline-block;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: rgba(0, 116, 74, 0.15);
+  color: #00744A;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 11px;
@@ -82,7 +82,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(0, 116, 74, 0.3);
 }
 
 .modal-title {
@@ -97,8 +97,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(34, 197, 94, 0.05);
-  border: 1px solid rgba(34, 197, 94, 0.15);
+  background: rgba(0, 116, 74, 0.05);
+  border: 1px solid rgba(0, 116, 74, 0.15);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -113,13 +113,13 @@
 .asset-icon {
   width: 44px;
   height: 44px;
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(0, 116, 74, 0.2);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #22c55e;
+  color: #00744A;
   font-size: 14px;
 }
 
@@ -137,8 +137,8 @@
 }
 
 .order-side-badge {
-  background: #22c55e;
-  color: #0f1419;
+  background: #00744A;
+  color: #24272a;
   padding: 8px 14px;
   border-radius: 6px;
   font-weight: 600;
@@ -181,10 +181,10 @@
 .live-quote {
   font-size: 10px;
   font-weight: 600;
-  color: #22c55e;
+  color: #00744A;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(0, 116, 74, 0.1);
   padding: 3px 8px;
   border-radius: 3px;
 }
@@ -227,8 +227,8 @@
 
 /* Summary Section */
 .summary-section {
-  background: rgba(34, 197, 94, 0.05);
-  border: 1px solid rgba(34, 197, 94, 0.15);
+  background: rgba(0, 116, 74, 0.05);
+  border: 1px solid rgba(0, 116, 74, 0.15);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
@@ -254,11 +254,11 @@
 
 .summary-row.divider {
   padding: 12px 0 8px 0;
-  border-top: 1px solid rgba(34, 197, 94, 0.2);
+  border-top: 1px solid rgba(0, 116, 74, 0.2);
 }
 
 .summary-row.divider .summary-value.total {
-  color: #22c55e;
+  color: #00744A;
   font-size: 14px;
 }
 
@@ -267,7 +267,7 @@
 }
 
 .summary-row.buying-power .summary-value {
-  color: #22c55e;
+  color: #00744A;
 }
 
 /* Warning Section */
@@ -339,18 +339,18 @@
 }
 
 .btn-confirm {
-  background: #22c55e;
-  color: #0f1419;
+  background: #00744A;
+  color: #24272a;
 }
 
 .btn-confirm.buy {
-  background: #22c55e;
-  color: #0f1419;
+  background: #00744A;
+  color: #24272a;
 }
 
 .btn-confirm.buy:hover {
-  background: #16a34a;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  background: #005c3a;
+  box-shadow: 0 0 20px rgba(0, 116, 74, 0.3);
 }
 
 .btn-confirm.sell {
@@ -400,7 +400,7 @@
 }
 
 .order-confirmation-modal::-webkit-scrollbar-thumb:hover {
-  background: rgba(34, 197, 94, 0.4);
+  background: rgba(0, 116, 74, 0.4);
 }
 
 /* Responsive */
