@@ -24,14 +24,14 @@
 }
 
 .period-btn:hover {
-  border-color: #22c55e;
-  color: #22c55e;
+  border-color: #00744A;
+  color: #00744A;
 }
 
 .period-btn.active {
-  background: #22c55e;
-  border-color: #22c55e;
-  color: #0f1419;
+  background: #00744A;
+  border-color: #00744A;
+  color: #24272a;
 }
 
 .chart-loading {
@@ -51,7 +51,7 @@
 
 .chart-bar {
   width: 8%;
-  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(180deg, #00744A 0%, #005c3a 100%);
   border-radius: 4px 4px 0 0;
   opacity: 0.8;
   transition: opacity 0.2s;

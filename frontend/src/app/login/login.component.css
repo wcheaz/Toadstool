@@ -3,18 +3,18 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  padding: 24px 16px;
+  background: var(--color-bg);
 }
 
 .login-card {
-  background: rgba(30, 41, 59, 0.9);
+  background: rgba(45, 49, 53, 0.94);
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  padding: 50px 40px;
+  padding: clamp(28px, 6vw, 50px) clamp(20px, 6vw, 40px);
   width: 100%;
   max-width: 400px;
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--color-border);
 }
 
 .logo-section {
@@ -30,7 +30,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, #00744A 0%, #005c3a 100%);
   border-radius: 8px;
   color: white;
   font-weight: bold;
@@ -46,14 +46,14 @@
 }
 
 .register-link {
-  color: #22c55e;
+  color: #00744A;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
 }
 
 .register-link:hover {
-  color: #16a34a;
+  color: #005c3a;
 }
 
 .admin-footer {
@@ -61,14 +61,14 @@
 }
 
 .admin-link {
-  color: #22c55e;
+  color: #00744A;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
 }
 
 .admin-link:hover {
-  color: #16a34a;
+  color: #005c3a;
 }
 
 /* Override block (was at the end of the original stylesheet) */
@@ -88,7 +88,7 @@
 }
 
 .footer-link {
-  color: #22c55e;
+  color: #00744A;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
@@ -96,7 +96,7 @@
 }
 
 .footer-link:hover {
-  color: #16a34a;
+  color: #005c3a;
 }
 
 .password-input-wrapper {

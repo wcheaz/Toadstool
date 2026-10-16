@@ -1,7 +1,8 @@
 <section class="balance-widget">
   <div class="balance-header">
     <div class="balance-title-section">
-      <h2>Current Balance</h2>
+      <span class="account-eyebrow">Trading account</span>
+      <h2>{{ accountName || 'Account overview' }}</h2>
     </div>
     <button class="visibility-toggle" (click)="toggleBalanceVisibility()" title="Toggle balance visibility">
       <svg *ngIf="isBalanceVisible" class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -18,16 +19,16 @@
   <div class="balance-content">
     <div class="balance-left">
       <div class="balance-amount">
-        <p class="balance-value-label">Current Balance</p>
-        <p class="balance-value" *ngIf="isBalanceVisible">
-          ${{ currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+        <p class="balance-value-label">Portfolio value</p>
+        <p class="balance-value">
+          {{ isBalanceVisible ? ('$' + portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '••••••' }}
         </p>
-        <p class="balance-value hidden" *ngIf="!isBalanceVisible">••••••</p>
       </div>
       <div class="balance-available">
         <p class="available-label">Available for Trading</p>
-        <p class="available-value" *ngIf="isBalanceVisible">${{ availableForTrading.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
-        <p class="available-value hidden" *ngIf="!isBalanceVisible">••••••</p>
+        <p class="available-value">
+          {{ isBalanceVisible ? ('$' + availableForTrading.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '••••••' }}
+        </p>
       </div>
     </div>
 

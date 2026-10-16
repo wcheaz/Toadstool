@@ -9,7 +9,8 @@ import { CommonModule } from '@angular/common';
   styleUrl: './balance-widget.component.css'
 })
 export class BalanceWidgetComponent {
-  @Input() currentBalance: number = 0;
+  @Input() accountName: string = '';
+  @Input() portfolioValue: number = 0;
   @Input() availableForTrading: number = 0;
   @Output() depositClicked = new EventEmitter<void>();
   @Output() withdrawClicked = new EventEmitter<void>();
