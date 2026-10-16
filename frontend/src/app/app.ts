@@ -7,9 +7,10 @@ import { TopBarComponent } from './homepage/components/top-bar/top-bar.component
 import { ProfileComponent } from './profile/profile.component';
 import { isAuthenticated } from './auth-storage';
 import { filter } from 'rxjs/operators';
+import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.component';
 
 @Component({
-  imports: [CommonModule, RouterOutlet, SidebarComponent, TopBarComponent, ProfileComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, TopBarComponent, ProfileComponent, ThemeToggleComponent],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
