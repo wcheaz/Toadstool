@@ -88,6 +88,19 @@ public final class AdminDtos {
         public String details;
     }
 
+    public static class CashEventRow {
+        public UUID cashEventId;
+        public UUID accountId;
+        public UUID clientId;
+        public String clientName;
+        public String accountName;
+        public String eventType;
+        public BigDecimal amount;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
+        public OffsetDateTime occurredAt;
+        public String details;
+    }
+
     public static class PlatformActivityRow {
         @JsonSerialize(using = LocalDateSerializer.class)
         public LocalDate activityDate;

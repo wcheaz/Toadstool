@@ -3,14 +3,14 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { finalize, map } from 'rxjs/operators';
 import { AuthService } from '../core/auth.service';
 import { ApiService } from '../core/api/api.service';
 import { ApiTimestamp, PaginatedResponse } from '../core/api/api.models';
 import { SidebarComponent } from '../homepage/components/sidebar/sidebar.component';
 import { formatDateTime, humanize } from '../admin-dashboard/admin-format';
 
-type AuditTab = 'logins' | 'trades' | 'access';
+type AuditTab = 'logins' | 'trades' | 'access' | 'cash';
 
 interface AuditRow {
   at: ApiTimestamp;
@@ -36,7 +36,8 @@ export class AdminAuditComponent implements OnInit {
   readonly tabs: Array<{ key: AuditTab; label: string }> = [
     { key: 'logins', label: 'Sign-ins' },
     { key: 'trades', label: 'Trade events' },
-    { key: 'access', label: 'Admin access' }
+    { key: 'access', label: 'Admin access' },
+    { key: 'cash', label: 'Cash flow' }
   ];
   readonly formatDateTime = formatDateTime;
 
@@ -52,6 +53,7 @@ export class AdminAuditComponent implements OnInit {
   offset = 0;
   loading = false;
   error = '';
+  private loadRequestId = 0;
 
   constructor(
     private authService: AuthService,
@@ -137,24 +139,33 @@ export class AdminAuditComponent implements OnInit {
 
   private load(): void {
     const tab = this.tab;
+    const requestId = ++this.loadRequestId;
     this.loading = true;
     this.error = '';
     this.cdr.detectChanges();
-    this.request(tab).subscribe({
+    this.request(tab).pipe(
+      finalize(() => {
+        if (requestId === this.loadRequestId) {
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      })
+    ).subscribe({
       next: (page) => {
-        if (tab !== this.tab) {
+        if (requestId !== this.loadRequestId || tab !== this.tab) {
           return;
         }
         this.rows = page.items;
         this.totalCount = page.pagination.totalCount;
-        this.loading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
+        if (requestId !== this.loadRequestId) {
+          return;
+        }
         console.error('Failed to load audit events:', err);
         this.rows = [];
         this.totalCount = 0;
-        this.loading = false;
         this.error = 'Could not load audit events. Please try again.';
         this.cdr.detectChanges();
       }
@@ -211,6 +222,21 @@ export class AdminAuditComponent implements OnInit {
               tone: 'neutral' as const
             }))
           })));
+      case 'cash':
+        return this.apiService.getAuditCashEvents({ clientId }, this.pageSize, this.offset)
+          .pipe(map((page) => ({
+            ...page,
+            items: page.items.map((event) => ({
+              at: event.occurredAt,
+              who: event.clientName,
+              whoDetail: event.accountName,
+              clientId: event.clientId,
+              event: humanize(event.eventType),
+              details: this.formatAmount(event.amount),
+              status: 'COMPLETED',
+              tone: 'neutral' as const
+            }))
+          })));
     }
   }
 
@@ -225,6 +251,13 @@ export class AdminAuditComponent implements OnInit {
       return ` · ${humanize(parsed.side)} ${parsed.quantity}`;
     }
     return '';
+  }
+
+  private formatAmount(amount: number): string {
+    return Math.abs(amount).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    });
   }
 
   private parse(details: string): any {

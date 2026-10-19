@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { ApiService } from '../core/api/api.service';
+import { finalize } from 'rxjs/operators';
 import { AdminClientSummary, Insight, PlatformOverview } from '../core/api/api.models';
 import { SidebarComponent } from '../homepage/components/sidebar/sidebar.component';
 import { formatDateTime, formatMoney, humanize } from './admin-format';
@@ -32,6 +33,7 @@ export class AdminDashboardComponent implements OnInit {
   overview: PlatformOverview | null = null;
   insights: Insight[] = [];
   loadedAt: Date | null = null;
+  private clientsRequestId = 0;
 
   readonly formatMoney = formatMoney;
   readonly formatDateTime = formatDateTime;
@@ -106,21 +108,33 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private loadClients(): void {
+    const requestId = ++this.clientsRequestId;
     this.loading = true;
     this.error = '';
-    this.apiService.searchAdminClients(this.appliedSearchTerm, this.statusFilter, this.pageSize, this.offset).subscribe({
+    this.apiService.searchAdminClients(this.appliedSearchTerm, this.statusFilter, this.pageSize, this.offset).pipe(
+      finalize(() => {
+        if (requestId === this.clientsRequestId) {
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      })
+    ).subscribe({
       next: (page) => {
+        if (requestId !== this.clientsRequestId) {
+          return;
+        }
         this.clients = page.items;
         this.totalCount = page.pagination.totalCount;
-        this.loading = false;
         this.loadedAt = new Date();
         this.cdr.detectChanges();
       },
       error: (err) => {
+        if (requestId !== this.clientsRequestId) {
+          return;
+        }
         console.error('Failed to load clients:', err);
         this.clients = [];
         this.totalCount = 0;
-        this.loading = false;
         this.error = err?.status === 403
           ? 'Your session does not have admin access.'
           : 'Could not load clients. Please try again.';

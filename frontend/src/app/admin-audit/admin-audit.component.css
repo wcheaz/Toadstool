@@ -13,6 +13,8 @@
 .audit-table tbody tr:first-child { background: transparent; }
 .audit-table tr.clickable { cursor: pointer; }
 .audit-table tr.clickable:hover { background: #1c2030; }
+.audit-table td { overflow: hidden; }
+.audit-table td span, .audit-table td strong { overflow-wrap: anywhere; word-break: break-word; }
 td b.neutral { color: #a9b0c3; background: #1f2536; }
 @media (max-width: 700px) {
 	.audit-filters { grid-template-columns: 1fr; }

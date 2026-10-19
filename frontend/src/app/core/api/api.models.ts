@@ -228,6 +228,18 @@ export interface AccessEventRow {
   details: string;
 }
 
+export interface AdminCashEventRow {
+  cashEventId: string;
+  accountId: string;
+  clientId: string;
+  clientName: string;
+  accountName: string;
+  eventType: string;
+  amount: number;
+  occurredAt: ApiTimestamp;
+  details: string;
+}
+
 export interface PlatformActivityRow {
   activityDate: string;
   orderCount: number;
