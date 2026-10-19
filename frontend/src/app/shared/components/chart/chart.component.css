@@ -1,4 +1,10 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .chart-container {
+  min-width: 0;
   padding: 16px;
   background: rgba(15, 20, 25, 0.6);
   border-radius: 8px;
@@ -76,4 +82,17 @@
   font-size: 12px;
   color: #a1a5b4;
   text-align: left;
+}
+
+@media (max-width: 768px) {
+  .period-btn {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .chart-loading,
+  .chart-axis {
+    font-size: 14px;
+  }
 }

@@ -83,3 +83,24 @@
   font-size: 12px;
   color: #a1a5b4;
 }
+
+@media (max-width: 768px) {
+  .depth-header {
+    font-size: 16px;
+  }
+
+  .level-badge,
+  .depth-row,
+  .depth-footer {
+    font-size: 14px;
+  }
+
+  .depth-row {
+    min-height: 40px;
+    padding: 8px;
+  }
+
+  .depth-bar {
+    padding: 8px;
+  }
+}
