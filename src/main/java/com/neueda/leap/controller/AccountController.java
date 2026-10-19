@@ -149,6 +149,30 @@ public class AccountController {
         return ResponseEntity.ok(mapToAccountResponse(account));
     }
 
+    @PatchMapping("/accounts/{accountId}")
+    public ResponseEntity<AccountResponse> updateAccount(@PathVariable UUID accountId,
+                                                         @RequestBody UpdateAccountRequest request) {
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) return ResponseEntity.notFound().build();
+        if (!SecurityAccess.canAccessAccount(accountId, account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null) return ResponseEntity.badRequest().build();
+        if (request.getAccountName() != null) {
+            String accountName = request.getAccountName().trim();
+            if (accountName.isBlank() || accountName.length() > 80) return ResponseEntity.badRequest().build();
+            accountService.updateAccountName(accountId, accountName);
+        }
+        if (request.getStatus() != null) {
+            if (!"CLOSED".equals(request.getStatus())) return ResponseEntity.badRequest().build();
+            if (account.getBalance() != null && account.getBalance().signum() != 0) {
+                return ResponseEntity.unprocessableEntity().build();
+            }
+            accountService.updateStatus(accountId, "CLOSED");
+        }
+        return ResponseEntity.ok(mapToAccountResponse(accountService.getAccountById(accountId)));
+    }
+
     /**
      * GET /api/clients/{clientId}/accounts
      * List accounts for a client
@@ -288,5 +312,15 @@ public class AccountController {
         public void setEventType(String eventType) { this.eventType = eventType; }
         public BigDecimal getAmount() { return amount; }
         public void setAmount(BigDecimal amount) { this.amount = amount; }
+    }
+
+    public static class UpdateAccountRequest {
+        private String accountName;
+        private String status;
+
+        public String getAccountName() { return accountName; }
+        public void setAccountName(String accountName) { this.accountName = accountName; }
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
     }
 }

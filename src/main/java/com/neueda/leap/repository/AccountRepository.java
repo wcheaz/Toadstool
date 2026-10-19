@@ -15,4 +15,6 @@ public interface AccountRepository {
     void save(UUID clientId, String status);
     void save(UUID clientId, String accountName, String status);
     void updateBalance(UUID accountId, BigDecimal balance);
+    int updateAccountName(UUID accountId, String accountName);
+    int updateStatus(UUID accountId, String status);
 }
