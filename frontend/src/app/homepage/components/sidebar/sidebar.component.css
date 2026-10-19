@@ -263,8 +263,19 @@
   }
 
   .account-panel {
+    display: block;
     min-width: 220px;
     margin: 0 12px;
+    padding: 8px 10px;
+    align-self: center;
+  }
+
+  .account-panel-heading {
+    padding-bottom: 4px;
+  }
+
+  .account-menu-trigger {
+    min-height: 36px;
   }
 
   .sidebar-nav ul {
@@ -277,6 +288,5 @@
     white-space: nowrap;
   }
 
-  .account-panel,
   .admin-workspace { display: none; }
 }
