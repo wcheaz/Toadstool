@@ -18,3 +18,13 @@
   min-width: 0;
   min-height: 0;
 }
+
+@media (max-width: 768px) {
+  .app-wrapper {
+    flex-direction: column;
+  }
+
+  .main-layout {
+    width: 100%;
+  }
+}

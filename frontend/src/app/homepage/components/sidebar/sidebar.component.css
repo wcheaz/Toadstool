@@ -258,6 +258,10 @@
     min-width: fit-content;
   }
 
+  .sidebar-title {
+    display: none;
+  }
+
   .account-panel {
     min-width: 220px;
     margin: 0 12px;

@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .market-module {
   min-height: auto;
   flex: 1;
