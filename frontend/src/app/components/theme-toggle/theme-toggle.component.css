@@ -28,7 +28,8 @@
 
 @media (max-width: 768px) {
   :host {
-    top: 10px;
+    top: auto;
     right: 10px;
+    bottom: 16px;
   }
 }
