@@ -49,7 +49,7 @@
             </td>
             <td>{{ tx.asset }}</td>
             <td>{{ tx.orderType }}</td>
-            <td>{{ tx.quantity }}</td>
+            <td class="quantity">{{ tx.quantity }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(tx.status)">
                 {{ tx.status }}
@@ -66,12 +66,26 @@
           <tr>
             <th>Date</th>
             <th>Type</th>
-            <th>Amount</th>
+            <th class="amount">Amount</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
+          <tr *ngFor="let event of cashActivity">
+            <td>{{ event.date }}</td>
+            <td>{{ event.type }}</td>
+            <td class="amount">{{ event.amount }}</td>
+            <td>
+              <span class="status-badge status-completed">{{ event.status }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="cashActivityLoading">
+            <td colspan="4" class="empty-state">Loading cash activity...</td>
+          </tr>
+          <tr *ngIf="!cashActivityLoading && cashActivityError">
+            <td colspan="4" class="empty-state error-state">{{ cashActivityError }}</td>
+          </tr>
+          <tr *ngIf="!cashActivityLoading && !cashActivityError && cashActivity.length === 0">
             <td colspan="4" class="empty-state">No cash activity to display.</td>
           </tr>
         </tbody>

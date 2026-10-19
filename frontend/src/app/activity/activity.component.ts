@@ -4,7 +4,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth.service';
-import { Instrument, OrderResponse } from '../core/api/api.models';
+import { CashEventResponse, Instrument, OrderResponse } from '../core/api/api.models';
 
 interface Transaction {
   id: string;
@@ -12,6 +12,14 @@ interface Transaction {
   asset: string;
   orderType: string;
   quantity: string;
+  status: string;
+}
+
+interface CashActivity {
+  id: string;
+  date: string;
+  type: string;
+  amount: string;
   status: string;
 }
 
@@ -31,6 +39,10 @@ export class ActivityComponent implements OnInit {
   ];
   tab: ActivityTab = 'orders';
   transactions: Transaction[] = [];
+  cashActivity: CashActivity[] = [];
+  cashActivityLoading = false;
+  cashActivityError = '';
+  private cashActivityLoaded = false;
   readonly pageSize = 20;
   currentPage = 1;
   totalOrderCount = 0;
@@ -141,6 +153,51 @@ export class ActivityComponent implements OnInit {
 
   selectTab(tab: ActivityTab): void {
     this.tab = tab;
+    if (tab === 'cash' && !this.cashActivityLoaded && !this.cashActivityLoading) {
+      this.loadCashActivity();
+    }
+  }
+
+  private loadCashActivity(): void {
+    const accountId = this.authService.getAccountId();
+    if (!accountId) {
+      this.cashActivityError = 'Cash activity is unavailable because no account is signed in.';
+      return;
+    }
+
+    this.cashActivityLoading = true;
+    this.cashActivityError = '';
+    this.apiService.getCashEvents(accountId, 1000, 0).pipe(timeout(5000)).subscribe({
+      next: (response) => {
+        this.cashActivity = response.items
+          .filter((event) => event.eventType === 'DEPOSIT' || event.eventType === 'WITHDRAWAL')
+          .map((event) => this.mapCashEventToActivity(event));
+        this.cashActivityLoaded = true;
+        this.cashActivityLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('[Activity] Failed to load cash activity:', error);
+        this.cashActivityError = 'Unable to load cash activity. Please try again later.';
+        this.cashActivityLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private mapCashEventToActivity(event: CashEventResponse): CashActivity {
+    const isWithdrawal = event.eventType === 'WITHDRAWAL';
+    const amount = Math.abs(Number(event.amount));
+    return {
+      id: event.cashEventId,
+      date: this.formatSubmittedAt(event.occurredAt),
+      type: isWithdrawal ? 'Withdrawal' : 'Deposit',
+      amount: Number.isFinite(amount) ? amount.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }) : String(event.amount),
+      status: 'Completed'
+    };
   }
 
   get totalPages(): number {

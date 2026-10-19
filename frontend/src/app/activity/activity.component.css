@@ -142,10 +142,22 @@
   color: #e5e7eb;
 }
 
+.quantity {
+  text-align: right;
+}
+
+.amount {
+  text-align: left;
+}
+
 .empty-state {
   padding: 32px 16px;
   text-align: center;
   color: #94a3b8;
+}
+
+.error-state {
+  color: #ef4444;
 }
 
 .transactions-table tbody tr:hover {
