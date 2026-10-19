@@ -25,17 +25,11 @@
 }
 
 .logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #00744A 0%, #005c3a 100%);
-  border-radius: 8px;
-  color: white;
-  font-weight: bold;
-  font-size: 20px;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .brand-title {
