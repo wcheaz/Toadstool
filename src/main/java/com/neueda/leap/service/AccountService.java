@@ -70,4 +70,12 @@ public class AccountService {
     public void updateAccountBalance(UUID accountId, BigDecimal newBalance) {
         accountRepository.updateBalance(accountId, newBalance);
     }
+
+    public boolean updateAccountName(UUID accountId, String accountName) {
+        return accountRepository.updateAccountName(accountId, accountName.trim()) > 0;
+    }
+
+    public boolean updateStatus(UUID accountId, String status) {
+        return accountRepository.updateStatus(accountId, status) > 0;
+    }
 }

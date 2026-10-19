@@ -39,7 +39,14 @@ export class SidebarComponent implements OnInit {
     if (!accountName) return;
 
     this.isCreatingAccount = true;
-    this.accountState.createAccount(accountName)?.subscribe({
+    const createRequest = this.accountState.createAccount(accountName);
+    if (!createRequest) {
+      this.isCreatingAccount = false;
+      window.alert('Your client session is unavailable. Please sign in again before creating an account.');
+      return;
+    }
+
+    createRequest.subscribe({
       next: (account) => {
         this.accountState.addAccount(account);
         this.isCreatingAccount = false;
@@ -53,8 +60,8 @@ export class SidebarComponent implements OnInit {
   }
 
   manageAccounts() {
-    alert('Account management is ready for creating accounts. Account closing will be available when supported by the account service.');
     this.isAccountMenuOpen = false;
+    this.router.navigate(['/manage-accounts']);
   }
 
   navigateTo(section: string) {
