@@ -75,7 +75,31 @@ export class RegisterComponent {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+    const email = this.email.trim();
+
+    if (!email.includes('@')) {
+      this.errorMessage = 'Please include an @ in your email address';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const localPart = email.slice(0, email.indexOf('@'));
+    if (localPart.startsWith('.') || localPart.endsWith('.') || localPart.includes('..')) {
+      this.errorMessage = 'Please enter a valid email address: the part before @ cannot start or end with a period';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (!email.slice(email.indexOf('@') + 1).includes('.')) {
+      this.errorMessage = 'Please include a period after the @ in your email address';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       this.errorMessage = 'Please enter a valid email address';
       this.isLoading = false;
       this.cdr.detectChanges();
