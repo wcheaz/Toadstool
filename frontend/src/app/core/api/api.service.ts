@@ -135,6 +135,10 @@ export class ApiService {
     return this.http.get<AccountResponse>(`${this.apiUrl}/accounts/${accountId}`);
   }
 
+  updateAccount(accountId: string, request: { accountName?: string; status?: string }): Observable<AccountResponse> {
+    return this.http.patch<AccountResponse>(`${this.apiUrl}/accounts/${accountId}`, request);
+  }
+
   getAccountHoldings(accountId: string): Observable<HoldingsResponse> {
     return this.http.get<HoldingsResponse>(
       `${this.apiUrl}/accounts/${accountId}/holdings`

@@ -55,4 +55,11 @@ export class AccountStateService {
       existing.accountId === account.accountId ? account : existing));
     this.selectAccount(account);
   }
+
+  removeAccount(accountId: string): void {
+    const remaining = this.accountsSubject.value.filter(account => account.accountId !== accountId);
+    this.accountsSubject.next(remaining);
+    const nextAccount = remaining[0] || null;
+    if (nextAccount) this.selectAccount(nextAccount);
+  }
 }

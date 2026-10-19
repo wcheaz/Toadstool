@@ -10,6 +10,7 @@ import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.compo
 import { AdminClientDetailsComponent } from './admin-dashboard/admin-client-details.component';
 import { TradingComponent } from './trading/trading.component';
 import { AdminAuditComponent } from './admin-audit/admin-audit.component';
+import { ManageAccountsComponent } from './manage-accounts/manage-accounts.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -23,4 +24,5 @@ export const routes: Routes = [
   { path: 'news', component: NewsComponent, canActivate: [authGuard] },
   { path: 'activity', component: ActivityComponent, canActivate: [authGuard] },
   { path: 'trading', component: TradingComponent, canActivate: [authGuard] }
+  ,{ path: 'manage-accounts', component: ManageAccountsComponent, canActivate: [authGuard] }
 ];

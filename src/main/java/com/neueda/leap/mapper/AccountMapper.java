@@ -68,4 +68,7 @@ public interface AccountMapper {
 
         @Update("UPDATE trading.accounts SET account_name = #{accountName} WHERE account_id = #{accountId}")
         int updateAccountName(@Param("accountId") UUID accountId, @Param("accountName") String accountName);
+
+        @Update("UPDATE trading.accounts SET status = #{status} WHERE account_id = #{accountId}")
+        int updateStatus(@Param("accountId") UUID accountId, @Param("status") String status);
 }
