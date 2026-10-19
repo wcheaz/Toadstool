@@ -12,7 +12,6 @@ export interface OrderTicketValue {
   orderSide: 'buy' | 'sell';
   quantity: number;
   limitPrice: number;
-  duration: 'day' | 'gtc';
   agreedToTerms: boolean;
 }
 
@@ -32,7 +31,6 @@ export class OrderTicketComponent {
   orderSide: 'buy' | 'sell' = 'buy';
   quantity: number = 50;
   limitPrice: number = 0;
-  duration: 'day' | 'gtc' = 'day';
   agreedToTerms: boolean = false;
 
   get estimatedValue(): number {
@@ -105,7 +103,6 @@ export class OrderTicketComponent {
       orderSide: this.orderSide,
       quantity: this.quantity,
       limitPrice: this.limitPrice,
-      duration: this.duration,
       agreedToTerms: this.agreedToTerms
     });
   }
