@@ -10,7 +10,7 @@ import { ApiTimestamp, PaginatedResponse } from '../core/api/api.models';
 import { SidebarComponent } from '../homepage/components/sidebar/sidebar.component';
 import { formatDateTime, humanize } from '../admin-dashboard/admin-format';
 
-type AuditTab = 'logins' | 'trades' | 'access';
+type AuditTab = 'logins' | 'trades' | 'access' | 'cash';
 
 interface AuditRow {
   at: ApiTimestamp;
@@ -36,7 +36,8 @@ export class AdminAuditComponent implements OnInit {
   readonly tabs: Array<{ key: AuditTab; label: string }> = [
     { key: 'logins', label: 'Sign-ins' },
     { key: 'trades', label: 'Trade events' },
-    { key: 'access', label: 'Admin access' }
+    { key: 'access', label: 'Admin access' },
+    { key: 'cash', label: 'Cash flow' }
   ];
   readonly formatDateTime = formatDateTime;
 
@@ -211,6 +212,21 @@ export class AdminAuditComponent implements OnInit {
               tone: 'neutral' as const
             }))
           })));
+      case 'cash':
+        return this.apiService.getAuditCashEvents({ clientId }, this.pageSize, this.offset)
+          .pipe(map((page) => ({
+            ...page,
+            items: page.items.map((event) => ({
+              at: event.occurredAt,
+              who: event.clientName,
+              whoDetail: event.accountName,
+              clientId: event.clientId,
+              event: humanize(event.eventType),
+              details: this.formatAmount(event.amount),
+              status: 'COMPLETED',
+              tone: 'neutral' as const
+            }))
+          })));
     }
   }
 
@@ -225,6 +241,13 @@ export class AdminAuditComponent implements OnInit {
       return ` · ${humanize(parsed.side)} ${parsed.quantity}`;
     }
     return '';
+  }
+
+  private formatAmount(amount: number): string {
+    return Math.abs(amount).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    });
   }
 
   private parse(details: string): any {

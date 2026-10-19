@@ -3,6 +3,7 @@ package com.neueda.leap.mapper;
 import com.neueda.leap.dto.AdminDtos.AccessEvent;
 import com.neueda.leap.dto.AdminDtos.ClientAccount;
 import com.neueda.leap.dto.AdminDtos.ClientSummary;
+import com.neueda.leap.dto.AdminDtos.CashEventRow;
 import com.neueda.leap.dto.AdminDtos.InstrumentActivityRow;
 import com.neueda.leap.dto.AdminDtos.LoginEventRow;
 import com.neueda.leap.dto.AdminDtos.PlatformActivityRow;
@@ -127,6 +128,30 @@ public interface AdminQueryMapper {
     @Select({"<script>", "SELECT COUNT(*) FROM trading.login_events e", LOGIN_FILTER, "</script>"})
     int countLoginEvents(@Param("clientId") UUID clientId, @Param("outcome") String outcome,
                          @Param("emailAttempted") String emailAttempted);
+
+    // ---- Audit: cash events across the platform ----
+
+    String CASH_EVENT_FILTER = "<where>e.event_type IN ('DEPOSIT', 'WITHDRAWAL')"
+            + "<if test='clientId != null'> AND a.client_id = #{clientId}</if>"
+            + "<if test='eventType != null'> AND e.event_type = #{eventType}</if>"
+            + "</where>";
+
+    @Select({"<script>",
+            "SELECT e.cash_event_id, e.account_id, a.client_id, c.display_name AS client_name,",
+            "a.account_name, e.event_type, e.amount, e.occurred_at, e.details::text AS details",
+            "FROM trading.cash_events e",
+            "JOIN trading.accounts a ON a.account_id = e.account_id",
+            "JOIN trading.clients c ON c.client_id = a.client_id",
+            CASH_EVENT_FILTER,
+            "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
+    List<CashEventRow> selectCashEvents(@Param("clientId") UUID clientId,
+                                         @Param("eventType") String eventType,
+                                         @Param("limit") int limit, @Param("offset") int offset);
+
+    @Select({"<script>", "SELECT COUNT(*) FROM trading.cash_events e",
+            "JOIN trading.accounts a ON a.account_id = e.account_id",
+            CASH_EVENT_FILTER, "</script>"})
+    int countCashEvents(@Param("clientId") UUID clientId, @Param("eventType") String eventType);
 
     // ---- Analytics ----
 

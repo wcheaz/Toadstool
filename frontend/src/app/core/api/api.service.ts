@@ -19,6 +19,7 @@ import {
 } from './api.models';
 import {
   AccessEventRow,
+  AdminCashEventRow,
   AdminClientDetail,
   AdminClientSummary,
   CashEventRequest,
@@ -246,6 +247,12 @@ export class ApiService {
                        limit: number, offset: number): Observable<PaginatedResponse<AccessEventRow>> {
     const params = this.params({ ...filters, limit, offset });
     return this.http.get<PaginatedResponse<AccessEventRow>>(`${this.apiUrl}/admin/audit/access-events`, { params });
+  }
+
+  getAuditCashEvents(filters: { clientId?: string; eventType?: string },
+                     limit: number, offset: number): Observable<PaginatedResponse<AdminCashEventRow>> {
+    const params = this.params({ ...filters, limit, offset });
+    return this.http.get<PaginatedResponse<AdminCashEventRow>>(`${this.apiUrl}/admin/audit/cash-events`, { params });
   }
 
   getPlatformActivity(limit: number = 30): Observable<PaginatedResponse<PlatformActivityRow>> {

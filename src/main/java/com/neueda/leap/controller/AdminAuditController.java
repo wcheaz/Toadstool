@@ -3,6 +3,7 @@ package com.neueda.leap.controller;
 import com.neueda.leap.dto.AdminDtos.AccessEvent;
 import com.neueda.leap.dto.AdminDtos.LoginEventRow;
 import com.neueda.leap.dto.AdminDtos.TradeEventRow;
+import com.neueda.leap.dto.AdminDtos.CashEventRow;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.AdminOversightService;
@@ -71,6 +72,21 @@ public class AdminAuditController {
         }
         List<AccessEvent> events = adminOversightService.listAccessEvents(clientId, limit, offset);
         int totalCount = adminOversightService.countAccessEvents(clientId);
+        return ResponseEntity.ok(new PaginatedResponse<>(events, limit, offset, totalCount));
+    }
+
+    @GetMapping("/cash-events")
+    public ResponseEntity<PaginatedResponse<CashEventRow>> listCashEvents(
+            @RequestParam(required = false) UUID clientId,
+            @RequestParam(required = false) String eventType,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        ResponseEntity<PaginatedResponse<CashEventRow>> rejected = reject(limit, offset);
+        if (rejected != null) {
+            return rejected;
+        }
+        List<CashEventRow> events = adminOversightService.listCashEvents(clientId, eventType, limit, offset);
+        int totalCount = adminOversightService.countCashEvents(clientId, eventType);
         return ResponseEntity.ok(new PaginatedResponse<>(events, limit, offset, totalCount));
     }
 

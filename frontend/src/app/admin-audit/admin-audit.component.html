@@ -33,10 +33,10 @@
       </section>
 
       <section class="panel results-panel" aria-labelledby="audit-heading">
-        <div class="panel-heading results-heading"><div><h2 id="audit-heading">{{ tab === 'logins' ? 'Sign-in events' : tab === 'trades' ? 'Trade events' : 'Admin access events' }} <small>{{ totalCount | number }} EVENTS</small></h2></div><span>Newest first · Read-only</span></div>
+        <div class="panel-heading results-heading"><div><h2 id="audit-heading">{{ tab === 'logins' ? 'Sign-in events' : tab === 'trades' ? 'Trade events' : tab === 'access' ? 'Admin access events' : 'Cash flow' }} <small>{{ totalCount | number }} EVENTS</small></h2></div><span>Newest first · Read-only</span></div>
         <div class="table-wrap">
           <table class="audit-table">
-            <thead><tr><th>Time (UTC)</th><th>{{ tab === 'access' ? 'Admin' : 'Client' }}</th><th>Event</th><th>Details</th><th>Status</th></tr></thead>
+            <thead><tr><th>Time (UTC)</th><th>{{ tab === 'access' ? 'Admin' : 'Client' }}</th><th>{{ tab === 'cash' ? 'Type' : 'Event' }}</th><th>{{ tab === 'cash' ? 'Amount' : 'Details' }}</th><th>Status</th></tr></thead>
             <tbody>
               <tr *ngFor="let row of rows" [class.clickable]="!!row.clientId" (click)="openClient(row)">
                 <td><span>{{ formatDateTime(row.at) }}</span></td>

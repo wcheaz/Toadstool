@@ -3,6 +3,7 @@ package com.neueda.leap.service;
 import com.neueda.leap.dto.AdminDtos.AccessEvent;
 import com.neueda.leap.dto.AdminDtos.ClientDetail;
 import com.neueda.leap.dto.AdminDtos.ClientSummary;
+import com.neueda.leap.dto.AdminDtos.CashEventRow;
 import com.neueda.leap.dto.AdminDtos.InstrumentActivityRow;
 import com.neueda.leap.dto.AdminDtos.LoginEventRow;
 import com.neueda.leap.dto.AdminDtos.PlatformActivityRow;
@@ -90,6 +91,14 @@ public class AdminOversightService {
 
     public int countLoginEvents(UUID clientId, String outcome, String emailAttempted) {
         return adminQueryMapper.countLoginEvents(clientId, blankToNull(outcome), blankToNull(emailAttempted));
+    }
+
+    public List<CashEventRow> listCashEvents(UUID clientId, String eventType, int limit, int offset) {
+        return adminQueryMapper.selectCashEvents(clientId, blankToNull(eventType), limit, offset);
+    }
+
+    public int countCashEvents(UUID clientId, String eventType) {
+        return adminQueryMapper.countCashEvents(clientId, blankToNull(eventType));
     }
 
     public List<PlatformActivityRow> listPlatformActivity(LocalDate fromDate, LocalDate toDate, int limit, int offset) {
