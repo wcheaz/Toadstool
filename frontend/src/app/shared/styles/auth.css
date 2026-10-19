@@ -10,17 +10,11 @@
 }
 
 .logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 48px;
   height: 48px;
-  background-color: #00744A;
-  border-radius: 8px;
-  color: white;
-  font-size: 28px;
-  font-weight: bold;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .brand-title {
@@ -184,7 +178,6 @@ label {
   margin: 0;
 }
 
-.logo-icon,
 .btn-primary,
 .btn {
   background-color: var(--color-primary);

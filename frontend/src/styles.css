@@ -281,6 +281,710 @@ a {
 }
 
 :root[data-theme='light'] .login-card .logo-icon,
-:root[data-theme='light'] .register-card .logo-icon {
+:root[data-theme='light'] .register-card .logo-icon,
+:root[data-theme='light'] .admin-login-card .logo-icon,
+:root[data-theme='light'] .sidebar-logo {
+  filter: brightness(0) saturate(100%) invert(22%) sepia(35%) saturate(1100%) hue-rotate(120deg) brightness(85%) contrast(101%) !important;
+}
+
+/* Page-specific surfaces that previously carried their own dark palettes. */
+:root[data-theme='light'] .trading-page {
+  --desk-bg: var(--color-bg);
+  --panel: var(--color-surface);
+  --panel-soft: var(--color-surface-raised);
+  --line: var(--color-border);
+  --muted: var(--color-text-muted);
+  --green: var(--color-primary);
+  --green-text: var(--color-success);
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-page .search-box,
+:root[data-theme='light'] .trading-page .search-box kbd,
+:root[data-theme='light'] .trading-page .stock-row,
+:root[data-theme='light'] .trading-page .news-card {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .trading-page .stock-row:hover,
+:root[data-theme='light'] .trading-page .stock-row.selected {
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-page .stock-badge {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-page .panel-title > span,
+:root[data-theme='light'] .trading-page .disclaimer,
+:root[data-theme='light'] .trading-page .search-box input::placeholder,
+:root[data-theme='light'] .trading-page .search-box kbd,
+:root[data-theme='light'] .trading-page .stock-copy small,
+:root[data-theme='light'] .trading-page .news-card small,
+:root[data-theme='light'] .trading-page .news-list-heading,
+:root[data-theme='light'] .trading-page .secondary .news-card-heading {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .trading-page .search-box,
+:root[data-theme='light'] .trading-page .search-box:focus-within {
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='light'] .trading-page .search-box:focus-within {
+  box-shadow: 0 0 0 2px var(--color-primary-soft) !important;
+}
+
+:root[data-theme='light'] .trading-page .trade-button,
+:root[data-theme='light'] .trading-page .open-trade-button {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .trading-page .trade-button:hover,
+:root[data-theme='light'] .trading-page .open-trade-button:hover {
+  background: var(--color-primary-strong) !important;
+}
+
+:root[data-theme='light'] .trading-modal,
+:root[data-theme='light'] .trading-modal .error-state,
+:root[data-theme='light'] .trading-modal .order-ticket,
+:root[data-theme='light'] .trading-modal .market-depth {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-modal .trading-content,
+:root[data-theme='light'] .trading-modal .trading-left,
+:root[data-theme='light'] .trading-modal .trading-right {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-modal .asset-info h2,
+:root[data-theme='light'] .trading-modal .price-value,
+:root[data-theme='light'] .trading-modal .error-message,
+:root[data-theme='light'] .trading-modal .close-btn,
+:root[data-theme='light'] .trading-modal .close-icon-btn,
+:root[data-theme='light'] .trading-modal .order-ticket h3,
+:root[data-theme='light'] .trading-modal .depth-header,
+:root[data-theme='light'] .trading-modal .quantity-input input,
+:root[data-theme='light'] .trading-modal .form-section input,
+:root[data-theme='light'] .trading-modal .duration-select,
+:root[data-theme='light'] .trading-modal .info-value,
+:root[data-theme='light'] .trading-modal .summary-row,
+:root[data-theme='light'] .trading-modal .depth-bar,
+:root[data-theme='light'] .trading-modal .depth-type,
+:root[data-theme='light'] .trading-modal .terms-checkbox:hover span {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-modal .price-label,
+:root[data-theme='light'] .trading-modal .price-range,
+:root[data-theme='light'] .trading-modal .error-details,
+:root[data-theme='light'] .trading-modal .side-btn,
+:root[data-theme='light'] .trading-modal .type-btn,
+:root[data-theme='light'] .trading-modal .form-section label,
+:root[data-theme='light'] .trading-modal .unit-label,
+:root[data-theme='light'] .trading-modal .info-label,
+:root[data-theme='light'] .trading-modal .summary-row span:first-child,
+:root[data-theme='light'] .trading-modal .terms-checkbox,
+:root[data-theme='light'] .trading-modal .terms-checkbox span,
+:root[data-theme='light'] .trading-modal .depth-price,
+:root[data-theme='light'] .trading-modal .depth-footer,
+:root[data-theme='light'] .trading-modal .level-badge {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .trading-modal .side-selector,
+:root[data-theme='light'] .trading-modal .order-type-selector,
+:root[data-theme='light'] .trading-modal .quantity-input,
+:root[data-theme='light'] .trading-modal .form-section input,
+:root[data-theme='light'] .trading-modal .duration-selector,
+:root[data-theme='light'] .trading-modal .btn-preview,
+:root[data-theme='light'] .trading-modal .level-badge {
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='light'] .trading-modal .summary-section,
+:root[data-theme='light'] .trading-modal .price-section,
+:root[data-theme='light'] .trading-modal .ticker-badge,
+:root[data-theme='light'] .trading-modal .type-btn.active,
+:root[data-theme='light'] .trading-modal .price-change.positive,
+:root[data-theme='light'] .trading-modal .btn-place.buy {
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-modal .btn-place.buy {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .news-wrapper,
+:root[data-theme='light'] .activity-container {
+  color: var(--color-text);
+}
+
+:root[data-theme='light'] .tabs-container,
+:root[data-theme='light'] .transactions-section,
+:root[data-theme='light'] .stat-card,
+:root[data-theme='light'] .widget {
+  border-color: var(--color-border) !important;
+  background: var(--color-surface) !important;
+}
+
+:root[data-theme='light'] .tab-button,
+:root[data-theme='light'] .activity-subtitle,
+:root[data-theme='light'] .stat-label,
+:root[data-theme='light'] .stat-unit,
+:root[data-theme='light'] .transactions-table th,
+:root[data-theme='light'] .pagination-summary,
+:root[data-theme='light'] .tx-date,
+:root[data-theme='light'] .widget-status,
+:root[data-theme='light'] .asset-articles,
+:root[data-theme='light'] .event-date,
+:root[data-theme='light'] .event-detail {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .activity-header h1,
+:root[data-theme='light'] .section-header h2,
+:root[data-theme='light'] .stat-value,
+:root[data-theme='light'] .transactions-table td,
+:root[data-theme='light'] .widget-title,
+:root[data-theme='light'] .asset-symbol,
+:root[data-theme='light'] .asset-price,
+:root[data-theme='light'] .event-name,
+:root[data-theme='light'] .desk-heading h1,
+:root[data-theme='light'] .panel-title h2 {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .tab-button:hover,
+:root[data-theme='light'] .tab-button.active,
+:root[data-theme='light'] .tx-id,
+:root[data-theme='light'] .status-completed,
+:root[data-theme='light'] .asset-change.positive,
+:root[data-theme='light'] .market-status {
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .transactions-table thead,
+:root[data-theme='light'] .pagination-btn,
+:root[data-theme='light'] .asset-item,
+:root[data-theme='light'] .calendar-item,
+:root[data-theme='light'] .recommendations-panel,
+:root[data-theme='light'] .news-panel,
+:root[data-theme='light'] .panel {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .pagination-btn,
+:root[data-theme='light'] .asset-item {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .pagination-btn:hover:not(:disabled),
+:root[data-theme='light'] .asset-item:hover {
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .deposit-modal-overlay {
+  background: rgba(36, 39, 42, 0.45) !important;
+}
+
+:root[data-theme='light'] .deposit-modal,
+:root[data-theme='light'] .review-card,
+:root[data-theme='light'] .account-card,
+:root[data-theme='light'] .amount-preview {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .modal-header,
+:root[data-theme='light'] .progress-indicator,
+:root[data-theme='light'] .modal-footer,
+:root[data-theme='light'] .terms-agreement {
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .modal-title,
+:root[data-theme='light'] .step-title,
+:root[data-theme='light'] .form-label,
+:root[data-theme='light'] .preview-item,
+:root[data-theme='light'] .review-value,
+:root[data-theme='light'] .bank-name,
+:root[data-theme='light'] .checkbox-label,
+:root[data-theme='light'] .info-text p strong {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .modal-subtitle,
+:root[data-theme='light'] .step-description,
+:root[data-theme='light'] .step-label,
+:root[data-theme='light'] .input-hint,
+:root[data-theme='light'] .info-label,
+:root[data-theme='light'] .preview-item span:first-child,
+:root[data-theme='light'] .account-type,
+:root[data-theme='light'] .account-number,
+:root[data-theme='light'] .review-label,
+:root[data-theme='light'] .info-text p,
+:root[data-theme='light'] .close-btn,
+:root[data-theme='light'] .btn-secondary,
+:root[data-theme='light'] .btn-cancel {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .amount-input,
+:root[data-theme='light'] .step-number,
+:root[data-theme='light'] .account-card,
+:root[data-theme='light'] .btn-secondary,
+:root[data-theme='light'] .btn-cancel {
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='light'] .amount-input {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .deposit-info-box,
+:root[data-theme='light'] .info-message,
+:root[data-theme='light'] .account-card.selected,
+:root[data-theme='light'] .step.active .step-number,
+:root[data-theme='light'] .step.completed .step-number,
+:root[data-theme='light'] .btn-primary {
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .info-value,
+:root[data-theme='light'] .preview-value.highlight,
+:root[data-theme='light'] .review-heading,
+:root[data-theme='light'] .review-value.total,
+:root[data-theme='light'] .currency-symbol,
+:root[data-theme='light'] .step.active .step-number,
+:root[data-theme='light'] .step.active .step-label,
+:root[data-theme='light'] .btn-primary,
+:root[data-theme='light'] .link-button {
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .btn-deposit {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-strong) 100%) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .admin-shell,
+:root[data-theme='light'] .details-shell {
+  --bg: var(--color-bg) !important;
+  --surface: var(--color-surface) !important;
+  --surface-2: var(--color-surface-raised) !important;
+  --line: var(--color-border) !important;
+  --muted: var(--color-text-muted) !important;
+  --text: var(--color-text) !important;
+  --green: var(--color-primary) !important;
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .admin-shell .admin-sidebar,
+:root[data-theme='light'] .details-shell .admin-sidebar,
+:root[data-theme='light'] .admin-shell .nav-item:hover,
+:root[data-theme='light'] .admin-shell .nav-item.active,
+:root[data-theme='light'] .details-shell .nav-item:hover,
+:root[data-theme='light'] .details-shell .nav-item.active {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .admin-shell .brand,
+:root[data-theme='light'] .admin-shell .nav-item,
+:root[data-theme='light'] .admin-shell .subnav,
+:root[data-theme='light'] .admin-shell .page-heading h1,
+:root[data-theme='light'] .admin-shell .panel-heading h2,
+:root[data-theme='light'] .details-shell .brand,
+:root[data-theme='light'] .details-shell .nav-item,
+:root[data-theme='light'] .details-shell .subnav,
+:root[data-theme='light'] .details-shell .page-heading h1,
+:root[data-theme='light'] .details-shell .section-heading h2,
+:root[data-theme='light'] .details-shell .identity h2,
+:root[data-theme='light'] .details-shell .metric-card strong,
+:root[data-theme='light'] .details-shell td,
+:root[data-theme='light'] .admin-shell td,
+:root[data-theme='light'] .admin-shell th,
+:root[data-theme='light'] .details-shell th {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .admin-shell .page-heading p,
+:root[data-theme='light'] .admin-shell .panel-heading > span,
+:root[data-theme='light'] .admin-shell .results-heading small,
+:root[data-theme='light'] .admin-shell .page-footer,
+:root[data-theme='light'] .details-shell .page-heading p,
+:root[data-theme='light'] .details-shell .identity p,
+:root[data-theme='light'] .details-shell .identity-facts small,
+:root[data-theme='light'] .details-shell .metric-card small,
+:root[data-theme='light'] .details-shell .section-heading > span,
+:root[data-theme='light'] .details-shell .trading-card > small,
+:root[data-theme='light'] .details-shell .table-note,
+:root[data-theme='light'] .details-shell .page-footer {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .admin-shell .panel,
+:root[data-theme='light'] .admin-shell .overview-card,
+:root[data-theme='light'] .admin-shell .insight,
+:root[data-theme='light'] .details-shell .panel,
+:root[data-theme='light'] .details-shell .metric-card,
+:root[data-theme='light'] .details-shell .chart-panel,
+:root[data-theme='light'] .details-shell .trading-card,
+:root[data-theme='light'] .details-shell .table-panel {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .admin-shell .field input,
+:root[data-theme='light'] .admin-shell .field select,
+:root[data-theme='light'] .admin-shell .find-button,
+:root[data-theme='light'] .admin-shell .details-button,
+:root[data-theme='light'] .details-shell .filters button,
+:root[data-theme='light'] .details-shell .filters select,
+:root[data-theme='light'] .details-shell .account-picker select {
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .admin-shell tbody tr:first-child,
+:root[data-theme='light'] .admin-shell .insight,
+:root[data-theme='light'] .details-shell .insight {
+  background: var(--color-surface-raised) !important;
+}
+
+/* Light-mode typography for components with legacy inline palettes. */
+:root[data-theme='light'] .trading-page .panel-title > span,
+:root[data-theme='light'] .trading-page .disclaimer,
+:root[data-theme='light'] .trading-page .search-box input::placeholder,
+:root[data-theme='light'] .trading-page .search-box kbd,
+:root[data-theme='light'] .trading-page .stock-copy small,
+:root[data-theme='light'] .trading-page .secondary .news-card-heading,
+:root[data-theme='light'] .trading-page .news-card small,
+:root[data-theme='light'] .trading-page .news-list-heading {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .trading-page .stock-copy strong,
+:root[data-theme='light'] .trading-page .news-card h3,
+:root[data-theme='light'] .trading-page .quote-grid dd,
+:root[data-theme='light'] .trading-page .desk-heading h1 {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-page .market-status,
+:root[data-theme='light'] .trading-page .live-label,
+:root[data-theme='light'] .trading-page .news-card-heading,
+:root[data-theme='light'] .trading-page .stock-change,
+:root[data-theme='light'] .trading-page .quote-grid dd.positive,
+:root[data-theme='light'] .trading-page .pulse {
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-modal .close-btn,
+:root[data-theme='light'] .trading-modal .close-icon-btn,
+:root[data-theme='light'] .trading-modal .asset-info h2,
+:root[data-theme='light'] .trading-modal .price-value,
+:root[data-theme='light'] .trading-modal .error-message,
+:root[data-theme='light'] .trading-modal .order-ticket h3,
+:root[data-theme='light'] .trading-modal .depth-header,
+:root[data-theme='light'] .trading-modal .quantity-input input,
+:root[data-theme='light'] .trading-modal .form-section input,
+:root[data-theme='light'] .trading-modal .duration-select,
+:root[data-theme='light'] .trading-modal .info-value,
+:root[data-theme='light'] .trading-modal .summary-row,
+:root[data-theme='light'] .trading-modal .depth-bar,
+:root[data-theme='light'] .trading-modal .depth-type,
+:root[data-theme='light'] .trading-modal .terms-checkbox:hover span {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-modal .price-label,
+:root[data-theme='light'] .trading-modal .price-range,
+:root[data-theme='light'] .trading-modal .error-details,
+:root[data-theme='light'] .trading-modal .side-btn,
+:root[data-theme='light'] .trading-modal .type-btn,
+:root[data-theme='light'] .trading-modal .form-section label,
+:root[data-theme='light'] .trading-modal .unit-label,
+:root[data-theme='light'] .trading-modal .info-label,
+:root[data-theme='light'] .trading-modal .summary-row span:first-child,
+:root[data-theme='light'] .trading-modal .terms-checkbox,
+:root[data-theme='light'] .trading-modal .terms-checkbox span,
+:root[data-theme='light'] .trading-modal .depth-price,
+:root[data-theme='light'] .trading-modal .depth-footer,
+:root[data-theme='light'] .trading-modal .level-badge,
+:root[data-theme='light'] .trading-modal .validation-error,
+:root[data-theme='light'] .trading-modal .sell-limit-invalid {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .trading-modal .ticker-badge,
+:root[data-theme='light'] .trading-modal .market-status,
+:root[data-theme='light'] .trading-modal .type-btn.active,
+:root[data-theme='light'] .trading-modal .price-change.positive,
+:root[data-theme='light'] .trading-modal .btn-place.buy,
+:root[data-theme='light'] .trading-modal .sell-limit-valid {
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .admin-shell .brand,
+:root[data-theme='light'] .admin-shell .nav-item,
+:root[data-theme='light'] .admin-shell .subnav,
+:root[data-theme='light'] .admin-shell .icon-button,
+:root[data-theme='light'] .admin-shell .profile-button,
+:root[data-theme='light'] .admin-shell .field,
+:root[data-theme='light'] .admin-shell .field input,
+:root[data-theme='light'] .admin-shell .field select,
+:root[data-theme='light'] .admin-shell .find-button,
+:root[data-theme='light'] .admin-shell .details-button,
+:root[data-theme='light'] .admin-shell th,
+:root[data-theme='light'] .admin-shell td,
+:root[data-theme='light'] .admin-shell td strong,
+:root[data-theme='light'] .details-shell .brand,
+:root[data-theme='light'] .details-shell .nav-item,
+:root[data-theme='light'] .details-shell .subnav,
+:root[data-theme='light'] .details-shell .icon-button,
+:root[data-theme='light'] .details-shell .profile-button,
+:root[data-theme='light'] .details-shell .identity h2,
+:root[data-theme='light'] .details-shell .identity-facts span,
+:root[data-theme='light'] .details-shell .metric-card strong,
+:root[data-theme='light'] .details-shell td {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .admin-shell .page-heading p,
+:root[data-theme='light'] .admin-shell .panel-heading > span,
+:root[data-theme='light'] .admin-shell .results-heading small,
+:root[data-theme='light'] .admin-shell td span,
+:root[data-theme='light'] .admin-shell .page-footer,
+:root[data-theme='light'] .details-shell .page-heading p,
+:root[data-theme='light'] .details-shell .identity p,
+:root[data-theme='light'] .details-shell .identity-facts small,
+:root[data-theme='light'] .details-shell .metric-card small,
+:root[data-theme='light'] .details-shell .metric-card span,
+:root[data-theme='light'] .details-shell .section-heading > span,
+:root[data-theme='light'] .details-shell .trading-card > small,
+:root[data-theme='light'] .details-shell .table-note,
+:root[data-theme='light'] .details-shell .page-footer,
+:root[data-theme='light'] .details-shell .account-picker {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .admin-shell .nav-item:hover,
+:root[data-theme='light'] .admin-shell .nav-item.active,
+:root[data-theme='light'] .admin-shell .tab.active,
+:root[data-theme='light'] .details-shell .nav-item:hover,
+:root[data-theme='light'] .details-shell .nav-item.active,
+:root[data-theme='light'] .details-shell .range-tabs .selected,
+:root[data-theme='light'] .details-shell .metric-card strong.green,
+:root[data-theme='light'] .details-shell .chart-summary {
+  color: var(--color-primary) !important;
+}
+
+/* Normalize dark-mode pages that still carry legacy navy component styles. */
+:root[data-theme='dark'] .admin-shell,
+:root[data-theme='dark'] .details-shell {
+  --bg: var(--color-bg) !important;
+  --surface: var(--color-surface) !important;
+  --surface-2: var(--color-surface-raised) !important;
+  --line: var(--color-border) !important;
+  --muted: var(--color-text-muted) !important;
+  --text: var(--color-text) !important;
+  --green: var(--color-primary) !important;
+}
+
+:root[data-theme='dark'] .admin-shell .admin-sidebar,
+:root[data-theme='dark'] .details-shell .admin-sidebar,
+:root[data-theme='dark'] .admin-shell .nav-item:hover,
+:root[data-theme='dark'] .admin-shell .nav-item.active,
+:root[data-theme='dark'] .details-shell .nav-item:hover,
+:root[data-theme='dark'] .details-shell .nav-item.active {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='dark'] .admin-shell .panel,
+:root[data-theme='dark'] .details-shell .panel,
+:root[data-theme='dark'] .admin-shell .overview-card,
+:root[data-theme='dark'] .admin-shell .insight,
+:root[data-theme='dark'] .details-shell .metric-card,
+:root[data-theme='dark'] .details-shell .chart-panel,
+:root[data-theme='dark'] .details-shell .trading-card,
+:root[data-theme='dark'] .details-shell .table-panel {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='dark'] .admin-shell .field input,
+:root[data-theme='dark'] .admin-shell .field select,
+:root[data-theme='dark'] .admin-shell .find-button,
+:root[data-theme='dark'] .admin-shell .details-button,
+:root[data-theme='dark'] .details-shell .filters button,
+:root[data-theme='dark'] .details-shell .filters select,
+:root[data-theme='dark'] .details-shell .account-picker select {
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='dark'] .admin-shell td,
+:root[data-theme='dark'] .admin-shell th,
+:root[data-theme='dark'] .details-shell td,
+:root[data-theme='dark'] .details-shell th,
+:root[data-theme='dark'] .details-shell .identity-facts span,
+:root[data-theme='dark'] .details-shell .metric-card strong {
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='dark'] .admin-shell .brand,
+:root[data-theme='dark'] .admin-shell .nav-item,
+:root[data-theme='dark'] .admin-shell .subnav,
+:root[data-theme='dark'] .admin-shell .page-heading h1,
+:root[data-theme='dark'] .admin-shell .panel-heading h2,
+:root[data-theme='dark'] .details-shell .brand,
+:root[data-theme='dark'] .details-shell .nav-item,
+:root[data-theme='dark'] .details-shell .subnav,
+:root[data-theme='dark'] .details-shell .page-heading h1,
+:root[data-theme='dark'] .details-shell .section-heading h2 {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='dark'] .admin-shell .page-heading p,
+:root[data-theme='dark'] .admin-shell .panel-heading > span,
+:root[data-theme='dark'] .admin-shell .results-heading small,
+:root[data-theme='dark'] .admin-shell .page-footer,
+:root[data-theme='dark'] .details-shell .page-heading p,
+:root[data-theme='dark'] .details-shell .identity p,
+:root[data-theme='dark'] .details-shell .identity-facts small,
+:root[data-theme='dark'] .details-shell .metric-card small,
+:root[data-theme='dark'] .details-shell .section-heading > span,
+:root[data-theme='dark'] .details-shell .trading-card > small,
+:root[data-theme='dark'] .details-shell .table-note,
+:root[data-theme='dark'] .details-shell .page-footer {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='dark'] .trading-modal,
+:root[data-theme='dark'] .trading-modal .error-state {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg) 100%) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .asset-info h2,
+:root[data-theme='dark'] .trading-modal .price-value,
+:root[data-theme='dark'] .trading-modal .error-message,
+:root[data-theme='dark'] .trading-modal .close-btn,
+:root[data-theme='dark'] .trading-modal .close-icon-btn {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .price-label,
+:root[data-theme='dark'] .trading-modal .price-range,
+:root[data-theme='dark'] .trading-modal .error-details {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .price-section,
+:root[data-theme='dark'] .trading-modal .ticker-badge,
+:root[data-theme='dark'] .trading-modal .price-change.positive {
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-success) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .order-ticket,
+:root[data-theme='dark'] .trading-modal .market-depth {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .side-selector,
+:root[data-theme='dark'] .trading-modal .order-type-selector,
+:root[data-theme='dark'] .trading-modal .quantity-input,
+:root[data-theme='dark'] .trading-modal .form-section input,
+:root[data-theme='dark'] .trading-modal .duration-selector,
+:root[data-theme='dark'] .trading-modal .btn-preview,
+:root[data-theme='dark'] .trading-modal .level-badge {
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .order-ticket h3,
+:root[data-theme='dark'] .trading-modal .depth-header,
+:root[data-theme='dark'] .trading-modal .quantity-input input,
+:root[data-theme='dark'] .trading-modal .form-section input,
+:root[data-theme='dark'] .trading-modal .duration-select,
+:root[data-theme='dark'] .trading-modal .info-value,
+:root[data-theme='dark'] .trading-modal .summary-row,
+:root[data-theme='dark'] .trading-modal .depth-bar,
+:root[data-theme='dark'] .trading-modal .depth-type {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .side-btn,
+:root[data-theme='dark'] .trading-modal .type-btn,
+:root[data-theme='dark'] .trading-modal .form-section label,
+:root[data-theme='dark'] .trading-modal .unit-label,
+:root[data-theme='dark'] .trading-modal .info-label,
+:root[data-theme='dark'] .trading-modal .summary-row span:first-child,
+:root[data-theme='dark'] .trading-modal .terms-checkbox,
+:root[data-theme='dark'] .trading-modal .terms-checkbox span,
+:root[data-theme='dark'] .trading-modal .depth-price,
+:root[data-theme='dark'] .trading-modal .depth-footer,
+:root[data-theme='dark'] .trading-modal .level-badge {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .summary-section,
+:root[data-theme='dark'] .trading-modal .type-btn.active,
+:root[data-theme='dark'] .trading-modal .btn-place.buy {
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='dark'] .trading-modal .btn-place.buy,
+:root[data-theme='dark'] .trading-modal .type-btn.active {
+  color: var(--color-success) !important;
+}
+
+:root[data-theme='dark'] .activity-container .stat-card,
+:root[data-theme='dark'] .activity-container .transactions-section {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='dark'] .activity-container .transactions-table thead,
+:root[data-theme='dark'] .activity-container .pagination-btn {
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='dark'] .activity-container .transactions-table th,
+:root[data-theme='dark'] .activity-container .transactions-table td,
+:root[data-theme='dark'] .activity-container .activity-header h1,
+:root[data-theme='dark'] .activity-container .section-header h2,
+:root[data-theme='dark'] .activity-container .stat-value,
+:root[data-theme='dark'] .activity-container .pagination-btn {
+  color: var(--color-text) !important;
 }

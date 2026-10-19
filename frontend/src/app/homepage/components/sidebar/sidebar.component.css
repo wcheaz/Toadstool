@@ -142,24 +142,19 @@
 }
 
 .sidebar-logo {
-  width: 32px;
-  height: 32px;
-  background-color: #00744A;
-  color: white;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
+  width: 56px;
+  height: 56px;
+  display: block;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .sidebar-title {
   font-size: 14px;
   font-weight: 600;
   color: #e5e7eb;
-  white-space: nowrap;
+  line-height: 1.1;
+  white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
 }
