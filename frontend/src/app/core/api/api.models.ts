@@ -210,6 +210,8 @@ export interface TradeEventRow {
   tradeEventId: string;
   clientId: string | null;
   clientName: string | null;
+  accountId: string | null;
+  accountName: string | null;
   entityType: string;
   entityId: string;
   action: string;

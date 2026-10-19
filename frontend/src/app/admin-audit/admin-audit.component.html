@@ -36,18 +36,19 @@
         <div class="panel-heading results-heading"><div><h2 id="audit-heading">{{ tab === 'logins' ? 'Sign-in events' : tab === 'trades' ? 'Trade events' : tab === 'access' ? 'Admin access events' : 'Cash flow' }} <small>{{ totalCount | number }} EVENTS</small></h2></div><span>Newest first · Read-only</span></div>
         <div class="table-wrap">
           <table class="audit-table">
-            <thead><tr><th>Time (UTC)</th><th>{{ tab === 'access' ? 'Admin' : 'Client' }}</th><th>{{ tab === 'cash' ? 'Type' : 'Event' }}</th><th>{{ tab === 'cash' ? 'Amount' : 'Details' }}</th><th>Status</th></tr></thead>
+            <thead><tr><th>Time (UTC)</th><th>{{ tab === 'access' ? 'Admin' : 'Client' }}</th><th>Account</th><th>{{ tab === 'cash' ? 'Type' : 'Event' }}</th><th>{{ tab === 'cash' ? 'Amount' : 'Details' }}</th><th>Status</th></tr></thead>
             <tbody>
               <tr *ngFor="let row of rows" [class.clickable]="!!row.clientId" (click)="openClient(row)">
                 <td><span>{{ formatDateTime(row.at) }}</span></td>
                 <td><strong>{{ row.who }}</strong><span>{{ row.whoDetail }}</span></td>
+                <td><span>{{ row.accountName }}</span></td>
                 <td><span>{{ row.event }}</span></td>
                 <td><span>{{ row.details }}</span></td>
                 <td><b [class.review]="row.tone === 'warn'" [class.neutral]="row.tone === 'neutral'">{{ row.status }}</b></td>
               </tr>
-              <tr *ngIf="loading && rows.length === 0"><td colspan="5" class="empty-state">Loading events…</td></tr>
-              <tr *ngIf="!loading && error"><td colspan="5" class="empty-state error-state">{{ error }}</td></tr>
-              <tr *ngIf="!loading && !error && rows.length === 0"><td colspan="5" class="empty-state">No events match these filters.</td></tr>
+              <tr *ngIf="loading && rows.length === 0"><td colspan="6" class="empty-state">Loading events…</td></tr>
+              <tr *ngIf="!loading && error"><td colspan="6" class="empty-state error-state">{{ error }}</td></tr>
+              <tr *ngIf="!loading && !error && rows.length === 0"><td colspan="6" class="empty-state">No events match these filters.</td></tr>
             </tbody>
           </table>
         </div>

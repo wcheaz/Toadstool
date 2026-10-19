@@ -98,9 +98,15 @@ public interface AdminQueryMapper {
             + "</where>";
 
     @Select({"<script>",
-            "SELECT e.trade_event_id, e.client_id, c.display_name AS client_name, e.entity_type, e.entity_id,",
+            "SELECT e.trade_event_id, e.client_id, c.display_name AS client_name,",
+            "a.account_id, a.account_name, e.entity_type, e.entity_id,",
             "e.action, e.occurred_at, e.details::text AS details",
-            "FROM trading.trade_events e LEFT JOIN trading.clients c ON c.client_id = e.client_id",
+            "FROM trading.trade_events e",
+            "LEFT JOIN trading.clients c ON c.client_id = e.client_id",
+            "LEFT JOIN trading.orders o ON e.entity_type = 'ORDER' AND o.order_id = e.entity_id",
+            "LEFT JOIN trading.fills f ON e.entity_type = 'FILL' AND f.fill_id = e.entity_id",
+            "LEFT JOIN trading.accounts a ON a.account_id = COALESCE(o.account_id,",
+            "(SELECT fo.account_id FROM trading.orders fo WHERE fo.order_id = f.order_id))",
             TRADE_FILTER, "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<TradeEventRow> selectTradeEvents(@Param("clientId") UUID clientId, @Param("action") String action,
                                           @Param("limit") int limit, @Param("offset") int offset);
