@@ -50,6 +50,10 @@
   .news-section {
     grid-template-columns: 1fr;
   }
+
+  .news-status {
+    font-size: 14px;
+  }
 }
 
 :host-context([data-theme='light']) .news-status {

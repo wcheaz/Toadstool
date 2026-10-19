@@ -78,4 +78,10 @@
     width: 100%;
     justify-content: space-between;
   }
+
+  .icon-button {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
 }

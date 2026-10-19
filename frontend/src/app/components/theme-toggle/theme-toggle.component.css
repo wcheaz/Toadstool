@@ -32,4 +32,9 @@
     right: 10px;
     bottom: 16px;
   }
+
+  .theme-toggle {
+    width: 44px;
+    height: 44px;
+  }
 }

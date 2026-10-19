@@ -124,6 +124,30 @@
   .table-row {
     min-width: 620px;
   }
+
+  .table-row {
+    min-height: 64px;
+    padding: 16px;
+  }
+
+  .table-cell {
+    font-size: 14px;
+  }
+
+  .asset-name {
+    font-size: 14px;
+  }
+
+  .asset-full,
+  .holding-value {
+    font-size: 12px;
+  }
+
+  .trade-btn {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
 }
 
 .held-summary {

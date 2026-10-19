@@ -1,8 +1,23 @@
+:host {
+  display: block;
+  flex-shrink: 0;
+}
+
+.sidebar-shell {
+  display: flex;
+  width: 200px;
+  height: 100vh;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+}
+
 .sidebar {
   position: sticky;
   top: 0;
   width: 200px;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--color-surface-raised);
   padding: 16px 0;
   overflow-y: auto;
@@ -240,13 +255,22 @@
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    top: 0;
+  .sidebar-shell {
+    position: static;
     width: 100%;
+    height: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
     padding: 12px 0;
     overflow-x: auto;
     flex-direction: row;
-    height: 70px;
+    height: 84px;
     max-height: none;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
@@ -264,18 +288,73 @@
 
   .account-panel {
     display: block;
-    min-width: 220px;
-    margin: 0 12px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
     padding: 8px 10px;
     align-self: center;
+    border-radius: 0;
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .account-panel:has(.account-menu[open]) {
+    z-index: 20;
   }
 
   .account-panel-heading {
     padding-bottom: 4px;
   }
 
+  .account-panel-kicker {
+    font-size: 11px;
+  }
+
   .account-menu-trigger {
-    min-height: 36px;
+    min-height: 48px;
+  }
+
+  .account-menu-current strong {
+    font-size: 16px;
+  }
+
+  .account-menu-current small {
+    font-size: 14px;
+  }
+
+  .account-menu-list {
+    top: calc(100% + 8px);
+    bottom: auto;
+  }
+
+  .account-option,
+  .account-action {
+    min-height: 54px;
+    font-size: 16px;
+  }
+
+  .account-option {
+    padding: 12px;
+  }
+
+  .account-option strong {
+    font-size: 16px;
+  }
+
+  .account-option small,
+  .account-empty {
+    font-size: 14px;
+  }
+
+  .account-action {
+    padding: 12px;
+  }
+
+  .account-check,
+  .action-icon {
+    font-size: 17px;
   }
 
   .sidebar-nav ul {
@@ -283,8 +362,9 @@
   }
 
   .nav-button {
-    padding: 8px 16px;
-    font-size: 13px;
+    min-height: 48px;
+    padding: 10px 18px;
+    font-size: 15px;
     white-space: nowrap;
   }
 

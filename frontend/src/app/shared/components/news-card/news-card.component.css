@@ -90,6 +90,36 @@
   min-width: 0;
 }
 
+@media (max-width: 768px) {
+  .news-article {
+    padding: 20px;
+  }
+
+  .article-meta,
+  .timestamp {
+    font-size: 14px;
+  }
+
+  .category-tag {
+    padding: 5px 9px;
+  }
+
+  .article-title {
+    font-size: 18px;
+    line-height: 1.35;
+  }
+
+  .article-description {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .asset-tag,
+  .market-info {
+    font-size: 13px;
+  }
+}
+
 /* Light mode (see ThemeService / styles.css) */
 :host-context([data-theme='light']) .news-article {
   background: var(--color-surface);
