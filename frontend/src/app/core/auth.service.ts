@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthResponse } from './api/api.models';
 import { ApiService } from './api/api.service';
-import { clearAuthSession, getAccountId, getClientDisplayName, storeAuthSession } from '../auth-storage';
+import { clearAuthSession, getAccountId, getClientDisplayName, getClientEmail, storeAuthSession } from '../auth-storage';
 
 /**
  * Handles the client session stored for the current browser tab.
@@ -23,6 +23,10 @@ export class AuthService {
 
   getClientName(): string {
     return getClientDisplayName() || 'User';
+  }
+
+  getClientEmail(): string {
+    return getClientEmail() || '';
   }
 
   getClientId(): string {

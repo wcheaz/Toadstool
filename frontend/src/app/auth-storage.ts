@@ -59,6 +59,10 @@ export function getClientDisplayName(): string | null {
   return readSessionItem(storageKeys.clientName) ?? readSessionItem(storageKeys.username);
 }
 
+export function getClientEmail(): string | null {
+  return readSessionItem(storageKeys.clientEmail);
+}
+
 export function getAccountId(): string | null {
   return readSessionItem(storageKeys.accountId);
 }
