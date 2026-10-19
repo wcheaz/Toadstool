@@ -77,7 +77,6 @@
     [orderType]="pendingTicket?.orderSide ?? 'buy'"
     [quantity]="pendingTicket?.quantity ?? 50"
     [limitPrice]="pendingTicket?.limitPrice ?? 0"
-    [duration]="pendingTicket?.duration ?? 'day'"
     [orderSide]="pendingTicket?.orderType ?? 'market'"
     (confirm)="confirmOrder()"
     (editOrder)="editOrder()"

@@ -165,25 +165,7 @@ export class TradingModalComponent implements OnChanges {
     ).subscribe({
       next: (response: OrderResponse) => {
         console.log('Order placed successfully:', response);
-
-        // Auto-fill based on order type
-        if (ticket.orderType === 'market') {
-          // Market order: fill immediately at current price
-          this.fillOrder(response.orderId, this.selectedAsset!.price);
-        } else if (ticket.orderType === 'limit') {
-          // Limit order: fill only if current price meets the limit
-          if (ticket.orderSide === 'buy' && this.selectedAsset!.price <= ticket.limitPrice) {
-            this.fillOrder(response.orderId, ticket.limitPrice);
-          } else if (ticket.orderSide === 'sell' && this.selectedAsset!.price >= ticket.limitPrice) {
-            this.fillOrder(response.orderId, ticket.limitPrice);
-          } else {
-            // Limit price not met, order stays pending
-            this.isSubmitting = false;
-            this.isSuccessOpen = true;
-            this.orderCompleted.emit();
-            console.log('Limit order placed. Waiting for price to reach', ticket.limitPrice);
-          }
-        }
+        this.fillOrder(response.orderId, this.selectedAsset!.price);
       },
       error: (error: any) => {
         this.isSubmitting = false;

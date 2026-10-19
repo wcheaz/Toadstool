@@ -138,32 +138,6 @@
   background: rgba(0, 116, 74, 0.05);
 }
 
-/* Duration Selector */
-.duration-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(71, 85, 105, 0.1);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: 6px;
-  padding: 8px 12px;
-}
-
-.duration-select {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: #f3f4f6;
-  font-size: 13px;
-  cursor: pointer;
-  outline: none;
-}
-
-.duration-select option {
-  background: #24272a;
-  color: #f3f4f6;
-}
-
 .price-info {
   display: flex;
   flex-direction: column;

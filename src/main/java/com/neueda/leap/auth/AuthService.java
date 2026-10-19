@@ -28,12 +28,20 @@ import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class AuthService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
+                    + "[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                    + "(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
+    );
 
     private final ClientMapper clientMapper;
     private final AccountMapper accountMapper;
@@ -236,7 +244,7 @@ public class AuthService {
         if (request == null) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "Registration details are required");
         }
-        if (!StringUtils.hasText(request.getEmail()) || !request.getEmail().contains("@")) {
+        if (!isValidEmail(request.getEmail())) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "A valid email is required");
         }
         if (!StringUtils.hasText(request.getDisplayName()) || request.getDisplayName().trim().length() > 120) {
@@ -248,6 +256,12 @@ public class AuthService {
         if (request.getPassword() == null || request.getPassword().length() < 8) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
         }
+    }
+
+    private boolean isValidEmail(String email) {
+        return StringUtils.hasText(email)
+                && email.length() <= 254
+                && EMAIL_PATTERN.matcher(email).matches();
     }
 
     private void validateLoginRequest(AuthLoginRequest request) {
@@ -333,7 +347,7 @@ public class AuthService {
         AuthRegisterRequest normalized = new AuthRegisterRequest();
         normalized.setEmail(trimToNull(request.getEmail()));
         normalized.setDisplayName(trimToNull(request.getDisplayName()));
-        normalized.setUsername(trimToNull(request.getUsername()));
+        normalized.setUsername(normalizeUsername(request.getUsername()));
         normalized.setPassword(request.getPassword());
         return normalized;
     }
@@ -344,7 +358,7 @@ public class AuthService {
         }
 
         AuthLoginRequest normalized = new AuthLoginRequest();
-        normalized.setUsername(trimToNull(request.getUsername()));
+        normalized.setUsername(normalizeUsername(request.getUsername()));
         normalized.setPassword(request.getPassword());
         return normalized;
     }
@@ -367,6 +381,11 @@ public class AuthService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeUsername(String username) {
+        String normalized = trimToNull(username);
+        return normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
     }
 
     private void recordLoginEvent(UUID clientId, String email, String outcome, String failureReason) {
