@@ -153,6 +153,7 @@
   padding: 24px;
   height: 100%;
   overflow-y: auto;
+  min-width: 0;
 }
 
 /* Left Panel - Asset Details */
@@ -161,6 +162,7 @@
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .asset-header {
@@ -314,9 +316,39 @@
     border-radius: 8px;
   }
 
-  .trading-content { padding: 16px; gap: 16px; }
+  .trading-content {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: start;
+    padding: 16px;
+    gap: 16px;
+  }
 
   .trading-left {
-    max-height: 40%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .ticker-badge {
+    padding: 8px 14px;
+    font-size: 16px;
+  }
+
+  .asset-info h2 {
+    font-size: 22px;
+  }
+
+  .market-status,
+  .price-label,
+  .price-range {
+    font-size: 14px;
+  }
+
+  .price-value {
+    font-size: 36px;
+  }
+
+  .price-change {
+    font-size: 16px;
   }
 }

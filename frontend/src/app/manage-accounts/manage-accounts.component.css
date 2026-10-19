@@ -26,4 +26,39 @@
 .notice { margin-bottom: 15px; padding: 11px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--color-text); font-size: 11px; }.notice.success { border-color: var(--color-success); color: var(--color-success); }.notice.error { border-color: var(--color-danger); color: var(--color-danger); }
 .empty-state { padding: 60px 20px; text-align: center; }.empty-state h2 { margin: 0 0 8px; color: var(--color-text); font-size: 17px; }.empty-state p { margin: 0; color: var(--color-text-muted); font-size: 11px; }
 .dialog-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .65); }.support-dialog { position: relative; width: min(100%, 410px); padding: 30px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); text-align: center; box-shadow: var(--shadow-lg); }.dialog-close { position: absolute; top: 10px; right: 13px; border: 0; background: none; color: var(--color-text-muted); font-size: 23px; cursor: pointer; }.support-icon { display: grid; place-items: center; width: 32px; height: 32px; margin: 0 auto 13px; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-success); font-weight: 700; }.support-dialog h2 { margin: 0 0 10px; color: var(--color-text); font-size: 17px; }.support-dialog p { margin: 0 auto 14px; color: var(--color-text-muted); font-size: 11px; line-height: 1.5; }.phone-number { display: block; color: var(--color-success); font-size: 19px; letter-spacing: .04em; }.support-dialog small { display: block; margin-top: 7px; color: var(--color-text-subtle); font-size: 9px; }.support-dialog .primary-button { margin-top: 22px; }
-@media (max-width: 760px) { .manage-page { padding: 20px 16px 32px; }.manage-heading, .account-strip { align-items: flex-start; flex-direction: column; }.manage-heading h1 { font-size: 24px; }.read-only-note { align-self: flex-start; }.account-strip select { min-width: 0; }.account-summary { align-self: stretch; }.settings-grid { grid-template-columns: 1fr; }.setting-card { min-height: auto; } }
+@media (max-width: 760px) {
+  .manage-page { padding: 20px 16px 32px; }
+  .manage-heading, .account-strip { align-items: flex-start; flex-direction: column; }
+  .manage-heading h1 { font-size: 24px; }
+  .manage-heading p { font-size: 15px; }
+  .eyebrow { font-size: 12px; }
+  .read-only-note { align-self: flex-start; font-size: 12px; }
+  .account-strip select { min-width: 0; }
+  .account-summary { align-self: stretch; }
+  .account-summary strong { font-size: 15px; }
+  .account-summary small { font-size: 12px; }
+  .field-label, label { font-size: 13px; }
+  .setting-card { min-height: auto; padding: 24px; }
+  .settings-grid { grid-template-columns: 1fr; }
+  .card-heading h2 { font-size: 18px; }
+  .card-heading p { font-size: 13px; }
+  .step { flex-basis: 32px; width: 32px; height: 32px; font-size: 12px; }
+  .setting-card input, .setting-card select, .account-strip select {
+    height: 46px;
+    font-size: 15px;
+  }
+  .primary-button, .danger-button, .withdraw-button {
+    min-height: 46px;
+    font-size: 14px;
+  }
+  .text-button { font-size: 13px; }
+  .available-balance, .balance-check { font-size: 13px; }
+  .notice { font-size: 14px; }
+  .empty-state h2 { font-size: 20px; }
+  .empty-state p { font-size: 14px; }
+  .support-dialog { padding: 32px 24px; }
+  .support-dialog h2 { font-size: 20px; }
+  .support-dialog p { font-size: 14px; }
+  .support-dialog small { font-size: 12px; }
+  .phone-number { font-size: 22px; }
+}

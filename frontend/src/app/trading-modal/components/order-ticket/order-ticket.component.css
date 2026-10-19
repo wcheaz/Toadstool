@@ -1,7 +1,17 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.order-ticket {
+  min-width: 0;
+}
+
 .trading-right {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .order-ticket {
@@ -329,6 +339,61 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .trading-right {
-    max-height: 60%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .order-ticket {
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .order-ticket h3 {
+    font-size: 20px;
+  }
+
+  .side-btn,
+  .type-btn {
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .form-section label {
+    font-size: 14px;
+  }
+
+  .quantity-input,
+  .form-section input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .unit-label,
+  .price-info,
+  .summary-row,
+  .validation-error,
+  .sell-limit {
+    font-size: 14px;
+  }
+
+  .summary-row.total {
+    font-size: 16px;
+  }
+
+  .btn-preview,
+  .btn-place {
+    min-height: 50px;
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .terms-checkbox {
+    font-size: 14px;
+  }
+
+  .terms-checkbox input {
+    width: 20px;
+    height: 20px;
   }
 }

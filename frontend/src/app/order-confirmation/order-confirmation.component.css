@@ -408,6 +408,7 @@
   .order-confirmation-modal {
     max-width: 95%;
     max-height: 95vh;
+    padding: 24px;
   }
 
   .button-group {
@@ -417,5 +418,49 @@
   .btn-edit,
   .btn-confirm {
     width: 100%;
+    min-height: 56px;
+    padding: 14px 16px;
+    font-size: 17px;
+  }
+
+  .order-badge,
+  .section-title,
+  .live-quote {
+    font-size: 15px;
+  }
+
+  .modal-title {
+    font-size: 27px;
+  }
+
+  .asset-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .asset-details h3 {
+    font-size: 19px;
+  }
+
+  .asset-details p,
+  .detail-row,
+  .summary-row {
+    font-size: 17px;
+  }
+
+  .order-side-badge {
+    padding: 10px 16px;
+    font-size: 17px;
+  }
+
+  .price-timestamp,
+  .warning-text,
+  .confirmation-note {
+    font-size: 16px;
+  }
+
+  .summary-row.divider .summary-value.total {
+    font-size: 19px;
   }
 }

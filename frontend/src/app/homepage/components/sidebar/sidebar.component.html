@@ -1,3 +1,4 @@
+<div class="sidebar-shell">
 <aside class="sidebar">
   <div class="sidebar-header">
     <img class="sidebar-logo" src="Toadstool.svg?v=2" alt="Toadstool logo">
@@ -53,7 +54,8 @@
     </ul>
   </nav>
   <div class="admin-workspace" *ngIf="adminMode"><p>ADMIN WORKSPACE</p><span>Client data · Read-only oversight</span></div>
-  <section class="account-panel" *ngIf="!adminMode">
+</aside>
+<section class="account-panel" *ngIf="!adminMode">
     <div class="account-panel-heading">
       <span class="account-panel-kicker">Trading account</span>
       <span class="account-status-dot" aria-hidden="true"></span>
@@ -87,5 +89,5 @@
         </button>
       </div>
     </details>
-  </section>
-</aside>
+</section>
+</div>

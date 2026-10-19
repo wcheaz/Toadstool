@@ -63,4 +63,12 @@
   .features-grid {
     grid-template-columns: 1fr;
   }
+
+  .feature-card h4 {
+    font-size: 15px;
+  }
+
+  .feature-card p {
+    font-size: 14px;
+  }
 }

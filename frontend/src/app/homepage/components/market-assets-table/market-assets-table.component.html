@@ -25,7 +25,7 @@
         {{ (getQuote(instrument.instrumentId)?.price || 0) | currency }}
       </div>
       <div class="table-cell" [ngClass]="getPriceChangeClass(getQuote(instrument.instrumentId)?.changePercent)">
-        {{ getQuote(instrument.instrumentId)?.changePercent?.toFixed(2) || 'Loading...' }}%
+        {{ getQuote(instrument.instrumentId)?.changePercent?.toFixed(2) ?? 'Loading...' }}%
       </div>
       <div class="table-cell holding-cell">
         <ng-container *ngIf="getHolding(instrument.instrumentId) > 0; else noHolding">
