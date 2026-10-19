@@ -40,6 +40,10 @@ export class ApiService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/admin/login`, request);
   }
 
+  refreshSession(refreshToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, { token: refreshToken });
+  }
+
   logout(accessToken?: string | null): Observable<void> {
     const headers = accessToken
       ? new HttpHeaders({ Authorization: `Bearer ${accessToken}` })

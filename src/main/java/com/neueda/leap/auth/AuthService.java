@@ -12,7 +12,7 @@ import com.neueda.leap.mapper.AdminUserMapper;
 import com.neueda.leap.mapper.ClientMapper;
 import com.neueda.leap.mapper.LoginEventMapper;
 import com.neueda.leap.security.JwtAuthenticationFilter;
-import com.neueda.leap.security.JwtTokenService.IssuedAccessToken;
+import com.neueda.leap.security.JwtTokenService.IssuedTokenPair;
 import com.neueda.leap.security.JwtTokenService;
 import com.neueda.leap.security.JwtTokenValidator;
 import com.neueda.leap.security.ValidatedToken;
@@ -24,9 +24,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.time.ZoneOffset;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.HashMap;
@@ -142,22 +147,25 @@ public class AuthService {
         }
 
         OffsetDateTime issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
-        IssuedAccessToken issuedAccessToken = jwtTokenService.issueAccessToken(
+        IssuedTokenPair issuedTokens = jwtTokenService.issueTokenPair(
                 null,
                 adminUser.getAdminUserId(),
+                null,
                 null,
                 adminUser.getEmail(),
                 adminUser.getEmail(),
                 "ADMIN"
         );
 
-        if (issuedAccessToken.getAccessToken() == null) {
+        if (issuedTokens.getAccessToken() == null || issuedTokens.getRefreshToken() == null) {
             throw new IllegalStateException("JWT authentication is disabled");
         }
 
         return new AuthResponse(
-                issuedAccessToken.getAccessToken(),
-                Duration.between(issuedAt.toInstant(), issuedAccessToken.getAccessTokenExpiresAt()).getSeconds(),
+                issuedTokens.getAccessToken(),
+                Duration.between(issuedAt.toInstant(), issuedTokens.getAccessTokenExpiresAt()).getSeconds(),
+                issuedTokens.getRefreshToken(),
+                Duration.between(issuedAt.toInstant(), issuedTokens.getRefreshTokenExpiresAt()).getSeconds(),
                 null,
                 null,
                 adminUser.getDisplayName(),
@@ -183,8 +191,9 @@ public class AuthService {
 
         UUID sessionKeyId = UUID.randomUUID();
         OffsetDateTime issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
-        IssuedAccessToken issuedAccessToken = jwtTokenService.issueAccessToken(
+        IssuedTokenPair issuedTokens = jwtTokenService.issueTokenPair(
                 sessionKeyId,
+                client.getClientId(),
                 client.getClientId(),
                 account.getAccountId(),
                 username,
@@ -192,7 +201,7 @@ public class AuthService {
                 "CLIENT"
         );
 
-        if (issuedAccessToken.getAccessToken() == null) {
+        if (issuedTokens.getAccessToken() == null || issuedTokens.getRefreshToken() == null) {
             throw new IllegalStateException("JWT authentication is disabled");
         }
 
@@ -201,12 +210,16 @@ public class AuthService {
                 credentialId,
                 client.getClientId(),
                 issuedAt,
-                OffsetDateTime.ofInstant(issuedAccessToken.getAccessTokenExpiresAt(), ZoneOffset.UTC)
+                OffsetDateTime.ofInstant(issuedTokens.getAccessTokenExpiresAt(), ZoneOffset.UTC),
+                hashToken(issuedTokens.getRefreshToken()),
+                OffsetDateTime.ofInstant(issuedTokens.getRefreshTokenExpiresAt(), ZoneOffset.UTC)
         );
 
         return new AuthResponse(
-                issuedAccessToken.getAccessToken(),
-                Duration.between(issuedAt.toInstant(), issuedAccessToken.getAccessTokenExpiresAt()).getSeconds(),
+                issuedTokens.getAccessToken(),
+                Duration.between(issuedAt.toInstant(), issuedTokens.getAccessTokenExpiresAt()).getSeconds(),
+                issuedTokens.getRefreshToken(),
+                Duration.between(issuedAt.toInstant(), issuedTokens.getRefreshTokenExpiresAt()).getSeconds(),
                 client.getClientId(),
                 account.getAccountId(),
                 client.getDisplayName(),
@@ -285,6 +298,94 @@ public class AuthService {
         }
     }
 
+    public AuthResponse refresh(TokenValidationRequest request, String authorizationHeader) {
+        String token = extractToken(request, authorizationHeader);
+        try {
+            ValidatedToken validatedToken = jwtTokenValidator.validateToken(token);
+            if (!validatedToken.isAuthenticated()) {
+                throw new AuthApiException(HttpStatus.UNAUTHORIZED, "JWT authentication is disabled");
+            }
+            if (!"REFRESH".equalsIgnoreCase(validatedToken.getTokenType())) {
+                throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Only refresh tokens can be used to refresh the session");
+            }
+
+            if (!StringUtils.hasText(validatedToken.getSubject())) {
+                throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Refresh token subject is required");
+            }
+
+            String refreshTokenHash = hashToken(token);
+            IssuedTokenPair issuedTokens;
+
+            if ("ADMIN".equalsIgnoreCase(stripRolePrefix(validatedToken.getRoles()))) {
+                AdminUser adminUser = adminUserMapper.selectActiveAdminUserByEmail(validatedToken.getEmail());
+                if (adminUser == null) {
+                    throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Admin account no longer exists");
+                }
+
+                issuedTokens = jwtTokenService.issueTokenPair(
+                        null,
+                        UUID.fromString(validatedToken.getSubject()),
+                        null,
+                        null,
+                        adminUser.getEmail(),
+                        adminUser.getEmail(),
+                        "ADMIN"
+                );
+            } else {
+                if (!StringUtils.hasText(validatedToken.getClientId()) || !StringUtils.hasText(validatedToken.getAccountId())) {
+                    throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Client refresh token is missing required claims");
+                }
+
+                AuthSession session = sessionKeyService.getActiveSessionByRefreshTokenHash(refreshTokenHash);
+                if (session == null || session.getSessionKeyId() == null) {
+                    throw new AuthApiException(HttpStatus.UNAUTHORIZED, "JWT session is no longer active");
+                }
+
+                if (!validatedToken.getSubject().equals(session.getClientId().toString())) {
+                    throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Refresh token subject does not match the active session");
+                }
+
+                issuedTokens = jwtTokenService.issueTokenPair(
+                        session.getSessionKeyId(),
+                        UUID.fromString(validatedToken.getSubject()),
+                        UUID.fromString(validatedToken.getClientId()),
+                        UUID.fromString(validatedToken.getAccountId()),
+                        validatedToken.getUsername(),
+                        validatedToken.getEmail(),
+                        stripRolePrefix(validatedToken.getRoles())
+                );
+
+                if (issuedTokens.getAccessToken() == null || issuedTokens.getRefreshToken() == null) {
+                    throw new IllegalStateException("JWT authentication is disabled");
+                }
+
+                boolean sessionRotated = sessionKeyService.rotateSessionTokens(
+                        session.getSessionKeyId(),
+                        OffsetDateTime.ofInstant(issuedTokens.getAccessTokenExpiresAt(), ZoneOffset.UTC),
+                        hashToken(issuedTokens.getRefreshToken()),
+                        OffsetDateTime.ofInstant(issuedTokens.getRefreshTokenExpiresAt(), ZoneOffset.UTC)
+                );
+                if (!sessionRotated) {
+                    throw new AuthApiException(HttpStatus.UNAUTHORIZED, "JWT session is no longer active");
+                }
+                return buildClientAuthResponse(validatedToken, issuedTokens);
+            }
+
+            if (issuedTokens.getAccessToken() == null || issuedTokens.getRefreshToken() == null) {
+                throw new IllegalStateException("JWT authentication is disabled");
+            }
+
+            return buildAdminAuthResponse(validatedToken, issuedTokens);
+        } catch (ExpiredJwtException exception) {
+            revokeExpiredSession(exception);
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
+        } catch (JwtException exception) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
+        } catch (IllegalArgumentException exception) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid session key in JWT");
+        }
+    }
+
     public void logout(TokenValidationRequest request, String authorizationHeader) {
         String token = extractToken(request, authorizationHeader);
         try {
@@ -321,6 +422,83 @@ public class AuthService {
             sessionKeyService.revokeSession(UUID.fromString(exception.getClaims().getId()));
         } catch (IllegalArgumentException ignored) {
         }
+    }
+
+    private AuthResponse buildClientAuthResponse(ValidatedToken validatedToken, IssuedTokenPair issuedTokens) {
+        if (!StringUtils.hasText(validatedToken.getClientId()) || !StringUtils.hasText(validatedToken.getAccountId())) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Client session is missing required claims");
+        }
+
+        Client client = clientMapper.selectClientById(UUID.fromString(validatedToken.getClientId()));
+        if (client == null) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Client account no longer exists");
+        }
+
+        List<Account> accounts = accountMapper.selectAccountsByClientId(UUID.fromString(validatedToken.getClientId()), 1, 0);
+        if (accounts.isEmpty()) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Client account no longer exists");
+        }
+
+        return new AuthResponse(
+                issuedTokens.getAccessToken(),
+                Duration.between(Instant.now(), issuedTokens.getAccessTokenExpiresAt()).getSeconds(),
+                issuedTokens.getRefreshToken(),
+                Duration.between(Instant.now(), issuedTokens.getRefreshTokenExpiresAt()).getSeconds(),
+                client.getClientId(),
+                UUID.fromString(validatedToken.getAccountId()),
+                client.getDisplayName(),
+                validatedToken.getUsername(),
+                validatedToken.getEmail(),
+                roleForResponse(validatedToken.getRoles())
+        );
+    }
+
+    private AuthResponse buildAdminAuthResponse(ValidatedToken validatedToken, IssuedTokenPair issuedTokens) {
+        if (!StringUtils.hasText(validatedToken.getEmail())) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Admin session is missing an email claim");
+        }
+
+        AdminUser adminUser = adminUserMapper.selectActiveAdminUserByEmail(validatedToken.getEmail());
+        if (adminUser == null) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Admin account no longer exists");
+        }
+
+        return new AuthResponse(
+                issuedTokens.getAccessToken(),
+                Duration.between(Instant.now(), issuedTokens.getAccessTokenExpiresAt()).getSeconds(),
+                issuedTokens.getRefreshToken(),
+                Duration.between(Instant.now(), issuedTokens.getRefreshTokenExpiresAt()).getSeconds(),
+                null,
+                null,
+                adminUser.getDisplayName(),
+                validatedToken.getUsername(),
+                validatedToken.getEmail(),
+                roleForResponse(validatedToken.getRoles())
+        );
+    }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 support is required", e);
+        }
+    }
+
+    private String stripRolePrefix(String role) {
+        if (!StringUtils.hasText(role)) {
+            return "";
+        }
+        if (role.startsWith("ROLE_")) {
+            return role.substring("ROLE_".length());
+        }
+        return role;
+    }
+
+    private String roleForResponse(String role) {
+        return stripRolePrefix(role);
     }
 
     private AuthRegisterRequest normalizeRegisterRequest(AuthRegisterRequest request) {

@@ -5,6 +5,7 @@ import com.neueda.leap.auth.AuthResponse;
 import com.neueda.leap.auth.TokenValidationResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -389,6 +390,29 @@ class AuthenticationSecurityTest {
     }
 
     @Test
+    @DisplayName("Refreshing a client session issues a refresh token with a 15-minute TTL")
+    void refreshIssuesRefreshTokenWithFifteenMinuteTtl() {
+        RegisteredUser registeredUser = registerUser();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<AuthResponse> refreshResponse = restTemplate.exchange(
+                url("/api/auth/refresh"),
+                HttpMethod.POST,
+                new HttpEntity<>(
+                        "{\"token\":\"" + registeredUser.authResponse().getRefreshToken() + "\"}",
+                        headers
+                ),
+                AuthResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, refreshResponse.getStatusCode());
+        assertNotNull(refreshResponse.getBody());
+        assertEquals(Duration.ofMinutes(15).getSeconds(), jwtLifetimeSeconds(refreshResponse.getBody().getRefreshToken()));
+    }
+
+    @Test
     @DisplayName("Client JWTs cannot access admin-only analytics endpoints")
     void clientJwtCannotAccessAdminEndpoint() {
         RegisteredUser registeredUser = registerUser();
@@ -492,6 +516,15 @@ class AuthenticationSecurityTest {
                 .parseClaimsJws(accessToken)
                 .getBody()
                 .getId());
+    }
+
+    private long jwtLifetimeSeconds(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(TOKEN_SIGNING_KEYS.getPublic())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return Duration.between(claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant()).getSeconds();
     }
 
     private OffsetDateTime readRevokedAt(UUID sessionKeyId) {

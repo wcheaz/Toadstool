@@ -11,6 +11,8 @@ export interface AdminLoginRequest {
 export interface AuthResponse {
   accessToken: string;
   expiresIn: number;
+  refreshToken: string;
+  refreshTokenExpiresIn: number;
   clientId: string | null;
   accountId: string | null;
   displayName: string;

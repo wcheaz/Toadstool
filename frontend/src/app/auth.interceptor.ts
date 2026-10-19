@@ -4,7 +4,7 @@ import { catchError, throwError } from 'rxjs';
 import { inject } from '@angular/core';
 import { AuthService } from './core/auth.service';
 
-const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register'];
+const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh'];
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authService = inject(AuthService);

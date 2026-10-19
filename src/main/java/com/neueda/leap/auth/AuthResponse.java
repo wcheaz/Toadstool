@@ -6,6 +6,8 @@ public class AuthResponse {
 
     private final String accessToken;
     private final long expiresIn;
+    private final String refreshToken;
+    private final long refreshTokenExpiresIn;
     private final UUID clientId;
     private final UUID accountId;
     private final String displayName;
@@ -13,10 +15,12 @@ public class AuthResponse {
     private final String email;
     private final String role;
 
-    public AuthResponse(String accessToken, long expiresIn, UUID clientId, UUID accountId,
-                        String displayName, String username, String email, String role) {
+    public AuthResponse(String accessToken, long expiresIn, String refreshToken, long refreshTokenExpiresIn,
+                        UUID clientId, UUID accountId, String displayName, String username, String email, String role) {
         this.accessToken = accessToken;
         this.expiresIn = expiresIn;
+        this.refreshToken = refreshToken;
+        this.refreshTokenExpiresIn = refreshTokenExpiresIn;
         this.clientId = clientId;
         this.accountId = accountId;
         this.displayName = displayName;
@@ -31,6 +35,14 @@ public class AuthResponse {
 
     public long getExpiresIn() {
         return expiresIn;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public long getRefreshTokenExpiresIn() {
+        return refreshTokenExpiresIn;
     }
 
     public UUID getClientId() {

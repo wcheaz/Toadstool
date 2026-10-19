@@ -9,6 +9,7 @@ public class JwtProperties {
     private String privateKey = "";
     private String issuer = "toadstool";
     private long accessTokenTtlMinutes = 15;
+    private long refreshTokenTtlMinutes = 15;
     private boolean enabled = true;
     private boolean requireHttps = true;
 
@@ -42,6 +43,14 @@ public class JwtProperties {
 
     public void setAccessTokenTtlMinutes(long accessTokenTtlMinutes) {
         this.accessTokenTtlMinutes = accessTokenTtlMinutes;
+    }
+
+    public long getRefreshTokenTtlMinutes() {
+        return refreshTokenTtlMinutes;
+    }
+
+    public void setRefreshTokenTtlMinutes(long refreshTokenTtlMinutes) {
+        this.refreshTokenTtlMinutes = refreshTokenTtlMinutes;
     }
 
     public boolean isEnabled() {

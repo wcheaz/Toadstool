@@ -53,7 +53,8 @@ export class LoginComponent {
         this.authService.storeClientSession(response);
         console.log('Login successful:', response);
         
-        // Navigate to homepage
+        // Send the user into the authenticated app after a successful sign-in.
+        this.isLoading = false;
         this.router.navigate(['/homepage']);
       },
       error: (error) => {

@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { AuthResponse } from './api/api.models';
 import { ApiService } from './api/api.service';
-import { clearAuthSession, getAccessToken, getAccountId as readAccountId, getClientDisplayName, storeAuthSession } from '../auth-storage';
+import { clearAuthSession, getAccessToken, getAccountId as readAccountId, getClientDisplayName, getRefreshToken, storeAuthSession } from '../auth-storage';
+import { Observable, throwError } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 /**
  * Handles the client session stored in localStorage.
@@ -19,6 +21,18 @@ export class AuthService {
     storeAuthSession(response);
   }
 
+  refreshSession(): Observable<AuthResponse> {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      this.forceLogout();
+      return throwError(() => new Error('Refresh token is missing'));
+    }
+
+    return this.apiService.refreshSession(refreshToken).pipe(
+      tap((response) => this.storeClientSession(response))
+    );
+  }
+
   getClientName(): string {
     return getClientDisplayName() || 'User';
   }
@@ -27,8 +41,9 @@ export class AuthService {
     return readAccountId() || '';
   }
 
-  logout(): void {
-    this.apiService.logout(getAccessToken()).subscribe({
+  logout(tokenToRevoke?: string | null): void {
+    const token = tokenToRevoke ?? getAccessToken() ?? getRefreshToken();
+    this.apiService.logout(token).subscribe({
       next: () => this.finishLogout(),
       error: (error) => {
         console.error('Failed to revoke session during sign out:', error);
