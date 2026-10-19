@@ -9,6 +9,7 @@ import java.util.UUID;
  */
 public interface InstrumentRepository {
     Instrument findById(UUID instrumentId);
+    List<Instrument> findByIds(List<UUID> instrumentIds);
     Instrument findBySymbol(String symbol);
     List<Instrument> findTradable(int limit, int offset);
     int countTradable();
