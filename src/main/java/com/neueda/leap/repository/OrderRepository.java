@@ -17,5 +17,4 @@ public interface OrderRepository {
     int countByAccountId(UUID accountId);
     int countAll(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt);
     void save(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey);
-    void updateStatus(UUID orderId, String status);
 }

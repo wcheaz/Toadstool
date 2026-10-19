@@ -3,6 +3,7 @@ package com.neueda.leap.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.leap.config.FinnhubProperties;
+import com.neueda.leap.dto.EarningsEventResponse;
 import com.neueda.leap.dto.FinnhubNewsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +116,36 @@ public class FinnhubNewsService {
             return allNews;
         } catch (Exception e) {
             logger.error("Error fetching general news: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<EarningsEventResponse> fetchEarningsCalendar(String symbol, String fromDate, String toDate) {
+        try {
+            applyRateLimit();
+            String url = properties.getBaseUrl() + "/calendar/earnings?symbol=" + symbol.toUpperCase() +
+                        "&from=" + fromDate + "&to=" + toDate + "&token=" + properties.getApiKey();
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                logger.warn("Finnhub API returned non-success status for earnings calendar of {}", symbol);
+                return Collections.emptyList();
+            }
+
+            JsonNode events = objectMapper.readTree(response.getBody()).path("earningsCalendar");
+            List<EarningsEventResponse> earnings = new ArrayList<>();
+            events.forEach(event -> earnings.add(new EarningsEventResponse(
+                    event.path("symbol").asText(symbol),
+                    event.path("date").asText(""),
+                    event.path("hour").asText(""),
+                    event.hasNonNull("quarter") ? event.get("quarter").asInt() : null,
+                    event.hasNonNull("year") ? event.get("year").asInt() : null,
+                    event.hasNonNull("epsEstimate") ? event.get("epsEstimate").asDouble() : null,
+                    event.hasNonNull("revenueEstimate") ? event.get("revenueEstimate").asDouble() : null
+            )));
+            return earnings;
+        } catch (Exception e) {
+            logger.error("Error fetching earnings calendar for symbol {}: {}", symbol, e.getMessage(), e);
             return Collections.emptyList();
         }
     }

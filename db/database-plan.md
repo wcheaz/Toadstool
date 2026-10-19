@@ -6,7 +6,7 @@ This is deliberately the smallest schema that satisfies Week 1's two DB stories 
 in `project-plan.md`) — not the platform's final data model. The full future shape is sketched
 below and should grow one week at a time, in step with the plan, rather than being built upfront.
 
-The schema itself lives in [`db/migrations/V1__init.sql`](db/migrations/V1__init.sql), a
+The schema itself lives in [`src/main/resources/db/migrations/V1__init.sql`](../src/main/resources/db/migrations/V1__init.sql), a
 Flyway-style migration, per the repo layout `project-plan.md` calls for. For now the script drops
 and recreates both schemas on every run (`DROP SCHEMA ... CASCADE`), so anyone can re-run it to
 pick up changes without hand-managing diffs — this goes away once Flyway (W1-4) takes over

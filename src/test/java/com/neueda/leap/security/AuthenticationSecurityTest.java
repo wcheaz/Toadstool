@@ -3,11 +3,14 @@ package com.neueda.leap.security;
 import com.neueda.leap.ToadstoolApplication;
 import com.neueda.leap.auth.AuthResponse;
 import com.neueda.leap.auth.TokenValidationResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -17,7 +20,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -41,6 +44,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = ToadstoolApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -62,7 +66,12 @@ class AuthenticationSecurityTest {
     @LocalServerPort
     private int port;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private final TestRestTemplate restTemplate = new TestRestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String SEEDED_CLIENT_EMAIL = "alice.johnson@example.com";
 
     @Autowired
     private com.neueda.leap.auth.SessionKeyService sessionKeyService;
@@ -445,6 +454,162 @@ class AuthenticationSecurityTest {
     @Test
     @DisplayName("Admin login can access admin probe endpoint")
     void adminLoginCanAccessAdminProbeEndpoint() {
+        AuthResponse adminAuth = adminLogin();
+        assertEquals("ADMIN", adminAuth.getRole());
+
+        ResponseEntity<String> probeResponse = restTemplate.exchange(
+                url(ADMIN_PROBE_PATH),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(adminAuth.getAccessToken())),
+                String.class
+        );
+
+        assertEquals(HttpStatus.OK, probeResponse.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Admin logout revokes the admin session for the access token")
+    void adminLogoutRevokesSession() {
+        AuthResponse adminAuth = adminLogin();
+
+        ResponseEntity<Void> logoutResponse = restTemplate.exchange(
+                url("/api/auth/logout"),
+                HttpMethod.POST,
+                new HttpEntity<>(authHeaders(adminAuth.getAccessToken())),
+                Void.class
+        );
+
+        ResponseEntity<String> probeResponse = restTemplate.exchange(
+                url(ADMIN_PROBE_PATH),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(adminAuth.getAccessToken())),
+                String.class
+        );
+
+        assertEquals(HttpStatus.NO_CONTENT, logoutResponse.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, probeResponse.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Admin credentials cannot be written without the provisioning flag")
+    void adminCredentialsAreReadOnly() {
+        assertThrows(Exception.class, () -> jdbcTemplate.update(
+                "INSERT INTO trading.admin_credentials (admin_user_id, username, password_hash) "
+                        + "SELECT admin_user_id, 'intruder@example.com', 'x' FROM trading.admin_users LIMIT 1"
+        ));
+        assertThrows(Exception.class, () -> jdbcTemplate.update(
+                "UPDATE trading.admin_credentials SET password_hash = 'x' WHERE username = ?", SEEDED_ADMIN_EMAIL
+        ));
+        assertThrows(Exception.class, () -> jdbcTemplate.update(
+                "DELETE FROM trading.admin_credentials WHERE username = ?", SEEDED_ADMIN_EMAIL
+        ));
+    }
+
+    @Test
+    @DisplayName("Admin can search clients and the client view is recorded in the access log")
+    void adminClientSearchAndViewIsAudited() throws Exception {
+        String token = adminLogin().getAccessToken();
+
+        JsonNode search = getJson("/api/admin/clients?q=" + SEEDED_CLIENT_EMAIL, token);
+        assertEquals(1, search.path("pagination").path("totalCount").asInt());
+        JsonNode client = search.path("items").get(0);
+        assertEquals("Alice Johnson", client.path("displayName").asText());
+        assertTrue(client.path("accountCount").asInt() >= 1);
+        String clientId = client.path("clientId").asText();
+
+        int accessBefore = getJson("/api/admin/audit/access-events?clientId=" + clientId, token)
+                .path("pagination").path("totalCount").asInt();
+
+        JsonNode detail = getJson("/api/admin/clients/" + clientId, token);
+        assertEquals(clientId, detail.path("client").path("clientId").asText());
+        assertTrue(detail.path("accounts").size() >= 1);
+
+        JsonNode access = null;
+        for (int attempt = 0; attempt < 10; attempt++) {
+            access = getJson("/api/admin/audit/access-events?clientId=" + clientId, token);
+            if (access.path("pagination").path("totalCount").asInt() >= accessBefore + 1) {
+                break;
+            }
+            Thread.sleep(150);
+        }
+
+        assertNotNull(access);
+        assertEquals(accessBefore + 1, access.path("pagination").path("totalCount").asInt());
+        assertEquals("VIEW_CLIENT", access.path("items").get(0).path("action").asText());
+        assertEquals(SEEDED_ADMIN_EMAIL, access.path("items").get(0).path("adminEmail").asText());
+    }
+
+    @Test
+    @DisplayName("Admin sees real holdings, fills and order status for a client account")
+    void adminSeesRealAccountData() throws Exception {
+        String token = adminLogin().getAccessToken();
+        String clientId = getJson("/api/admin/clients?q=" + SEEDED_CLIENT_EMAIL, token)
+                .path("items").get(0).path("clientId").asText();
+        String accountId = getJson("/api/admin/clients/" + clientId, token)
+                .path("accounts").get(0).path("accountId").asText();
+
+        JsonNode holdings = getJson("/api/accounts/" + accountId + "/holdings", token);
+        assertTrue(holdings.path("holdings").size() > 0);
+        assertTrue(holdings.path("holdings").get(0).hasNonNull("symbol"));
+
+        JsonNode fills = getJson("/api/accounts/" + accountId + "/fills?limit=50", token);
+        assertTrue(fills.path("items").size() > 0);
+        assertTrue(fills.path("items").get(0).has("fee"));
+
+        JsonNode orders = getJson("/api/accounts/" + accountId + "/orders?limit=50", token);
+        assertEquals("FILLED", orders.path("items").get(0).path("status").asText());
+
+        JsonNode cashEvents = getJson("/api/accounts/" + accountId + "/cash-events", token);
+        assertTrue(cashEvents.path("pagination").has("totalCount"));
+    }
+
+    @Test
+    @DisplayName("Admin audit and analytics endpoints return live data")
+    void adminAuditAndAnalyticsReturnLiveData() throws Exception {
+        String token = adminLogin().getAccessToken();
+
+        JsonNode logins = getJson("/api/admin/audit/login-events?outcome=SUCCESS&limit=5", token);
+        assertTrue(logins.path("pagination").path("totalCount").asInt() > 0);
+        logins.path("items").forEach(item -> assertEquals("SUCCESS", item.path("outcome").asText()));
+
+        JsonNode trades = getJson("/api/admin/audit/trade-events?limit=5", token);
+        assertTrue(trades.path("pagination").path("totalCount").asInt() > 0);
+
+        JsonNode platform = getJson("/api/admin/analytics/platform-activity?limit=5", token);
+        assertTrue(platform.path("pagination").path("totalCount").asInt() > 0);
+
+        JsonNode insights = getJson("/api/admin/analytics/insights", token);
+        assertTrue(insights.path("overview").path("totalClients").asInt() > 0);
+        assertTrue(insights.path("insights").size() > 0);
+    }
+
+    @Test
+    @DisplayName("Client JWTs cannot use the admin client oversight endpoints")
+    void clientJwtCannotSearchClients() {
+        RegisteredUser registeredUser = registerUser();
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url("/api/admin/clients"),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(registeredUser.authResponse().getAccessToken())),
+                String.class
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    private JsonNode getJson(String path, String accessToken) throws Exception {
+        ResponseEntity<String> response = restTemplate.exchange(
+                url(path),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(accessToken)),
+                String.class
+        );
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "GET " + path);
+        return objectMapper.readTree(response.getBody());
+    }
+
+    private AuthResponse adminLogin() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -462,16 +627,7 @@ class AuthenticationSecurityTest {
         assertEquals(HttpStatus.OK, loginResponse.getStatusCode());
         assertNotNull(loginResponse.getBody());
         assertNotNull(loginResponse.getBody().getAccessToken());
-        assertEquals("ADMIN", loginResponse.getBody().getRole());
-
-        ResponseEntity<String> probeResponse = restTemplate.exchange(
-                url(ADMIN_PROBE_PATH),
-                HttpMethod.GET,
-                new HttpEntity<>(authHeaders(loginResponse.getBody().getAccessToken())),
-                String.class
-        );
-
-        assertEquals(HttpStatus.OK, probeResponse.getStatusCode());
+        return loginResponse.getBody();
     }
 
     private String generateValidToken() {

@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import {
   LoginResponse,
   RegisterRequest,
@@ -19,6 +18,21 @@ import {
   AdminLoginRequest,
   TokenValidationResponse
 } from './api.models';
+import {
+  AccessEventRow,
+  AdminCashEventRow,
+  AdminClientDetail,
+  AdminClientSummary,
+  CashEventRequest,
+  CashEventResponse,
+  FillResponse,
+  HoldingsResponse,
+  InsightsResponse,
+  LoginEventRow,
+  PlatformActivityRow,
+  TradeEventRow
+} from './api.models';
+import { HttpParams } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -117,21 +131,28 @@ export class ApiService {
     );
   }
 
-  /**
-   * Get the first account for a client
-   */
-  getAccountByClientId(clientId: string): Observable<AccountResponse> {
-    return this.http.get<AccountResponse>(
-      `${this.apiUrl}/clients/${clientId}/accounts?limit=1&offset=0`
-    ).pipe(
-      // Map the paginated response to just the first account
-      map((response: any) => {
-        if (response.items && response.items.length > 0) {
-          return response.items[0];
-        }
-        throw new Error('No account found for client');
-      })
+  getAccountsByClientId(clientId: string): Observable<PaginatedResponse<AccountResponse>> {
+    return this.http.get<PaginatedResponse<AccountResponse>>(
+      `${this.apiUrl}/clients/${clientId}/accounts?limit=1000&offset=0`
     );
+  }
+
+  createAccount(clientId: string, accountName: string): Observable<AccountResponse> {
+    return this.http.post<AccountResponse>(`${this.apiUrl}/accounts`, { clientId, accountName });
+  }
+
+  getAccountById(accountId: string): Observable<AccountResponse> {
+    return this.http.get<AccountResponse>(`${this.apiUrl}/accounts/${accountId}`);
+  }
+
+  getAccountHoldings(accountId: string): Observable<HoldingsResponse> {
+    return this.http.get<HoldingsResponse>(
+      `${this.apiUrl}/accounts/${accountId}/holdings`
+    );
+  }
+
+  postCashEvent(accountId: string, request: CashEventRequest): Observable<AccountResponse> {
+    return this.http.post<AccountResponse>(`${this.apiUrl}/accounts/${accountId}/cash-events`, request);
   }
 
   /**
@@ -183,5 +204,85 @@ export class ApiService {
       `${this.apiUrl}/orders/${orderId}/fill?price=${price}`,
       {}
     );
+  }
+
+  getFills(accountId: string, limit: number = 1000, offset: number = 0): Observable<PaginatedResponse<FillResponse>> {
+    return this.http.get<PaginatedResponse<FillResponse>>(
+      `${this.apiUrl}/accounts/${accountId}/fills?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  getCashEvents(accountId: string, limit: number = 1000, offset: number = 0): Observable<PaginatedResponse<CashEventResponse>> {
+    return this.http.get<PaginatedResponse<CashEventResponse>>(
+      `${this.apiUrl}/accounts/${accountId}/cash-events?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  getClientLoginEvents(clientId: string, limit: number = 20): Observable<PaginatedResponse<LoginEventRow>> {
+    return this.http.get<PaginatedResponse<LoginEventRow>>(
+      `${this.apiUrl}/clients/${clientId}/login-events?limit=${limit}&offset=0`
+    );
+  }
+
+  getClientTradeEvents(clientId: string, limit: number = 20): Observable<PaginatedResponse<TradeEventRow>> {
+    return this.http.get<PaginatedResponse<TradeEventRow>>(
+      `${this.apiUrl}/clients/${clientId}/events?limit=${limit}&offset=0`
+    );
+  }
+
+  // ---- Admin oversight ----
+
+  searchAdminClients(q: string, status: string, limit: number, offset: number): Observable<PaginatedResponse<AdminClientSummary>> {
+    const params = this.params({ q, status, limit, offset });
+    return this.http.get<PaginatedResponse<AdminClientSummary>>(`${this.apiUrl}/admin/clients`, { params });
+  }
+
+  getAdminClient(clientId: string): Observable<AdminClientDetail> {
+    return this.http.get<AdminClientDetail>(`${this.apiUrl}/admin/clients/${clientId}`);
+  }
+
+  getAuditLoginEvents(filters: { outcome?: string; emailAttempted?: string; clientId?: string },
+                      limit: number, offset: number): Observable<PaginatedResponse<LoginEventRow>> {
+    const params = this.params({ ...filters, limit, offset });
+    return this.http.get<PaginatedResponse<LoginEventRow>>(`${this.apiUrl}/admin/audit/login-events`, { params });
+  }
+
+  getAuditTradeEvents(filters: { action?: string; clientId?: string },
+                      limit: number, offset: number): Observable<PaginatedResponse<TradeEventRow>> {
+    const params = this.params({ ...filters, limit, offset });
+    return this.http.get<PaginatedResponse<TradeEventRow>>(`${this.apiUrl}/admin/audit/trade-events`, { params });
+  }
+
+  getAuditAccessEvents(filters: { clientId?: string },
+                       limit: number, offset: number): Observable<PaginatedResponse<AccessEventRow>> {
+    const params = this.params({ ...filters, limit, offset });
+    return this.http.get<PaginatedResponse<AccessEventRow>>(`${this.apiUrl}/admin/audit/access-events`, { params });
+  }
+
+  getAuditCashEvents(filters: { clientId?: string; eventType?: string },
+                     limit: number, offset: number): Observable<PaginatedResponse<AdminCashEventRow>> {
+    const params = this.params({ ...filters, limit, offset });
+    return this.http.get<PaginatedResponse<AdminCashEventRow>>(`${this.apiUrl}/admin/audit/cash-events`, { params });
+  }
+
+  getPlatformActivity(limit: number = 30): Observable<PaginatedResponse<PlatformActivityRow>> {
+    return this.http.get<PaginatedResponse<PlatformActivityRow>>(
+      `${this.apiUrl}/admin/analytics/platform-activity?limit=${limit}&offset=0`
+    );
+  }
+
+  getInsights(): Observable<InsightsResponse> {
+    return this.http.get<InsightsResponse>(`${this.apiUrl}/admin/analytics/insights`);
+  }
+
+  /** Build query params, skipping empty values. */
+  private params(values: { [key: string]: string | number | undefined | null }): HttpParams {
+    let params = new HttpParams();
+    Object.entries(values).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        params = params.set(key, String(value).trim());
+      }
+    });
+    return params;
   }
 }

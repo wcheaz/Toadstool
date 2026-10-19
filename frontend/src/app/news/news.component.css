@@ -48,8 +48,8 @@
 }
 
 .tab-button.active {
-  color: #22c55e;
-  border-bottom-color: #22c55e;
+  color: #00744A;
+  border-bottom-color: #00744A;
 }
 
 /* News Feed */
@@ -81,99 +81,6 @@
 }
 
 /* News Article */
-.news-article {
-  background-color: rgba(71, 85, 105, 0.1);
-  border: 1px solid rgba(71, 85, 105, 0.2);
-  border-radius: 8px;
-  padding: 16px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.news-article:hover {
-  background-color: rgba(71, 85, 105, 0.15);
-  border-color: rgba(71, 85, 105, 0.3);
-}
-
-.article-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  gap: 12px;
-}
-
-.article-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-}
-
-.category-tag {
-  background-color: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.timestamp {
-  color: #9ca3af;
-  font-size: 12px;
-}
-
-.impact-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.article-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #f3f4f6;
-  line-height: 1.4;
-}
-
-.article-description {
-  font-size: 13px;
-  color: #d1d5db;
-  margin: 0 0 12px 0;
-  line-height: 1.5;
-}
-
-.article-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.article-assets {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.asset-tag {
-  background-color: rgba(107, 114, 128, 0.2);
-  color: #d1d5db;
-  padding: 3px 6px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.market-info {
-  color: #6b7280;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
 /* Right Sidebar */
 .right-sidebar {
   width: 320px;
@@ -216,70 +123,6 @@
   font-weight: 600;
   margin: 0 0 12px 0;
   color: #f3f4f6;
-}
-
-/* Market Sentiment Widget */
-.market-sentiment-widget {
-  min-height: 180px;
-}
-
-.sentiment-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sentiment-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sentiment-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sentiment-label {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.sentiment-label.bullish {
-  color: #10b981;
-}
-
-.sentiment-label.bearish {
-  color: #ef4444;
-}
-
-.bar-container {
-  height: 8px;
-  background-color: rgba(71, 85, 105, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.bar-fill.bullish {
-  background-color: #10b981;
-}
-
-.bar-fill.bearish {
-  background-color: #ef4444;
-}
-
-.sentiment-description {
-  font-size: 12px;
-  color: #9ca3af;
-  margin: 0;
-  line-height: 1.4;
 }
 
 /* Trading Assets Widget */
@@ -330,7 +173,7 @@
   grid-column: 1;
 }
 
-.asset-members {
+.asset-articles {
   color: #9ca3af;
   grid-column: 2;
   text-align: right;
@@ -350,6 +193,22 @@
 
 .asset-change.positive {
   color: #10b981;
+}
+
+.asset-change.neutral {
+  color: #9ca3af;
+}
+
+.asset-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
+.widget-status {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 /* Impact Calendar Widget */
@@ -393,14 +252,24 @@
   width: fit-content;
 }
 
-.event-impact.neutral {
-  background-color: rgba(107, 114, 128, 0.2);
-  color: #d1d5db;
+.event-detail {
+  color: #9ca3af;
+  font-size: 11px;
 }
 
-.event-impact.bearing {
+.event-impact.high {
   background-color: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
+}
+
+.event-impact.medium {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.event-impact.low {
+  background-color: rgba(107, 114, 128, 0.2);
+  color: #d1d5db;
 }
 
 /* Scrollbar Styling */
@@ -477,229 +346,5 @@
   .right-sidebar {
     flex-direction: column;
     max-height: none;
-  }
-}
-
-/* News Detail Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-content {
-  background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: 12px;
-  max-width: 900px;
-  width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
-  position: relative;
-  display: flex;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: #f3f4f6;
-  cursor: pointer;
-  z-index: 10;
-  transition: color 0.2s;
-}
-
-.modal-close:hover {
-  color: #22c55e;
-}
-
-.modal-body {
-  display: flex;
-  gap: 32px;
-  padding: 32px;
-  flex: 1;
-}
-
-.modal-article {
-  flex: 2;
-  min-width: 0;
-}
-
-.modal-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  color: #f3f4f6;
-  line-height: 1.4;
-}
-
-.modal-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: #9ca3af;
-  margin-bottom: 16px;
-}
-
-.modal-source {
-  font-weight: 600;
-  color: #22c55e;
-}
-
-.modal-image {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin: 20px 0;
-  max-height: 300px;
-  object-fit: cover;
-}
-
-.modal-description {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #d1d5db;
-  margin: 16px 0;
-}
-
-.modal-read-more {
-  display: inline-block;
-  margin-top: 16px;
-  color: #22c55e;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 14px;
-  transition: color 0.2s;
-}
-
-.modal-read-more:hover {
-  color: #16a34a;
-}
-
-.modal-sidebar {
-  flex: 1;
-  min-width: 200px;
-}
-
-.stock-card {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  position: sticky;
-  top: 20px;
-}
-
-.stock-symbol {
-  font-size: 28px;
-  font-weight: 700;
-  color: #22c55e;
-  margin: 0 0 20px 0;
-}
-
-.stock-price {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.price {
-  font-size: 32px;
-  font-weight: 700;
-  color: #f3f4f6;
-}
-
-.price-label {
-  font-size: 12px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.trade-button {
-  width: 100%;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.trade-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
-}
-
-.trade-button:active {
-  transform: translateY(0);
-}
-
-.news-article {
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.news-article:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.05);
-}
-
-@media (max-width: 768px) {
-  .modal-body {
-    flex-direction: column;
-    gap: 24px;
-    padding: 16px;
-  }
-
-  .modal-sidebar {
-    min-width: auto;
-  }
-
-  .stock-card {
-    position: static;
-  }
-
-  .modal-title {
-    font-size: 18px;
   }
 }

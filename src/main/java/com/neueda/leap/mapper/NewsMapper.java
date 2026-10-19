@@ -14,6 +14,9 @@ public interface NewsMapper {
     @Delete("DELETE FROM trading.news WHERE batch_id = #{batchId}")
     void deleteNewsByBatchId(String batchId);
 
+    @Delete("DELETE FROM trading.news WHERE batch_id <> #{batchId}")
+    void deleteNewsExceptBatchId(String batchId);
+
     @Select("SELECT news_id as newsId, symbol, category, headline, summary, source, published_timestamp as publishedTimestamp, " +
             "image_url as imageUrl, source_url as sourceUrl, created_at as createdAt, batch_id as batchId " +
             "FROM trading.news WHERE symbol = #{symbol} ORDER BY published_timestamp DESC LIMIT #{limit}")

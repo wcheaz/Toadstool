@@ -18,10 +18,25 @@ export class MarketAssetsTableComponent {
   @Input() instruments: Instrument[] = [];
   @Input() quotes: Map<string, QuoteResponse> = new Map();
   @Input() loading: boolean = false;
+  /** Quantity held per instrumentId for the active account. */
+  @Input() holdings: Map<string, number> = new Map();
   @Output() tradeRequested = new EventEmitter<TradeRequest>();
 
   getQuote(instrumentId: string): QuoteResponse | undefined {
     return this.quotes.get(instrumentId);
+  }
+
+  getHolding(instrumentId: string): number {
+    return this.holdings.get(instrumentId) ?? 0;
+  }
+
+  getHoldingValue(instrument: Instrument): number | null {
+    const price = this.getQuote(instrument.instrumentId)?.price;
+    return price ? price * this.getHolding(instrument.instrumentId) : null;
+  }
+
+  get heldCount(): number {
+    return this.instruments.filter((instrument) => this.getHolding(instrument.instrumentId) > 0).length;
   }
 
   getPriceChangeClass(changePercent: number | undefined): string {

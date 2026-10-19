@@ -16,16 +16,27 @@
   <!-- Transactions Section -->
   <div class="transactions-section">
     <div class="section-header">
-      <h2>Past Order Activity</h2>
+      <div class="tab-row" role="tablist" aria-label="Activity views">
+        <button
+          type="button"
+          role="tab"
+          *ngFor="let item of tabs"
+          class="tab"
+          [class.active]="tab === item.key"
+          [attr.aria-selected]="tab === item.key"
+          (click)="selectTab(item.key)">
+          {{ item.label }}
+        </button>
+      </div>
     </div>
 
-    <div class="table-container">
+    <div class="table-container" *ngIf="tab === 'orders'">
       <table class="transactions-table">
         <thead>
           <tr>
             <th>Transaction ID</th>
             <th>Instrument Name</th>
-            <th>Order Type</th>
+            <th>Side</th>
             <th>Quantity</th>
             <th>Order Status</th>
           </tr>
@@ -38,7 +49,7 @@
             </td>
             <td>{{ tx.asset }}</td>
             <td>{{ tx.orderType }}</td>
-            <td>{{ tx.quantity }}</td>
+            <td class="quantity">{{ tx.quantity }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(tx.status)">
                 {{ tx.status }}
@@ -49,7 +60,39 @@
       </table>
     </div>
 
-    <div class="pagination-controls">
+    <div class="table-container" *ngIf="tab === 'cash'">
+      <table class="transactions-table cash-activity-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th class="amount">Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let event of cashActivity">
+            <td>{{ event.date }}</td>
+            <td>{{ event.type }}</td>
+            <td class="amount">{{ event.amount }}</td>
+            <td>
+              <span class="status-badge status-completed">{{ event.status }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="cashActivityLoading">
+            <td colspan="4" class="empty-state">Loading cash activity...</td>
+          </tr>
+          <tr *ngIf="!cashActivityLoading && cashActivityError">
+            <td colspan="4" class="empty-state error-state">{{ cashActivityError }}</td>
+          </tr>
+          <tr *ngIf="!cashActivityLoading && !cashActivityError && cashActivity.length === 0">
+            <td colspan="4" class="empty-state">No cash activity to display.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-controls" *ngIf="tab === 'orders'">
       <span class="pagination-summary">
         Page {{ currentPage }} of {{ totalPages }}
       </span>

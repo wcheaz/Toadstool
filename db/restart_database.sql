@@ -23,12 +23,14 @@ CREATE TABLE IF NOT EXISTS trading.clients (
     updated_at timestamptz NOT NULL DEFAULT now() -- Record last update timestamp
 );
 
--- Trading accounts owned by clients; one per client for now
+-- Trading accounts owned by clients; clients may own multiple accounts
 CREATE TABLE IF NOT EXISTS trading.accounts (
     account_id uuid PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique account identifier
     client_id uuid NOT NULL REFERENCES trading.clients(client_id), -- Reference to account owner
+    account_name varchar(80) NOT NULL DEFAULT 'Main Account', -- User-facing account name
     status varchar(20) NOT NULL CHECK (status IN ('ACTIVE', 'SUSPENDED', 'CLOSED')), -- Current account status
     opened_at timestamptz NOT NULL DEFAULT now(), -- Account opening timestamp
+    balance numeric(19,2) NOT NULL DEFAULT 0.00, -- Available cash balance
     UNIQUE (account_id, client_id)
 );
 
@@ -53,6 +55,27 @@ CREATE TABLE IF NOT EXISTS trading.orders (
     UNIQUE (account_id, idempotency_key), -- rejects a duplicate submission outright (BR-06/BR-09)
     FOREIGN KEY (account_id) REFERENCES trading.accounts(account_id)
 );
+
+CREATE TABLE IF NOT EXISTS trading.cash_events (
+  cash_event_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL REFERENCES trading.accounts(account_id),
+  order_id uuid REFERENCES trading.orders(order_id),
+  event_type varchar(20) NOT NULL CHECK (event_type IN ('DEPOSIT', 'WITHDRAWAL', 'BUY', 'SELL')),
+  amount numeric(19, 2) NOT NULL CHECK (amount <> 0),
+  occurred_at timestamptz NOT NULL DEFAULT now(),
+  details jsonb NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE OR REPLACE FUNCTION trading.prevent_cash_event_mutation()
+RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'cash_events are immutable';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER cash_events_immutable
+  BEFORE UPDATE OR DELETE ON trading.cash_events
+  FOR EACH ROW EXECUTE FUNCTION trading.prevent_cash_event_mutation();
 
 -- Internal users (David/Priya personas) for the admin/reporting dashboard, distinct from clients (W5-4)
 CREATE TABLE IF NOT EXISTS trading.admin_users (

@@ -29,10 +29,13 @@ export class TradingModalComponent implements OnChanges {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
   @Input() accountId: string = '';
+  @Input() accountBalance: number | null = null;
   @Input() candleData: CandleResponse[] = [];
   @Input() instrumentId: string = '';
   @Input() apiError: string = '';
   @Output() close = new EventEmitter<void>();
+  /** Emitted once an order is accepted (and filled, for market orders) so the parent can refresh holdings and cash. */
+  @Output() orderCompleted = new EventEmitter<void>();
 
   selectedTimeframe: string = '3M';
   loadingCandles: boolean = true;
@@ -125,6 +128,13 @@ export class TradingModalComponent implements OnChanges {
     const ticket = this.pendingTicket;
     if (!ticket) return;
 
+    const validationError = this.validateTicket(ticket);
+    if (validationError) {
+      this.errorMessage = validationError;
+      this.isErrorOpen = true;
+      return;
+    }
+
     if (!ticket.agreedToTerms) {
       this.errorMessage = 'Please agree to market conditions before placing an order';
       this.isErrorOpen = true;
@@ -155,24 +165,7 @@ export class TradingModalComponent implements OnChanges {
     ).subscribe({
       next: (response: OrderResponse) => {
         console.log('Order placed successfully:', response);
-
-        // Auto-fill based on order type
-        if (ticket.orderType === 'market') {
-          // Market order: fill immediately at current price
-          this.fillOrder(response.orderId, this.selectedAsset!.price);
-        } else if (ticket.orderType === 'limit') {
-          // Limit order: fill only if current price meets the limit
-          if (ticket.orderSide === 'buy' && this.selectedAsset!.price <= ticket.limitPrice) {
-            this.fillOrder(response.orderId, ticket.limitPrice);
-          } else if (ticket.orderSide === 'sell' && this.selectedAsset!.price >= ticket.limitPrice) {
-            this.fillOrder(response.orderId, ticket.limitPrice);
-          } else {
-            // Limit price not met, order stays pending
-            this.isSubmitting = false;
-            this.isSuccessOpen = true;
-            console.log('Limit order placed. Waiting for price to reach', ticket.limitPrice);
-          }
-        }
+        this.fillOrder(response.orderId, this.selectedAsset!.price);
       },
       error: (error: any) => {
         this.isSubmitting = false;
@@ -198,12 +191,36 @@ export class TradingModalComponent implements OnChanges {
     });
   }
 
+  private validateTicket(ticket: OrderTicketValue): string {
+    if (!this.selectedAsset) return 'Select an asset before placing an order.';
+    if (!Number.isFinite(ticket.quantity) || ticket.quantity <= 0) {
+      return 'Quantity must be greater than zero.';
+    }
+    if (!Number.isFinite(this.selectedAsset.price) || this.selectedAsset.price <= 0) {
+      return 'The selected asset does not have a valid market price.';
+    }
+    if (ticket.orderType === 'limit' && (!Number.isFinite(ticket.limitPrice) || ticket.limitPrice <= 0)) {
+      return 'Limit price must be greater than zero.';
+    }
+    if (ticket.orderSide === 'sell' && ticket.quantity > this.selectedAsset.holdings) {
+      return `You can sell at most ${this.selectedAsset.holdings} shares.`;
+    }
+    const price = ticket.orderType === 'limit' ? ticket.limitPrice : this.selectedAsset.price;
+    const total = ticket.quantity * price;
+    if (ticket.orderSide === 'buy' && this.accountBalance !== null &&
+        (!Number.isFinite(this.accountBalance) || total > this.accountBalance)) {
+      return `This order exceeds your available balance of $${this.accountBalance.toFixed(2)}.`;
+    }
+    return '';
+  }
+
   private fillOrder(orderId: string, fillPrice: number) {
     // Call backend to fill the order
     this.apiService.fillOrder(orderId, fillPrice).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.isSuccessOpen = true;
+        this.orderCompleted.emit();
         console.log('Order filled at price:', fillPrice);
       },
       error: (error) => {

@@ -15,7 +15,6 @@ export class OrderConfirmationComponent {
   @Input() selectedAsset: Asset | null = null;
   @Input() quantity: number = 50;
   @Input() limitPrice: number = 0;
-  @Input() duration: 'day' | 'gtc' = 'day';
   @Input() orderSide: 'market' | 'limit' = 'market';
   @Output() confirm = new EventEmitter<void>();
   @Output() editOrder = new EventEmitter<void>();
@@ -44,10 +43,6 @@ export class OrderConfirmationComponent {
   get estExecutionPrice(): string {
     if (!this.selectedAsset) return '$0.00';
     return `$${this.selectedAsset.price.toFixed(2)}`;
-  }
-
-  get durationLabel(): string {
-    return this.duration === 'day' ? 'Day' : 'GTC (Good Till Cancel)';
   }
 
   confirmOrder() {

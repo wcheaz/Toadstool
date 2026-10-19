@@ -1,0 +1,25 @@
+%%{init: {'flowchart': {'curve': 'linear'}, 'erDiagram': {'direction': 'LR'}}}%%
+erDiagram
+    CLIENTS ||--o{ ACCOUNTS : owns
+    CLIENTS ||--o{ **LOGIN_EVENTS** : generates
+    CLIENTS ||--o{ CLIENT_CREDENTIALS : has
+    CLIENT_CREDENTIALS ||--o{ **AUTH_SESSIONS** : creates
+    ACCOUNTS ||--o{ **ORDERS** : contains
+    INSTRUMENTS ||--o{ **ORDERS** : references
+    INSTRUMENTS ||--o{ **FACT_DAILY_INSTRUMENT** : tracked
+    **ORDERS** ||--|| **FILLS** : has
+    ACCOUNTS ||--o{ **CASH_EVENTS** : has
+    **FILLS** ||--o| **CASH_EVENTS** : triggers
+
+    CLIENTS { }
+    ACCOUNTS { }
+    INSTRUMENTS { }
+    **ORDERS** { }
+    **FILLS** { }
+    **LOGIN_EVENTS** { }
+    **CASH_EVENTS** { }
+    CLIENT_CREDENTIALS { }
+    **AUTH_SESSIONS** { }
+    ADMIN_USERS { }
+    **FACT_DAILY_INSTRUMENT** { }
+    **FACT_DAILY_PLATFORM** { }

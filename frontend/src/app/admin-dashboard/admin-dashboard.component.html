@@ -1,9 +1,8 @@
 <section class="admin-shell">
-  <app-sidebar [adminMode]="true"></app-sidebar>
+  <app-sidebar [adminMode]="true" activeSection="admin-dashboard"></app-sidebar>
 
   <main class="admin-main">
     <header class="topbar">
-      <button class="icon-button" type="button" aria-label="Notifications"><span class="notification-dot"></span></button>
       <button class="profile-button" type="button" (click)="logout()" title="Sign out">
         <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         <span>{{ adminName }}</span>
@@ -16,37 +15,64 @@
         <div><h1>Client oversight</h1><p>Find a client. View their account, portfolio, and activity.</p></div>
       </div>
 
+      <section class="overview-strip" *ngIf="overview" aria-label="Platform overview">
+        <article class="overview-card"><small>CLIENTS</small><strong>{{ overview.totalClients | number }}</strong><span>{{ overview.activeClients | number }} active · {{ overview.totalAccounts | number }} accounts</span></article>
+        <article class="overview-card"><small>CASH HELD</small><strong>{{ formatMoney(overview.totalCash) }}</strong><span>Across all client accounts</span></article>
+        <article class="overview-card"><small>GROSS VOLUME · 30D</small><strong>{{ formatMoney(overview.grossVolumeLast30Days) }}</strong><span>{{ overview.ordersLast30Days | number }} orders · {{ formatMoney(overview.feesLast30Days) }} fees</span></article>
+        <article class="overview-card"><small>ORDERS</small><strong>{{ overview.filledOrders | number }} / {{ overview.totalOrders | number }}</strong><span>Filled · {{ overview.openOrders | number }} awaiting execution</span></article>
+        <article class="overview-card" [class.alert]="overview.failedLoginsLast24Hours > 0"><small>FAILED SIGN-INS · 24H</small><strong>{{ overview.failedLoginsLast24Hours | number }}</strong><span>From the login audit log</span></article>
+      </section>
+
       <section class="panel search-panel" aria-labelledby="find-client-heading">
-        <div class="panel-heading"><h2 id="find-client-heading">Find a client</h2><span>12,482 client accounts · Read-only access</span></div>
+        <div class="panel-heading"><h2 id="find-client-heading">Find a client</h2><span>{{ overview ? (overview.totalClients | number) : '--' }} clients · Read-only access</span></div>
         <div class="search-grid">
-          <label class="field search-field"><span>Client username</span><div class="input-wrap"><span class="search-icon"></span><input type="search" [(ngModel)]="searchTerm" (keyup.enter)="applySearch()" aria-label="Search by client name or username"><button type="button" class="clear-button" (click)="clearSearch()" aria-label="Clear search">×</button></div></label>
-          <label class="field"><span>Client selector</span><select [(ngModel)]="selectedClient" aria-label="Select a client"><option>All clients</option><option *ngFor="let client of clients">{{ client.name }}</option></select></label>
+          <label class="field search-field"><span>Name, email, username or client ID</span><div class="input-wrap"><span class="search-icon"></span><input type="search" [(ngModel)]="searchTerm" (keyup.enter)="applySearch()" aria-label="Search clients"><button type="button" class="clear-button" (click)="clearSearch()" aria-label="Clear search">×</button></div></label>
+          <label class="field"><span>Client status</span><select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange()" aria-label="Filter by client status"><option value="">All statuses</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
           <button class="find-button" type="button" (click)="applySearch()"><span class="search-icon light"></span>Find client</button>
         </div>
-        <p class="helper">Search by full or partial username, or choose a client from the dropdown. Results are read-only.</p>
+        <p class="helper">Search by full or partial name, email or username. Results are read-only.</p>
       </section>
 
       <section class="panel results-panel" aria-labelledby="results-heading">
-        <div class="panel-heading results-heading"><div><h2 id="results-heading">Client results <small>{{ filteredClients.length }} VIEWABLE MATCHES</small></h2></div><span>Search contains “{{ appliedSearchTerm }}” · All accounts · Read-only results</span></div>
+        <div class="panel-heading results-heading">
+          <div><h2 id="results-heading">Client results <small>{{ totalCount | number }} MATCHES</small></h2></div>
+          <span>{{ appliedSearchTerm ? 'Search contains “' + appliedSearchTerm + '”' : 'All clients' }} · {{ statusFilter ? humanize(statusFilter) : 'All statuses' }}</span>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Account</th><th>Portfolio value</th><th>Cash balance</th><th>Latest activity</th><th>View</th></tr></thead>
+            <thead><tr><th>Client</th><th>Accounts</th><th>Cash balance</th><th>Latest activity</th><th>Last sign-in</th><th>View</th></tr></thead>
             <tbody>
-              <tr *ngFor="let client of filteredClients">
-                <td><strong>{{ client.name }}</strong><span>{{ client.username }}</span></td>
-                <td><span>{{ client.account }}</span><b [class.review]="client.status === 'REVIEW'">{{ client.status }}</b></td>
-                <td class="amount">{{ client.portfolio }}</td><td class="amount">{{ client.cash }}</td>
-                <td><span>{{ client.activity }}</span><span>{{ client.activityTime }}</span></td>
+              <tr *ngFor="let client of clients">
+                <td><strong>{{ client.displayName }}</strong><span>{{ client.username ? '@' + client.username : client.email }}</span></td>
+                <td><span>{{ client.primaryAccountName || 'Account' }}{{ client.accountCount > 1 ? ' +' + (client.accountCount - 1) + ' more' : '' }}</span><b [class.review]="client.status !== 'ACTIVE'">{{ client.status }}</b></td>
+                <td class="amount">{{ formatMoney(client.totalCash) }}</td>
+                <td><span>{{ client.latestActivity ? humanize(client.latestActivity) : 'No activity yet' }}</span><span>{{ formatDateTime(client.latestActivityAt) }}</span></td>
+                <td><span>{{ formatDateTime(client.lastLoginAt) }}</span></td>
                 <td><button class="details-button" type="button" (click)="viewDetails(client)">View details</button></td>
               </tr>
-              <tr *ngIf="filteredClients.length === 0"><td colspan="6" class="empty-state">No clients match this search.</td></tr>
+              <tr *ngIf="loading && clients.length === 0"><td colspan="6" class="empty-state">Loading clients…</td></tr>
+              <tr *ngIf="!loading && error"><td colspan="6" class="empty-state error-state">{{ error }}</td></tr>
+              <tr *ngIf="!loading && !error && clients.length === 0"><td colspan="6" class="empty-state">No clients match this search.</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="table-note">Portfolio value includes holdings + cash. Values as of 24 Oct 2024, 10:15 UTC. All data is read-only.</p>
+        <div class="table-footer">
+          <p class="table-note">Showing {{ pageStart }}–{{ pageEnd }} of {{ totalCount | number }} · Cash is the sum of all of a client's accounts{{ loadedAt ? ' · Loaded ' + formatDateTime(loadedAt.toISOString()) : '' }}</p>
+          <div class="pager">
+            <button type="button" class="details-button" (click)="previousPage()" [disabled]="!hasPrevious || loading">← Previous</button>
+            <button type="button" class="details-button" (click)="nextPage()" [disabled]="!hasNext || loading">Next →</button>
+          </div>
+        </div>
       </section>
 
-      <footer class="page-footer"><span>All timestamps in UTC · All values in USD · Read-only view</span><span>Admin access is recorded in the audit log · No management actions are available</span></footer>
+      <section class="panel insights-panel" *ngIf="insights.length > 0" aria-labelledby="insights-heading">
+        <div class="panel-heading"><h2 id="insights-heading">Platform insights</h2><span>Live from trading data</span></div>
+        <div class="insight-grid">
+          <article class="insight" *ngFor="let insight of insights"><small>{{ insight.title }}</small><strong>{{ insight.value }}</strong><span>{{ insight.detail }}</span></article>
+        </div>
+      </section>
+
+      <footer class="page-footer"><span>All timestamps in UTC · All values in USD · Read-only view</span><span>Opening a client's details is recorded in the admin audit log</span></footer>
     </div>
   </main>
 </section>

@@ -33,17 +33,26 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class AuthService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
+                    + "[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                    + "(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
+    );
 
     private final ClientMapper clientMapper;
     private final AccountMapper accountMapper;
     private final AdminUserMapper adminUserMapper;
     private final AuthCredentialMapper authCredentialMapper;
+    private final AdminCredentialMapper adminCredentialMapper;
     private final LoginEventMapper loginEventMapper;
     private final SessionKeyService sessionKeyService;
     private final JwtTokenService jwtTokenService;
@@ -53,13 +62,15 @@ public class AuthService {
 
 
     public AuthService(ClientMapper clientMapper, AccountMapper accountMapper, AdminUserMapper adminUserMapper,
-                       AuthCredentialMapper authCredentialMapper, LoginEventMapper loginEventMapper, 
+                       AuthCredentialMapper authCredentialMapper, AdminCredentialMapper adminCredentialMapper,
+                       LoginEventMapper loginEventMapper,
                        SessionKeyService sessionKeyService, JwtTokenService jwtTokenService,
                        JwtTokenValidator jwtTokenValidator, PasswordEncoder passwordEncoder) {
         this.clientMapper = clientMapper;
         this.accountMapper = accountMapper;
         this.adminUserMapper = adminUserMapper;
         this.authCredentialMapper = authCredentialMapper;
+        this.adminCredentialMapper = adminCredentialMapper;
         this.loginEventMapper = loginEventMapper;
         this.sessionKeyService = sessionKeyService;
         this.jwtTokenService = jwtTokenService;
@@ -134,8 +145,13 @@ public class AuthService {
         AdminLoginRequest normalizedRequest = normalizeAdminLoginRequest(request);
         validateAdminLoginRequest(normalizedRequest);
 
-        AdminUser adminUser = adminUserMapper.selectActiveAdminUserByEmail(normalizedRequest.getEmail());
-        if (adminUser == null || !passwordEncoder.matches(normalizedRequest.getPassword(), adminUser.getPasswordHash())) {
+        AdminCredential credential = adminCredentialMapper.selectByUsername(normalizedRequest.getEmail());
+        if (credential == null || !passwordEncoder.matches(normalizedRequest.getPassword(), credential.getPasswordHash())) {
+            throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid admin email or password");
+        }
+
+        AdminUser adminUser = adminUserMapper.selectAdminUserById(credential.getAdminUserId());
+        if (adminUser == null) {
             throw new AuthApiException(HttpStatus.UNAUTHORIZED, "Invalid admin email or password");
         }
 
@@ -146,9 +162,10 @@ public class AuthService {
             throw new AuthApiException(HttpStatus.FORBIDDEN, "Admin user is not active");
         }
 
+        UUID sessionKeyId = UUID.randomUUID();
         OffsetDateTime issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
         IssuedTokenPair issuedTokens = jwtTokenService.issueTokenPair(
-                null,
+                sessionKeyId,
                 adminUser.getAdminUserId(),
                 null,
                 null,
@@ -160,6 +177,14 @@ public class AuthService {
         if (issuedTokens.getAccessToken() == null || issuedTokens.getRefreshToken() == null) {
             throw new IllegalStateException("JWT authentication is disabled");
         }
+
+        sessionKeyService.createAdminSession(
+                sessionKeyId,
+                credential.getCredentialId(),
+                adminUser.getAdminUserId(),
+                issuedAt,
+                OffsetDateTime.ofInstant(issuedTokens.getAccessTokenExpiresAt(), ZoneOffset.UTC)
+        );
 
         return new AuthResponse(
                 issuedTokens.getAccessToken(),
@@ -233,7 +258,7 @@ public class AuthService {
         if (request == null) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "Registration details are required");
         }
-        if (!StringUtils.hasText(request.getEmail()) || !request.getEmail().contains("@")) {
+        if (!isValidEmail(request.getEmail())) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "A valid email is required");
         }
         if (!StringUtils.hasText(request.getDisplayName()) || request.getDisplayName().trim().length() > 120) {
@@ -245,6 +270,12 @@ public class AuthService {
         if (request.getPassword() == null || request.getPassword().length() < 8) {
             throw new AuthApiException(HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
         }
+    }
+
+    private boolean isValidEmail(String email) {
+        return StringUtils.hasText(email)
+                && email.length() <= 254
+                && EMAIL_PATTERN.matcher(email).matches();
     }
 
     private void validateLoginRequest(AuthLoginRequest request) {
@@ -509,7 +540,7 @@ public class AuthService {
         AuthRegisterRequest normalized = new AuthRegisterRequest();
         normalized.setEmail(trimToNull(request.getEmail()));
         normalized.setDisplayName(trimToNull(request.getDisplayName()));
-        normalized.setUsername(trimToNull(request.getUsername()));
+        normalized.setUsername(normalizeUsername(request.getUsername()));
         normalized.setPassword(request.getPassword());
         return normalized;
     }
@@ -520,7 +551,7 @@ public class AuthService {
         }
 
         AuthLoginRequest normalized = new AuthLoginRequest();
-        normalized.setUsername(trimToNull(request.getUsername()));
+        normalized.setUsername(normalizeUsername(request.getUsername()));
         normalized.setPassword(request.getPassword());
         return normalized;
     }
@@ -543,6 +574,11 @@ public class AuthService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeUsername(String username) {
+        String normalized = trimToNull(username);
+        return normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
     }
 
     private void recordLoginEvent(UUID clientId, String email, String outcome, String failureReason) {

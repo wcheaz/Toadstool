@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../core/auth.service';
+import { ApiService } from '../core/api/api.service';
 
 @Component({
   selector: 'app-profile-modal',
@@ -9,21 +10,22 @@ import { AuthService } from '../core/auth.service';
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css'
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnChanges {
   @Input() isOpen: boolean = false;
   @Output() close = new EventEmitter<void>();
 
   clientName: string = '';
   accountId: string = '';
+  accountName: string = '';
   email: string = '';
   joinDate: string = '';
   profileStats = {
     totalTrades: 2841,
     successRate: 99.42,
-    totalValue: 142384.50
+    totalValue: 0
   };
 
-  constructor(private authService: AuthService) {
+  constructor(private authService: AuthService, private apiService: ApiService) {
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
   }
@@ -31,6 +33,25 @@ export class ProfileComponent implements OnInit {
   ngOnInit() {
     this.email = `${this.clientName.toLowerCase().replace(/\s+/g, '.')}@toadstool.io`;
     this.joinDate = 'January 15, 2024';
+    this.loadAccountBalance();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['isOpen']?.currentValue === true) this.loadAccountBalance();
+  }
+
+  private loadAccountBalance() {
+    const selectedAccountId = this.authService.getAccountId();
+    if (!selectedAccountId) return;
+
+    this.accountId = selectedAccountId;
+    this.apiService.getAccountById(selectedAccountId).subscribe({
+      next: (account) => {
+        this.accountName = account.accountName;
+        this.profileStats.totalValue = account.balance;
+      },
+      error: (error) => console.error('Failed to load profile account:', error)
+    });
   }
 
   closeModal() {

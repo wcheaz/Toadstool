@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -155,6 +156,29 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.instrumentId").value(instrumentId.toString()));
 
         verify(orderService).getOrderById(orderId);
+    }
+
+    @Test
+    @DisplayName("POST /api/orders/{orderId}/fill rejects a different client")
+    void fillOrderRejectsDifferentClient() throws Exception {
+        UUID accountId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        UUID ownerClientId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        UUID authenticatedClientId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        UUID orderId = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        UUID instrumentId = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        ControllerTestSupport.authenticateClient(authenticatedClientId, UUID.randomUUID());
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.BUY,
+                new BigDecimal("3.0000000000"), "idem-fill", SUBMITTED_AT);
+
+        when(orderService.getOrderById(orderId)).thenReturn(order);
+        when(accountService.getAccountById(accountId))
+                .thenReturn(new Account(accountId, ownerClientId, AccountStatus.ACTIVE, SUBMITTED_AT));
+
+        mockMvc.perform(post("/api/orders/{orderId}/fill", orderId)
+                        .param("price", "100.00"))
+                .andExpect(status().isForbidden());
+
+        verify(orderService, never()).fillOrder(orderId, new BigDecimal("100.00"));
     }
 
     @Test

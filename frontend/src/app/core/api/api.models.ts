@@ -100,8 +100,15 @@ export interface PaginatedResponse<T> {
 export interface AccountResponse {
   accountId: string;
   clientId: string;
+  accountName: string;
   status: string;
   openedAt: string;
+  balance: number;
+}
+
+export interface CashEventRequest {
+  eventType: 'DEPOSIT' | 'WITHDRAWAL';
+  amount: number;
 }
 
 export interface OrderResponse {
@@ -119,4 +126,156 @@ export interface DepthLevel {
   volume: number;
   price: number;
   side: string;
+}
+
+/** API timestamps arrive either as ISO strings or epoch seconds, depending on the endpoint. */
+export type ApiTimestamp = string | number;
+
+export interface HoldingItem {
+  instrumentId: string;
+  symbol: string | null;
+  name: string | null;
+  assetClass: string | null;
+  quantity: string;
+}
+
+/** One position in GET /accounts/{id}/holdings. */
+export type HoldingResponse = HoldingItem;
+
+export interface HoldingsResponse {
+  accountId: string;
+  holdings: HoldingItem[];
+  cash: { balance: string; currency: string };
+  asOfTimestamp: ApiTimestamp;
+}
+
+export interface FillResponse {
+  fillId: string;
+  orderId: string;
+  price: string;
+  quantity: string;
+  status: string;
+  executedAt: ApiTimestamp;
+  fee: string;
+}
+
+export interface CashEventResponse {
+  cashEventId: string;
+  accountId: string;
+  orderId: string | null;
+  eventType: string;
+  amount: number;
+  occurredAt: ApiTimestamp;
+  details: string;
+}
+
+export interface AdminClientSummary {
+  clientId: string;
+  displayName: string;
+  email: string;
+  username: string | null;
+  status: string;
+  createdAt: ApiTimestamp;
+  accountCount: number;
+  totalCash: number;
+  primaryAccountId: string | null;
+  primaryAccountName: string | null;
+  latestActivity: string | null;
+  latestActivityAt: ApiTimestamp | null;
+  lastLoginAt: ApiTimestamp | null;
+}
+
+export interface AdminClientAccount {
+  accountId: string;
+  accountName: string | null;
+  status: string;
+  openedAt: ApiTimestamp;
+  balance: number;
+}
+
+export interface AdminClientDetail {
+  client: AdminClientSummary;
+  accounts: AdminClientAccount[];
+}
+
+export interface LoginEventRow {
+  loginEventId: string;
+  clientId: string | null;
+  clientName: string | null;
+  emailAttempted: string;
+  outcome: string;
+  occurredAt: ApiTimestamp;
+  details: string;
+}
+
+export interface TradeEventRow {
+  tradeEventId: string;
+  clientId: string | null;
+  clientName: string | null;
+  accountId: string | null;
+  accountName: string | null;
+  entityType: string;
+  entityId: string;
+  action: string;
+  occurredAt: ApiTimestamp;
+  details: string;
+}
+
+export interface AccessEventRow {
+  accessEventId: string;
+  adminUserId: string;
+  adminEmail: string;
+  clientId: string | null;
+  clientName: string | null;
+  action: string;
+  occurredAt: ApiTimestamp;
+  details: string;
+}
+
+export interface AdminCashEventRow {
+  cashEventId: string;
+  accountId: string;
+  clientId: string;
+  clientName: string;
+  accountName: string;
+  eventType: string;
+  amount: number;
+  occurredAt: ApiTimestamp;
+  details: string;
+}
+
+export interface PlatformActivityRow {
+  activityDate: string;
+  orderCount: number;
+  filledQuantity: string;
+  grossAmount: string;
+  updatedAt: ApiTimestamp;
+}
+
+export interface PlatformOverview {
+  totalClients: number;
+  activeClients: number;
+  totalAccounts: number;
+  totalCash: number;
+  totalOrders: number;
+  filledOrders: number;
+  openOrders: number;
+  ordersLast30Days: number;
+  grossVolumeLast30Days: number;
+  feesLast30Days: number;
+  failedLoginsLast24Hours: number;
+}
+
+export interface Insight {
+  name: string;
+  title: string;
+  value: string;
+  detail: string;
+}
+
+export interface InsightsResponse {
+  insights: Insight[];
+  generatedAt: ApiTimestamp;
+  overview: PlatformOverview | null;
+  topInstruments: Array<{ instrumentId: string; symbol: string; name: string; fillCount: number; grossAmount: number }>;
 }

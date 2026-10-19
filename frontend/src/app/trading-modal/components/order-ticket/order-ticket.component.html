@@ -12,24 +12,11 @@
       </button>
     </div>
 
-    <!-- Order Type -->
-    <div class="form-section">
-      <label>Order type</label>
-      <div class="order-type-selector">
-        <button class="type-btn" [class.active]="orderType === 'market'" (click)="orderType = 'market'">
-          Market
-        </button>
-        <button class="type-btn" [class.active]="orderType === 'limit'" (click)="orderType = 'limit'">
-          Limit
-        </button>
-      </div>
-    </div>
-
     <!-- Quantity -->
     <div class="form-section">
       <label>Quantity</label>
       <div class="quantity-input">
-        <input type="number" [(ngModel)]="quantity" min="1" placeholder="0">
+        <input type="number" [(ngModel)]="quantity" min="0.000001" step="any" placeholder="0">
         <span class="unit-label">Shares</span>
       </div>
     </div>
@@ -37,17 +24,13 @@
     <!-- Limit Price (if Limit order) -->
     <div class="form-section" *ngIf="orderType === 'limit'">
       <label>Limit Price</label>
-      <input type="number" [(ngModel)]="limitPrice" min="0" step="0.01" placeholder="0.00">
+      <input type="number" [(ngModel)]="limitPrice" min="0.01" step="0.01" placeholder="0.00">
     </div>
 
-    <!-- Duration -->
+    <!-- Duration
     <div class="form-section">
       <label>Duration</label>
       <div class="duration-selector">
-        <select [(ngModel)]="duration" class="duration-select">
-          <option value="day">Day</option>
-          <option value="gtc">GTC (Good Till Cancel)</option>
-        </select>
         <div class="price-info">
           <div class="info-label">Est. Fill</div>
           <div class="info-value">{{ estFillPrice }}</div>
@@ -56,7 +39,7 @@
           <div class="info-label">LIVE</div>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- Summary -->
     <div class="summary-section">
@@ -74,11 +57,20 @@
       </div>
     </div>
 
+    <p class="sell-limit" *ngIf="orderSide === 'sell' && selectedAsset"
+       [class.sell-limit-valid]="isSellQuantityValid"
+       [class.sell-limit-invalid]="!isSellQuantityValid">
+      You can sell at most {{ selectedAsset.holdings }} shares.
+    </p>
+    <p class="validation-error"
+       *ngIf="validationError && !(orderSide === 'sell' && selectedAsset && quantity > selectedAsset.holdings)"
+       role="alert">{{ validationError }}</p>
+
     <!-- Buttons -->
     <div class="button-group">
-      <button class="btn-preview" (click)="previewOrder()">Preview Order</button>
+      <button class="btn-preview" (click)="previewOrder()" [disabled]="!isFormValid">Preview Order</button>
       <button class="btn-place" [class.buy]="orderSide === 'buy'" [class.sell]="orderSide === 'sell'"
-              (click)="placeOrder()" [disabled]="!agreedToTerms">
+              (click)="placeOrder()" [disabled]="!agreedToTerms || !isFormValid">
         Place {{ orderSide === 'buy' ? 'Buy' : 'Sell' }} Order
       </button>
     </div>

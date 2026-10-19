@@ -27,6 +27,11 @@ public class NewsRepositoryImpl implements NewsRepository {
     }
 
     @Override
+    public void deleteNewsExceptBatchId(String batchId) {
+        newsMapper.deleteNewsExceptBatchId(batchId);
+    }
+
+    @Override
     public List<News> getLatestNewsBySymbol(String symbol, int limit) {
         return newsMapper.selectLatestNewsBySymbol(symbol, limit);
     }

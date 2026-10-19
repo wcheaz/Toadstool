@@ -1,6 +1,9 @@
 <div class="homepage-content">
   <!-- Balance Widget -->
   <app-balance-widget
+    [accountName]="accountName"
+    [portfolioValue]="portfolioValue"
+    [availableForTrading]="availableForTrading"
     (depositClicked)="openDepositModal()"
     (withdrawClicked)="onWithdrawClicked()"
     (transferClicked)="onTransferClicked()"></app-balance-widget>
@@ -20,6 +23,7 @@
             [instruments]="instruments"
             [quotes]="instrumentQuotes"
             [loading]="loadingInstruments"
+            [holdings]="holdings"
             (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
           </app-market-assets-table>
 
@@ -35,8 +39,10 @@
     [isOpen]="isTradeModalOpen"
     [selectedAsset]="selectedAsset"
     [accountId]="accountId"
+    [accountBalance]="currentBalance"
     [candleData]="tradingChartData"
     [instrumentId]="selectedInstrumentId"
+    (orderCompleted)="onOrderCompleted()"
     (close)="closeTradeModal()">
   </app-trading-modal>
 

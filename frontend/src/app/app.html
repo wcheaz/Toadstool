@@ -1,4 +1,5 @@
 ﻿<div class="app-wrapper">
+  <app-theme-toggle></app-theme-toggle>
   <app-sidebar *ngIf="isShowingMainLayout"></app-sidebar>
   <main class="main-layout" [class.full-width]="!isShowingMainLayout">
     <app-top-bar *ngIf="isShowingMainLayout" (profileClicked)="openProfileModal()"></app-top-bar>

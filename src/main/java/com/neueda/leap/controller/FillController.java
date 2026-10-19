@@ -149,7 +149,8 @@ public class FillController {
                 fill.getPrice().toPlainString(),
                 fill.getQuantity().toPlainString(),
                 fill.getStatus() != null ? fill.getStatus().toString() : "Pending",
-                fill.getExecutedAt()
+                fill.getExecutedAt(),
+                fill.getFee() != null ? fill.getFee().toPlainString() : "0"
         );
     }
 }

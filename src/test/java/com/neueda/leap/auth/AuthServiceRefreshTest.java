@@ -7,6 +7,7 @@ import com.neueda.leap.enums.AdminRole;
 import com.neueda.leap.enums.AdminUserStatus;
 import com.neueda.leap.enums.ClientStatus;
 import com.neueda.leap.mapper.AccountMapper;
+import com.neueda.leap.auth.AdminCredentialMapper;
 import com.neueda.leap.mapper.AdminUserMapper;
 import com.neueda.leap.mapper.ClientMapper;
 import com.neueda.leap.mapper.LoginEventMapper;
@@ -39,6 +40,7 @@ class AuthServiceRefreshTest {
     @Mock private AccountMapper accountMapper;
     @Mock private AdminUserMapper adminUserMapper;
     @Mock private AuthCredentialMapper authCredentialMapper;
+    @Mock private AdminCredentialMapper adminCredentialMapper;
     @Mock private LoginEventMapper loginEventMapper;
     @Mock private SessionKeyService sessionKeyService;
     @Mock private JwtTokenService jwtTokenService;
@@ -55,6 +57,7 @@ class AuthServiceRefreshTest {
                 accountMapper,
                 adminUserMapper,
                 authCredentialMapper,
+                adminCredentialMapper,
                 loginEventMapper,
                 sessionKeyService,
                 jwtTokenService,

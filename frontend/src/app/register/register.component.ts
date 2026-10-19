@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -24,6 +24,7 @@ export class RegisterComponent {
   isLoading: boolean = false;
   showPassword: boolean = false;
   showConfirmPassword: boolean = false;
+  activeLegalDocument: 'terms' | 'privacy' | null = null;
 
   constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {}
 
@@ -33,6 +34,19 @@ export class RegisterComponent {
 
   toggleConfirmPasswordVisibility() {
     this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  openLegalDocument(document: 'terms' | 'privacy') {
+    this.activeLegalDocument = document;
+  }
+
+  closeLegalDocument() {
+    this.activeLegalDocument = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    this.closeLegalDocument();
   }
 
   onSubmit() {
@@ -61,7 +75,31 @@ export class RegisterComponent {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+    const email = this.email.trim();
+
+    if (!email.includes('@')) {
+      this.errorMessage = 'Please include an @ in your email address';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const localPart = email.slice(0, email.indexOf('@'));
+    if (localPart.startsWith('.') || localPart.endsWith('.') || localPart.includes('..')) {
+      this.errorMessage = 'Please enter a valid email address: the part before @ cannot start or end with a period';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (!email.slice(email.indexOf('@') + 1).includes('.')) {
+      this.errorMessage = 'Please include a period after the @ in your email address';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       this.errorMessage = 'Please enter a valid email address';
       this.isLoading = false;
       this.cdr.detectChanges();
@@ -103,7 +141,7 @@ export class RegisterComponent {
       password: this.password
     }).subscribe({
       next: (response) => {
-        // Registration successful - store client info in localStorage
+        // Registration successful - store client info for the current session
         this.authService.storeClientSession(response);
 
         console.log('Registration successful:', response);

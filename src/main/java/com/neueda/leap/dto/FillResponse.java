@@ -16,6 +16,7 @@ public class FillResponse {
     private String status;
     @JsonSerialize(using = OffsetDateTimeSerializer.class)
     private OffsetDateTime executedAt;
+    private String fee = "0";
 
     public FillResponse() {
     }
@@ -28,6 +29,12 @@ public class FillResponse {
         this.quantity = quantity;
         this.status = status;
         this.executedAt = executedAt;
+    }
+
+    public FillResponse(UUID fillId, UUID orderId, String price, String quantity,
+                        String status, OffsetDateTime executedAt, String fee) {
+        this(fillId, orderId, price, quantity, status, executedAt);
+        this.fee = fee;
     }
 
     // Getters and Setters
@@ -77,5 +84,13 @@ public class FillResponse {
 
     public void setExecutedAt(OffsetDateTime executedAt) {
         this.executedAt = executedAt;
+    }
+
+    public String getFee() {
+        return fee;
+    }
+
+    public void setFee(String fee) {
+        this.fee = fee;
     }
 }

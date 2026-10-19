@@ -38,6 +38,10 @@ function readStoredItem(key: string): string | null {
   return localStorageOrNull()?.getItem(key) ?? null;
 }
 
+function readSessionItem(key: string): string | null {
+  return sessionStorageOrNull()?.getItem(key) ?? null;
+}
+
 function requireText(value: string | null | undefined, fieldName: string): string {
   if (!value || !value.trim()) {
     throw new Error(`Auth response is missing ${fieldName}`);
@@ -54,9 +58,9 @@ function requirePositiveNumber(value: number, fieldName: string): number {
 
 export function storeAuthSession(response: AuthResponse): void {
   const accessToken = requireText(response.accessToken, 'access token');
-  const refreshToken = requireText(response.refreshToken, 'refresh token');
   const expiresIn = requirePositiveNumber(response.expiresIn, 'access token lifetime');
-  const refreshTokenExpiresIn = requirePositiveNumber(response.refreshTokenExpiresIn, 'refresh token lifetime');
+  const refreshToken = response.refreshToken;
+  const refreshTokenExpiresIn = response.refreshTokenExpiresIn;
 
   const storage = sessionStorageOrNull();
   if (!storage) {
@@ -65,8 +69,16 @@ export function storeAuthSession(response: AuthResponse): void {
   Object.values(storageKeys).forEach((key) => storage.removeItem(key));
   storage.setItem(storageKeys.accessToken, accessToken);
   storage.setItem(storageKeys.accessTokenExpiresAt, String(Date.now() + (expiresIn * 1000)));
-  storage.setItem(storageKeys.refreshToken, refreshToken);
-  storage.setItem(storageKeys.refreshTokenExpiresAt, String(Date.now() + (refreshTokenExpiresIn * 1000)));
+
+  const hasRefreshToken = typeof refreshToken === 'string' && refreshToken.trim().length > 0;
+  const hasRefreshExpiry = Number.isFinite(refreshTokenExpiresIn) && refreshTokenExpiresIn > 0;
+  if (hasRefreshToken && hasRefreshExpiry) {
+    storage.setItem(storageKeys.refreshToken, refreshToken);
+    storage.setItem(storageKeys.refreshTokenExpiresAt, String(Date.now() + (refreshTokenExpiresIn * 1000)));
+  } else {
+    storage.removeItem(storageKeys.refreshToken);
+    storage.removeItem(storageKeys.refreshTokenExpiresAt);
+  }
   if (response.clientId) {
     storage.setItem(storageKeys.clientId, response.clientId);
   }
@@ -92,7 +104,7 @@ export function clearAuthSession(): void {
 }
 
 export function getAccessToken(): string | null {
-  return readStoredItem(storageKeys.accessToken);
+  return readSessionItem(storageKeys.accessToken);
 }
 
 export function getRefreshToken(): string | null {
@@ -120,11 +132,11 @@ export function getRefreshTokenExpiresAt(): number | null {
 }
 
 export function getClientDisplayName(): string | null {
-  return readStoredItem(storageKeys.clientName) ?? readStoredItem(storageKeys.username);
+  return readSessionItem(storageKeys.clientName) ?? readSessionItem(storageKeys.username);
 }
 
 export function getAccountId(): string | null {
-  return readStoredItem(storageKeys.accountId);
+  return readSessionItem(storageKeys.accountId);
 }
 
 export function isAuthenticated(): boolean {

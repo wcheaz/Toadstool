@@ -30,6 +30,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -71,6 +73,9 @@ class OrderServiceTest {
     @Mock
     private HoldingsService holdingsService;
 
+    @Mock
+    private CashEventService cashEventService;
+
     private UUID accountId;
     private UUID instrumentId;
     private UUID orderId;
@@ -101,6 +106,7 @@ class OrderServiceTest {
         activeAccount = new Account();
         activeAccount.setAccountId(accountId);
         activeAccount.setStatus(AccountStatus.ACTIVE);
+        activeAccount.setBalance(new BigDecimal("1000000.00"));
 
         // Setup default tradable instrument with EQUITY asset class
         tradableInstrument = new Instrument();
@@ -146,6 +152,110 @@ class OrderServiceTest {
         // Verify
         assertNotNull(result);
         assertEquals(orderId, result.getOrderId());
+    }
+
+    @Test
+    @DisplayName("fillOrder debits cash before recording a BUY")
+    void testFillOrderDebitsCashBeforeRecordingBuy() {
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.BUY,
+                new BigDecimal("2"), "fill-buy", OffsetDateTime.now());
+        when(orderRepository.findById(orderId)).thenReturn(order);
+
+        OrderService service = new OrderService(
+                orderRepository, pricingService, marketStatusService, accountService,
+                instrumentService, tradeEventService, orderValidator, feeStrategyFactory,
+                fillService, holdingsService, cashEventService);
+
+        service.fillOrder(orderId, new BigDecimal("10.00"));
+
+        // 2 x 10.00 plus the default 1.00 EQUITY fee stubbed in setUp
+        verify(cashEventService).post(
+                accountId, orderId, "BUY", new BigDecimal("-21.00"), "{}");
+        verify(holdingsService).updateHoldingFromFill(
+                accountId, instrumentId, OrderSide.BUY, new BigDecimal("2"));
+        verify(fillService).createFill(
+                orderId, "10.00", "2", "Filled", "1.00");
+    }
+
+    @Test
+    @DisplayName("fillOrder charges the asset-class fee on top of a BUY and records it on the fill")
+    void testFillOrderChargesAndRecordsFee() {
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.BUY,
+                new BigDecimal("2"), "fill-fee", OffsetDateTime.now());
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(instrumentId);
+        instrument.setAssetClass(AssetClass.EQUITY);
+        when(orderRepository.findById(orderId)).thenReturn(order);
+        when(instrumentService.getInstrumentById(instrumentId)).thenReturn(instrument);
+        when(feeStrategyFactory.getStrategy(AssetClass.EQUITY)).thenReturn(feeStrategy);
+        when(feeStrategy.calculateFee(new BigDecimal("20.00"))).thenReturn(new BigDecimal("1.5"));
+
+        OrderService service = new OrderService(
+                orderRepository, pricingService, marketStatusService, accountService,
+                instrumentService, tradeEventService, orderValidator, feeStrategyFactory,
+                fillService, holdingsService, cashEventService);
+
+        service.fillOrder(orderId, new BigDecimal("10.00"));
+
+        verify(cashEventService).post(
+                accountId, orderId, "BUY", new BigDecimal("-21.50"), "{}");
+        verify(fillService).createFill(
+                orderId, "10.00", "2", "Filled", "1.50");
+    }
+
+    @Test
+    @DisplayName("fillOrder deducts the fee from SELL proceeds")
+    void testFillOrderDeductsFeeFromSellProceeds() {
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.SELL,
+                new BigDecimal("2"), "fill-sell-fee", OffsetDateTime.now());
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(instrumentId);
+        instrument.setAssetClass(AssetClass.EQUITY);
+        when(orderRepository.findById(orderId)).thenReturn(order);
+        when(instrumentService.getInstrumentById(instrumentId)).thenReturn(instrument);
+        when(feeStrategyFactory.getStrategy(AssetClass.EQUITY)).thenReturn(feeStrategy);
+        when(feeStrategy.calculateFee(new BigDecimal("20.00"))).thenReturn(new BigDecimal("1.5"));
+
+        OrderService service = new OrderService(
+                orderRepository, pricingService, marketStatusService, accountService,
+                instrumentService, tradeEventService, orderValidator, feeStrategyFactory,
+                fillService, holdingsService, cashEventService);
+
+        service.fillOrder(orderId, new BigDecimal("10.00"));
+
+        verify(cashEventService).post(
+                accountId, orderId, "SELL", new BigDecimal("18.50"), "{}");
+    }
+
+    @Test
+    @DisplayName("fillOrder does not mutate holdings when cash debit is rejected")
+    void testFillOrderRejectsInsufficientCashBeforeRecordingBuy() {
+        Order order = new Order(orderId, accountId, instrumentId, OrderSide.BUY,
+                new BigDecimal("2"), "insufficient-funds", OffsetDateTime.now());
+        when(orderRepository.findById(orderId)).thenReturn(order);
+        doThrow(new IllegalArgumentException("Insufficient balance or account not found"))
+                .when(cashEventService).post(
+                        accountId, orderId, "BUY", new BigDecimal("-21.00"), "{}");
+
+        OrderService service = new OrderService(
+                orderRepository, pricingService, marketStatusService, accountService,
+                instrumentService, tradeEventService, orderValidator, feeStrategyFactory,
+                fillService, holdingsService, cashEventService);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.fillOrder(orderId, new BigDecimal("10.00")));
+        verify(holdingsService, never()).updateHoldingFromFill(
+                accountId, instrumentId, OrderSide.BUY, new BigDecimal("2"));
+        verify(fillService, never()).createFill(any(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("createOrder rejects a BUY that exceeds the account balance")
+    void testCreateOrderRejectsInsufficientBalance() {
+        activeAccount.setBalance(new BigDecimal("99.99"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.createOrder(accountId, instrumentId, "BUY", "1.00", "too-expensive"));
     }
 
     @Test
@@ -389,6 +499,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("createOrder handles large order values correctly")
     void testCreateOrderLargeOrderValue() {
+        activeAccount.setBalance(new BigDecimal("1000000000.00"));
         String idempotencyKey = "large-order-test";
         Order expectedOrder = new Order(orderId, accountId, instrumentId, OrderSide.BUY, 
                                         new BigDecimal("1000000.00"), idempotencyKey, OffsetDateTime.now());

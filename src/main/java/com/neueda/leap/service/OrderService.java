@@ -7,6 +7,7 @@ import com.neueda.leap.Fill;
 import com.neueda.leap.enums.AccountStatus;
 import com.neueda.leap.enums.InstrumentStatus;
 import com.neueda.leap.enums.OrderSide;
+import com.neueda.leap.enums.FillStatus;
 import com.neueda.leap.repository.OrderRepository;
 import com.neueda.leap.security.AuthenticatedUser;
 import com.neueda.leap.security.SecurityAccess;
@@ -15,6 +16,8 @@ import com.neueda.leap.validator.OrderValidationRequest;
 import com.neueda.leap.pricing.FeeStrategy;
 import com.neueda.leap.pricing.FeeStrategyFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -38,6 +41,7 @@ public class OrderService {
     private final FeeStrategyFactory feeStrategyFactory;
     private final FillService fillService;
     private final HoldingsService holdingsService;
+    private final CashEventService cashEventService;
 
     public OrderService(OrderRepository orderRepository,
                        InstrumentPricingService pricingService,
@@ -49,6 +53,22 @@ public class OrderService {
                        FeeStrategyFactory feeStrategyFactory,
                        FillService fillService,
                        HoldingsService holdingsService) {
+        this(orderRepository, pricingService, marketStatusService, accountService, instrumentService,
+                tradeEventService, orderValidator, feeStrategyFactory, fillService, holdingsService, null);
+    }
+
+    @Autowired
+    public OrderService(OrderRepository orderRepository,
+                       InstrumentPricingService pricingService,
+                       MarketStatusService marketStatusService,
+                       AccountService accountService,
+                       InstrumentService instrumentService,
+                       TradeEventService tradeEventService,
+                       OrderValidator orderValidator,
+                       FeeStrategyFactory feeStrategyFactory,
+                       FillService fillService,
+                       HoldingsService holdingsService,
+                       CashEventService cashEventService) {
         this.orderRepository = orderRepository;
         this.pricingService = pricingService;
         this.marketStatusService = marketStatusService;
@@ -59,6 +79,7 @@ public class OrderService {
         this.feeStrategyFactory = feeStrategyFactory;
         this.fillService = fillService;
         this.holdingsService = holdingsService;
+        this.cashEventService = cashEventService;
     }
 
     /**
@@ -170,6 +191,15 @@ public class OrderService {
         // Step 8: Calculate total order price
         BigDecimal totalPrice = orderValue.add(fee).setScale(5, RoundingMode.HALF_UP);
 
+        // Reject unaffordable BUY orders before they are persisted. The fill path
+        // performs the authoritative atomic debit again to handle concurrent orders.
+        if (OrderSide.BUY.equals(OrderSide.valueOf(side.toUpperCase()))
+                && (account.getBalance() == null
+                || account.getBalance().compareTo(totalPrice) < 0)) {
+            throw new IllegalArgumentException("Insufficient balance for BUY order. Required: "
+                    + totalPrice + ", Available: " + account.getBalance());
+        }
+
         // Step 9: Insert order into database
         orderRepository.save(accountId, instrumentId, side, quantity, idempotencyKey);
 
@@ -191,13 +221,6 @@ public class OrderService {
         );
         
         return order;
-    }
-
-    /**
-     * Update order status (used internally for state transitions)
-     */
-    public void updateOrderStatus(UUID orderId, String status) {
-        orderRepository.updateStatus(orderId, status);
     }
 
     private String buildOrderEventDetails(UUID ownerClientId, UUID accountId, UUID instrumentId,
@@ -229,42 +252,50 @@ public class OrderService {
      * @return The created Fill
      * @throws IllegalArgumentException if order not found
      */
+    @Transactional
     public Fill fillOrder(UUID orderId, BigDecimal fillPrice) {
         Order order = getOrderById(orderId);
         if (order == null) {
             throw new IllegalArgumentException("Order not found: " + orderId);
         }
+        if (fillPrice == null || fillPrice.signum() <= 0) {
+            throw new IllegalArgumentException("Fill price must be greater than zero");
+        }
+        if (cashEventService == null) {
+            throw new IllegalStateException("Cash event service is not configured");
+        }
 
         BigDecimal fillQuantity = order.getQuantity();
-        BigDecimal fillAmount = fillPrice.multiply(fillQuantity);
+        BigDecimal fillAmount = fillPrice.multiply(fillQuantity).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal fee = calculateFillFee(order.getInstrumentId(), fillAmount);
 
-        // Update holdings
+        // BUY pays value + fee; SELL receives value - fee.
+        BigDecimal cashDelta = OrderSide.BUY.equals(order.getSide())
+                ? fillAmount.add(fee).negate()
+                : fillAmount.subtract(fee);
+        String cashEventType = OrderSide.BUY.equals(order.getSide()) ? "BUY" : "SELL";
+        // Apply the cash change first. The conditional account update rejects a BUY
+        // with insufficient funds; the surrounding transaction rolls back any
+        // subsequent holding or fill changes if execution fails.
+        cashEventService.post(order.getAccountId(), order.getOrderId(), cashEventType, cashDelta, "{}");
+
         holdingsService.updateHoldingFromFill(order.getAccountId(), order.getInstrumentId(),
                 order.getSide(), fillQuantity);
 
-        // Update account balance
-        Account account = accountService.getAccountById(order.getAccountId());
-        if (account != null) {
-            BigDecimal currentBalance = BigDecimal.ZERO;
-            BigDecimal newBalance;
-
-            if (OrderSide.BUY.equals(order.getSide())) {
-                newBalance = currentBalance.subtract(fillAmount);
-            } else if (OrderSide.SELL.equals(order.getSide())) {
-                newBalance = currentBalance.add(fillAmount);
-            } else {
-                throw new IllegalArgumentException("Invalid order side: " + order.getSide());
-            }
-
-            accountService.updateAccountBalance(order.getAccountId(), newBalance);
-        }
-
         // Create fill record
-        fillService.createFill(orderId, fillPrice.toPlainString(), fillQuantity.toPlainString(), "FILLED");
+        return fillService.createFill(orderId, fillPrice.toPlainString(), fillQuantity.toPlainString(),
+                FillStatus.Filled.name(), fee.toPlainString());
+    }
 
-        // Update order status to FILLED
-        updateOrderStatus(orderId, "FILLED");
-
-        return fillService.getFillById(UUID.randomUUID()); // Note: FillService needs to return the created fill
+    private BigDecimal calculateFillFee(UUID instrumentId, BigDecimal fillAmount) {
+        Instrument instrument = instrumentService.getInstrumentById(instrumentId);
+        if (instrument == null || instrument.getAssetClass() == null) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        FeeStrategy feeStrategy = feeStrategyFactory.getStrategy(instrument.getAssetClass());
+        if (feeStrategy == null) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        return feeStrategy.calculateFee(fillAmount).setScale(2, RoundingMode.HALF_UP);
     }
 }

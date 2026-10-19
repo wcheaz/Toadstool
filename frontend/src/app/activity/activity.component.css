@@ -36,8 +36,8 @@
 }
 
 .stat-card:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.1);
+  border-color: rgba(0, 116, 74, 0.3);
+  box-shadow: 0 0 12px rgba(0, 116, 74, 0.1);
 }
 
 .stat-label {
@@ -76,6 +76,33 @@
   margin-bottom: 20px;
 }
 
+.tab-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 13px;
+}
+
+.tab {
+  border: 1px solid #2b3041;
+  border-radius: 4px;
+  padding: 6px 10px;
+  background: #10131d;
+  color: #858ca0;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: #eef0f7;
+}
+
+.tab.active {
+  border-color: #5ebc35;
+  color: #eef0f7;
+  background: #18351a;
+}
+
 .section-header h2 {
   font-size: 18px;
   font-weight: 600;
@@ -91,6 +118,7 @@
 .transactions-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 13px;
 }
 
@@ -113,10 +141,30 @@
   padding: 14px 16px;
   border-bottom: 1px solid rgba(71, 85, 105, 0.1);
   color: #e5e7eb;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.quantity {
+  text-align: right;
+}
+
+.amount {
+  text-align: left;
+}
+
+.empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.error-state {
+  color: #ef4444;
 }
 
 .transactions-table tbody tr:hover {
-  background-color: rgba(34, 197, 94, 0.05);
+  background-color: rgba(0, 116, 74, 0.05);
 }
 
 .pagination-controls {
@@ -148,8 +196,8 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.5);
+  background-color: rgba(0, 116, 74, 0.15);
+  border-color: rgba(0, 116, 74, 0.5);
 }
 
 .pagination-btn:disabled {
@@ -159,7 +207,7 @@
 
 .tx-id {
   font-weight: 500;
-  color: #22c55e;
+  color: #00744A;
 }
 
 .tx-date {
@@ -179,8 +227,8 @@
 }
 
 .status-completed {
-  background-color: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background-color: rgba(0, 116, 74, 0.2);
+  color: #00744A;
 }
 
 .status-pending {
@@ -220,5 +268,22 @@
   .transactions-table th,
   .transactions-table td {
     padding: 10px 12px;
+  }
+
+  .transactions-table {
+    min-width: 680px;
+  }
+}
+
+@media (min-width: 701px) {
+  .tab-row {
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .tab {
+    padding: 9px 16px;
+    font-size: 14px;
+    border-radius: 6px;
   }
 }

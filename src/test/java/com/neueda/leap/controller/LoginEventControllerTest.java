@@ -90,8 +90,8 @@ class LoginEventControllerTest {
                 "{\"reason\":\"wrong password\"}"
         );
 
-        when(loginEventService.listAllLoginEvents(1, 0)).thenReturn(List.of(event));
-        when(loginEventService.countAllLoginEvents()).thenReturn(1);
+        when(loginEventService.listLoginEvents(null, null, null, 1, 0)).thenReturn(List.of(event));
+        when(loginEventService.countLoginEvents(null, null, null)).thenReturn(1);
 
         mockMvc.perform(get("/api/admin/login-events")
                         .param("limit", "1")
