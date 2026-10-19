@@ -15,6 +15,8 @@ interface Transaction {
   status: string;
 }
 
+type ActivityTab = 'orders' | 'cash';
+
 @Component({
   selector: 'app-activity',
   standalone: true,
@@ -23,6 +25,11 @@ interface Transaction {
   styleUrl: './activity.component.css'
 })
 export class ActivityComponent implements OnInit {
+  readonly tabs: ReadonlyArray<{ key: ActivityTab; label: string }> = [
+    { key: 'orders', label: 'Order activity' },
+    { key: 'cash', label: 'Deposits & withdrawals' }
+  ];
+  tab: ActivityTab = 'orders';
   transactions: Transaction[] = [];
   readonly pageSize = 20;
   currentPage = 1;
@@ -130,6 +137,10 @@ export class ActivityComponent implements OnInit {
 
   get paginatedTransactions(): Transaction[] {
     return this.transactions;
+  }
+
+  selectTab(tab: ActivityTab): void {
+    this.tab = tab;
   }
 
   get totalPages(): number {

@@ -16,10 +16,21 @@
   <!-- Transactions Section -->
   <div class="transactions-section">
     <div class="section-header">
-      <h2>Past Order Activity</h2>
+      <div class="tab-row" role="tablist" aria-label="Activity views">
+        <button
+          type="button"
+          role="tab"
+          *ngFor="let item of tabs"
+          class="tab"
+          [class.active]="tab === item.key"
+          [attr.aria-selected]="tab === item.key"
+          (click)="selectTab(item.key)">
+          {{ item.label }}
+        </button>
+      </div>
     </div>
 
-    <div class="table-container">
+    <div class="table-container" *ngIf="tab === 'orders'">
       <table class="transactions-table">
         <thead>
           <tr>
@@ -49,7 +60,25 @@
       </table>
     </div>
 
-    <div class="pagination-controls">
+    <div class="table-container" *ngIf="tab === 'cash'">
+      <table class="transactions-table cash-activity-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4" class="empty-state">No cash activity to display.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-controls" *ngIf="tab === 'orders'">
       <span class="pagination-summary">
         Page {{ currentPage }} of {{ totalPages }}
       </span>
