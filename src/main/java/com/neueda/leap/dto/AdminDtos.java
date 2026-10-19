@@ -69,6 +69,8 @@ public final class AdminDtos {
         public UUID tradeEventId;
         public UUID clientId;
         public String clientName;
+        public UUID accountId;
+        public String accountName;
         public String entityType;
         public UUID entityId;
         public String action;

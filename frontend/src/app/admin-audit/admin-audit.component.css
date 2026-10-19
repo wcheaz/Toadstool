@@ -5,11 +5,12 @@
 .audit-filters { display: grid; grid-template-columns: 157px minmax(200px, 1fr) 74px; align-items: end; gap: 10px; }
 .audit-filters .field input { padding-left: 29px; }
 .client-filter { display: flex; align-items: center; gap: 8px; }
-.audit-table th:nth-child(1) { width: 17%; }
-.audit-table th:nth-child(2) { width: 22%; }
-.audit-table th:nth-child(3) { width: 18%; }
-.audit-table th:nth-child(4) { width: 31%; }
-.audit-table th:nth-child(5) { width: 12%; }
+.audit-table th:nth-child(1) { width: 16%; }
+.audit-table th:nth-child(2) { width: 20%; }
+.audit-table th:nth-child(3) { width: 17%; }
+.audit-table th:nth-child(4) { width: 16%; }
+.audit-table th:nth-child(5) { width: 21%; }
+.audit-table th:nth-child(6) { width: 10%; }
 .audit-table tbody tr:first-child { background: transparent; }
 .audit-table tr.clickable { cursor: pointer; }
 .audit-table tr.clickable:hover { background: #1c2030; }

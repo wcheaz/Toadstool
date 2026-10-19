@@ -16,6 +16,7 @@ interface AuditRow {
   at: ApiTimestamp;
   who: string;
   whoDetail: string;
+  accountName: string;
   clientId: string | null;
   event: string;
   details: string;
@@ -184,6 +185,7 @@ export class AdminAuditComponent implements OnInit {
             at: event.occurredAt,
             who: event.clientName ?? 'Unknown client',
             whoDetail: event.emailAttempted,
+            accountName: '--',
             clientId: event.clientId,
             event: event.outcome === 'SUCCESS' ? 'Successful sign-in' : 'Failed sign-in',
             details: this.reason(event.details),
@@ -200,6 +202,7 @@ export class AdminAuditComponent implements OnInit {
             at: event.occurredAt,
             who: event.clientName ?? 'Unknown client',
             whoDetail: event.clientId ? event.clientId.slice(0, 8) : '',
+            accountName: event.accountName ?? '--',
             clientId: event.clientId,
             event: humanize(event.action),
             details: `${humanize(event.entityType)} ${event.entityId.slice(0, 8)}${this.tradeSummary(event.details)}`,
@@ -215,6 +218,7 @@ export class AdminAuditComponent implements OnInit {
               at: event.occurredAt,
               who: event.adminEmail,
               whoDetail: 'Admin',
+              accountName: '--',
               clientId: event.clientId,
               event: humanize(event.action),
               details: event.clientName ? `Client: ${event.clientName}` : 'Platform data',
@@ -229,7 +233,8 @@ export class AdminAuditComponent implements OnInit {
             items: page.items.map((event) => ({
               at: event.occurredAt,
               who: event.clientName,
-              whoDetail: event.accountName,
+              whoDetail: event.clientId ? event.clientId.slice(0, 8) : '',
+              accountName: event.accountName,
               clientId: event.clientId,
               event: humanize(event.eventType),
               details: this.formatAmount(event.amount),
