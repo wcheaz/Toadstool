@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   LoginResponse,
@@ -53,8 +54,17 @@ export class ApiService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/admin/login`, request);
   }
 
-  logout(): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/auth/logout`, {});
+  refreshSession(refreshToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, { token: refreshToken });
+  }
+
+  logout(accessToken?: string | null): Observable<void> {
+    const headers = accessToken
+      ? new HttpHeaders({ Authorization: `Bearer ${accessToken}` })
+      : undefined;
+
+    const body = accessToken ? { token: accessToken } : {};
+    return this.http.post<void>(`${this.apiUrl}/auth/logout`, body, headers ? { headers } : undefined);
   }
 
   validateToken(token: string): Observable<TokenValidationResponse> {

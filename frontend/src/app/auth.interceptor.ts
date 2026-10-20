@@ -1,9 +1,13 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { getAccessToken } from './auth-storage';
+import { catchError, throwError } from 'rxjs';
+import { inject } from '@angular/core';
+import { AuthService } from './core/auth.service';
 
-const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register'];
+const publicAuthEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh'];
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
+  const authService = inject(AuthService);
   if (publicAuthEndpoints.some((endpoint) => request.url.includes(endpoint))) {
     return next(request);
   }
@@ -18,6 +22,13 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       setHeaders: {
         Authorization: `Bearer ${accessToken}`
       }
+    })
+  ).pipe(
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        authService.forceLogout();
+      }
+      return throwError(() => error);
     })
   );
 };

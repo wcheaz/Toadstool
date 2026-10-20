@@ -33,8 +33,14 @@ public class JwtTokenService {
 
     public IssuedAccessToken issueAccessToken(UUID sessionKeyId, UUID subjectId, UUID clientId, UUID accountId,
                                               String username, String email, String role) {
+        IssuedTokenPair issuedTokens = issueTokenPair(sessionKeyId, subjectId, clientId, accountId, username, email, role);
+        return new IssuedAccessToken(issuedTokens.getAccessToken(), issuedTokens.getAccessTokenExpiresAt());
+    }
+
+    public IssuedTokenPair issueTokenPair(UUID sessionKeyId, UUID subjectId, UUID clientId, UUID accountId,
+                                          String username, String email, String role) {
         if (!jwtProperties.isEnabled()) {
-            return IssuedAccessToken.disabled();
+            return IssuedTokenPair.disabled();
         }
 
         if (subjectId == null) {
@@ -52,11 +58,14 @@ public class JwtTokenService {
 
         Instant now = Instant.now();
         Instant accessExpiresAt = now.plus(Duration.ofMinutes(jwtProperties.getAccessTokenTtlMinutes()));
+        Instant refreshExpiresAt = now.plus(Duration.ofMinutes(jwtProperties.getRefreshTokenTtlMinutes()));
 
         String accessToken = buildToken(sessionKeyId, subjectId, clientId, accountId, username, email, role,
                 "ACCESS", now, accessExpiresAt);
+        String refreshToken = buildToken(sessionKeyId, subjectId, clientId, accountId, username, email, role,
+                "REFRESH", now, refreshExpiresAt);
 
-        return new IssuedAccessToken(accessToken, accessExpiresAt);
+        return new IssuedTokenPair(accessToken, accessExpiresAt, refreshToken, refreshExpiresAt);
     }
 
     private String buildToken(UUID sessionKeyId, UUID subjectId, UUID clientId, UUID accountId, String username, String email,
@@ -108,6 +117,40 @@ public class JwtTokenService {
 
         public Instant getAccessTokenExpiresAt() {
             return accessTokenExpiresAt;
+        }
+    }
+
+    public static class IssuedTokenPair {
+        private final String accessToken;
+        private final Instant accessTokenExpiresAt;
+        private final String refreshToken;
+        private final Instant refreshTokenExpiresAt;
+
+        public IssuedTokenPair(String accessToken, Instant accessTokenExpiresAt, String refreshToken, Instant refreshTokenExpiresAt) {
+            this.accessToken = accessToken;
+            this.accessTokenExpiresAt = accessTokenExpiresAt;
+            this.refreshToken = refreshToken;
+            this.refreshTokenExpiresAt = refreshTokenExpiresAt;
+        }
+
+        public static IssuedTokenPair disabled() {
+            return new IssuedTokenPair(null, null, null, null);
+        }
+
+        public String getAccessToken() {
+            return accessToken;
+        }
+
+        public Instant getAccessTokenExpiresAt() {
+            return accessTokenExpiresAt;
+        }
+
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+
+        public Instant getRefreshTokenExpiresAt() {
+            return refreshTokenExpiresAt;
         }
     }
 }

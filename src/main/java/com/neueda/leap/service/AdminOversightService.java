@@ -60,11 +60,17 @@ public class AdminOversightService {
 
     public void recordAccess(UUID clientId, String action) {
         AuthenticatedUser admin = SecurityAccess.currentUser();
-        if (admin == null || admin.getClientId() == null) {
+        if (admin == null) {
             return;
         }
-        // Admin tokens carry the admin user id in the clientId slot.
-        adminQueryMapper.insertAccessEvent(admin.getClientId(),
+        UUID adminUserId = admin.getClientId();
+        if (adminUserId == null && admin.getSubject() != null) {
+            adminUserId = UUID.fromString(admin.getSubject());
+        }
+        if (adminUserId == null) {
+            return;
+        }
+        adminQueryMapper.insertAccessEvent(adminUserId,
                 admin.getEmail() != null ? admin.getEmail() : admin.getUsername(),
                 clientId, action, "{}");
     }

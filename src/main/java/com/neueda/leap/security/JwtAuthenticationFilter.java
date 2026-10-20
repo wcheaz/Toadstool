@@ -1,6 +1,7 @@
 package com.neueda.leap.security;
 
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,6 +53,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     throw new JwtException("Refresh token cannot be used for API authentication");
                 }
             }
+        } catch (ExpiredJwtException e) {
+            revokeExpiredSession(e);
+            logger.debug("JWT validation failed: " + e.getMessage());
         } catch (JwtException | IllegalArgumentException e) {
             logger.debug("JWT validation failed: " + e.getMessage());
         }
@@ -112,5 +116,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return null;
         }
         return UUID.fromString(value);
+    }
+
+    private void revokeExpiredSession(ExpiredJwtException exception) {
+        if (exception.getClaims() == null || !StringUtils.hasText(exception.getClaims().getId())) {
+            return;
+        }
+        try {
+            sessionKeyService.revokeSession(UUID.fromString(exception.getClaims().getId()));
+        } catch (IllegalArgumentException ignored) {
+        }
     }
 }

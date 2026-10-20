@@ -50,5 +50,6 @@ auth:
     private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
     issuer: toadstool
     access-token-ttl-minutes: 15
+    refresh-token-ttl-minutes: 15
     enabled: true
     require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

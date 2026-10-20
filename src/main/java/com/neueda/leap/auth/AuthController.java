@@ -34,9 +34,16 @@ public class AuthController {
         return ResponseEntity.ok(authService.adminLogin(request));
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody(required = false) TokenValidationRequest request,
+                                                @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        return ResponseEntity.ok(authService.refresh(request, authorizationHeader));
+    }
+
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
-        authService.logout(authorizationHeader);
+    public ResponseEntity<Void> logout(@RequestBody(required = false) TokenValidationRequest request,
+                                      @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        authService.logout(request, authorizationHeader);
         return ResponseEntity.noContent().build();
     }
 
