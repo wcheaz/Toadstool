@@ -57,13 +57,6 @@ export class HomepageComponent implements OnInit, OnDestroy {
   // UI state
   isBalanceVisible: boolean = true;
 
-  // Available assets
-  assets: Asset[] = [
-    { instrumentId: '11111111-1111-1111-1111-111111111111', symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
-    { instrumentId: '22222222-2222-2222-2222-222222222222', symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
-    { instrumentId: '33333333-3333-3333-3333-333333333333', symbol: 'BTC', name: 'Bitcoin Vault Share', price: 67230.00, change: -0.45, holdings: 0.15 }
-  ];
-
   instruments: Instrument[] = [];
   instrumentQuotes: Map<string, QuoteResponse> = new Map();
   /** Quantity held per instrumentId for the active account. */

@@ -64,14 +64,14 @@ public class InstrumentMapperTest {
 
     @Test
     public void testCryptoAssetClass() {
-        Instrument btc = instrumentMapper.selectInstrumentBySymbol("BTC/USD");
+        Instrument btc = instrumentMapper.selectInstrumentBySymbol("BTC-USD");
         assertNotNull(btc);
         assertEquals(AssetClass.CRYPTO, btc.getAssetClass());
     }
 
     @Test
     public void testForexAssetClass() {
-        Instrument eurusd = instrumentMapper.selectInstrumentBySymbol("EUR/USD");
+        Instrument eurusd = instrumentMapper.selectInstrumentBySymbol("FX:EURUSD");
         assertNotNull(eurusd);
         assertEquals(AssetClass.FX, eurusd.getAssetClass());
     }
