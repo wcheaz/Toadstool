@@ -9,6 +9,7 @@ import com.neueda.leap.dto.AdminDtos.LoginEventRow;
 import com.neueda.leap.dto.AdminDtos.PlatformActivityRow;
 import com.neueda.leap.dto.AdminDtos.PlatformOverview;
 import com.neueda.leap.dto.AdminDtos.TopInstrument;
+import com.neueda.leap.dto.AdminDtos.InstrumentSideRatio;
 import com.neueda.leap.dto.AdminDtos.TradeEventRow;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -204,21 +205,81 @@ public interface AdminQueryMapper {
             + "(SELECT COUNT(DISTINCT order_id) FROM trading.fills WHERE status = 'Filled') AS filled_orders, "
             + "(SELECT COUNT(*) FROM trading.orders o WHERE NOT EXISTS "
             + "  (SELECT 1 FROM trading.fills f WHERE f.order_id = o.order_id)) AS open_orders, "
-            + "(SELECT COUNT(*) FROM trading.orders WHERE submitted_at >= now() - interval '30 days') AS orders_last30_days, "
+            + "(SELECT COUNT(*) FROM trading.orders WHERE submitted_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS orders_last30_days, "
             + "(SELECT COALESCE(SUM(price * quantity), 0) FROM trading.fills "
-            + "  WHERE status = 'Filled' AND executed_at >= now() - interval '30 days') AS gross_volume_last30_days, "
+            + "  WHERE status = 'Filled' AND executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS gross_volume_last30_days, "
             + "(SELECT COALESCE(SUM(fee), 0) FROM trading.fills "
-            + "  WHERE status = 'Filled' AND executed_at >= now() - interval '30 days') AS fees_last30_days, "
+            + "  WHERE status = 'Filled' AND executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS fees_last30_days, "
+            + "(SELECT COUNT(*) FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "  WHERE f.status = 'Filled' AND o.side = 'BUY' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS buy_fills_last30_days, "
+            + "(SELECT COUNT(*) FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "  WHERE f.status = 'Filled' AND o.side = 'SELL' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS sell_fills_last30_days, "
+            + "(SELECT COALESCE(SUM(f.quantity), 0) FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "  WHERE f.status = 'Filled' AND o.side = 'BUY' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS buy_quantity_last30_days, "
+            + "(SELECT COALESCE(SUM(f.quantity), 0) FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "  WHERE f.status = 'Filled' AND o.side = 'SELL' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS sell_quantity_last30_days, "
+            + "(SELECT COALESCE(SUM(f.price * f.quantity), 0) FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "  WHERE f.status = 'Filled' AND o.side = 'BUY' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS buy_value_last30_days, "
+            + "(SELECT COALESCE(SUM(f.price * f.quantity), 0) FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "  WHERE f.status = 'Filled' AND o.side = 'SELL' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS sell_value_last30_days, "
             + "(SELECT COUNT(*) FROM trading.login_events "
-            + "  WHERE outcome = 'FAILURE' AND occurred_at >= now() - interval '24 hours') AS failed_logins_last24_hours")
-    PlatformOverview selectPlatformOverview();
+            + "  WHERE outcome = 'FAILURE' AND occurred_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS failed_logins_last24_hours")
+    PlatformOverview selectPlatformOverview(@Param("days") int days);
 
-    @Select("SELECT i.instrument_id, i.symbol, i.name, COUNT(*) AS fill_count, SUM(f.price * f.quantity) AS gross_amount "
+    @Select("SELECT i.instrument_id, i.symbol, i.name, COUNT(*) AS fill_count, SUM(f.quantity) AS filled_quantity, "
+            + "SUM(f.price * f.quantity) AS gross_amount "
             + "FROM trading.fills f "
             + "JOIN trading.orders o ON o.order_id = f.order_id "
             + "JOIN trading.instruments i ON i.instrument_id = o.instrument_id "
-            + "WHERE f.status = 'Filled' AND f.executed_at >= now() - interval '30 days' "
+            + "WHERE f.status = 'Filled' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval "
             + "GROUP BY i.instrument_id, i.symbol, i.name "
             + "ORDER BY gross_amount DESC LIMIT #{limit}")
-    List<TopInstrument> selectTopInstruments(@Param("limit") int limit);
+    List<TopInstrument> selectTopInstruments(@Param("limit") int limit, @Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, COUNT(*) AS fill_count, SUM(f.quantity) AS filled_quantity, "
+            + "SUM(f.price * f.quantity) AS gross_amount "
+            + "FROM trading.fills f "
+            + "JOIN trading.orders o ON o.order_id = f.order_id "
+            + "JOIN trading.instruments i ON i.instrument_id = o.instrument_id "
+            + "WHERE f.status = 'Filled' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "ORDER BY fill_count DESC, gross_amount DESC LIMIT 1")
+    TopInstrument selectMostFilledInstrument(@Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, COUNT(*) AS fill_count, "
+            + "SUM(f.price * f.quantity) AS gross_amount "
+            + "FROM trading.fills f "
+            + "JOIN trading.orders o ON o.order_id = f.order_id "
+            + "JOIN trading.instruments i ON i.instrument_id = o.instrument_id "
+            + "WHERE f.status = 'Filled' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval "
+            + "AND o.side = #{side} "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "ORDER BY gross_amount DESC, fill_count DESC LIMIT 1")
+    TopInstrument selectTopInstrumentBySide(@Param("side") String side, @Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, "
+            + "COALESCE(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'BUY'), 0) AS buy_value, "
+            + "COALESCE(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'SELL'), 0) AS sell_value, "
+            + "COALESCE(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'BUY'), 0) / "
+            + "NULLIF(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'SELL'), 0) AS ratio "
+            + "FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "JOIN trading.instruments i ON i.instrument_id = o.instrument_id "
+            + "WHERE f.status = 'Filled' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "HAVING SUM(f.price * f.quantity) FILTER (WHERE o.side = 'SELL') > 0 "
+            + "ORDER BY ratio DESC LIMIT 1")
+    InstrumentSideRatio selectHighestBuySellRatio(@Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, "
+            + "COALESCE(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'BUY'), 0) AS buy_value, "
+            + "COALESCE(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'SELL'), 0) AS sell_value, "
+            + "COALESCE(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'SELL'), 0) / "
+            + "NULLIF(SUM(f.price * f.quantity) FILTER (WHERE o.side = 'BUY'), 0) AS ratio "
+            + "FROM trading.fills f JOIN trading.orders o ON o.order_id = f.order_id "
+            + "JOIN trading.instruments i ON i.instrument_id = o.instrument_id "
+            + "WHERE f.status = 'Filled' AND f.executed_at >= now() - (CAST(#{days} AS text) || ' days')::interval "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "HAVING SUM(f.price * f.quantity) FILTER (WHERE o.side = 'BUY') > 0 "
+            + "ORDER BY ratio DESC LIMIT 1")
+    InstrumentSideRatio selectHighestSellBuyRatio(@Param("days") int days);
 }

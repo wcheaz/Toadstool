@@ -31,7 +31,8 @@ export class AdminDashboardComponent implements OnInit {
   error = '';
 
   overview: PlatformOverview | null = null;
-  insights: Insight[] = [];
+  visibleInsights: Insight[] = [];
+  timeframe: 'day' | 'week' | 'month' = 'month';
   loadedAt: Date | null = null;
   private clientsRequestId = 0;
 
@@ -107,6 +108,10 @@ export class AdminDashboardComponent implements OnInit {
     this.router.navigate(['/admin-client', client.clientId]);
   }
 
+  onTimeframeChange(): void {
+    this.loadInsights();
+  }
+
   private loadClients(): void {
     const requestId = ++this.clientsRequestId;
     this.loading = true;
@@ -144,10 +149,15 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private loadInsights(): void {
-    this.apiService.getInsights().subscribe({
+    this.apiService.getInsights(this.timeframe).subscribe({
       next: (response) => {
         this.overview = response.overview;
-        this.insights = response.insights;
+        this.visibleInsights = response.insights.filter((insight) =>
+          insight.name !== 'most-traded-instrument' &&
+          insight.name !== 'gross-volume-30d' &&
+          insight.name !== 'open-orders' &&
+          insight.name !== 'failed-logins-24h'
+        );
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Failed to load platform insights:', err)

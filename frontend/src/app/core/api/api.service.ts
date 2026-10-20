@@ -275,8 +275,8 @@ export class ApiService {
     );
   }
 
-  getInsights(): Observable<InsightsResponse> {
-    return this.http.get<InsightsResponse>(`${this.apiUrl}/admin/analytics/insights`);
+  getInsights(timeframe: 'day' | 'week' | 'month' = 'month'): Observable<InsightsResponse> {
+    return this.http.get<InsightsResponse>(`${this.apiUrl}/admin/analytics/insights?timeframe=${timeframe}`);
   }
 
   /** Build query params, skipping empty values. */

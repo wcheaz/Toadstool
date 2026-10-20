@@ -106,15 +106,33 @@ class AdminAnalyticsControllerTest {
         top.symbol = "NEXS";
         top.fillCount = 6;
         top.grossAmount = new BigDecimal("1800");
-        when(adminOversightService.getPlatformOverview()).thenReturn(overview);
-        when(adminOversightService.listTopInstruments(5)).thenReturn(List.of(top));
+        TopInstrument mostFilled = new TopInstrument();
+        mostFilled.symbol = "FILL";
+        mostFilled.fillCount = 10;
+        mostFilled.grossAmount = new BigDecimal("1700");
+        TopInstrument mostBought = new TopInstrument();
+        mostBought.symbol = "BUY";
+        mostBought.fillCount = 4;
+        mostBought.grossAmount = new BigDecimal("1200");
+        TopInstrument mostSold = new TopInstrument();
+        mostSold.symbol = "SELL";
+        mostSold.fillCount = 3;
+        mostSold.grossAmount = new BigDecimal("900");
+        when(adminOversightService.getPlatformOverview(30)).thenReturn(overview);
+        when(adminOversightService.listTopInstruments(5, 30)).thenReturn(List.of(top));
+        when(adminOversightService.getMostFilledInstrument(30)).thenReturn(mostFilled);
+        when(adminOversightService.getTopInstrumentBySide("BUY", 30)).thenReturn(mostBought);
+        when(adminOversightService.getTopInstrumentBySide("SELL", 30)).thenReturn(mostSold);
 
         mockMvc.perform(get("/api/admin/analytics/insights"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.overview.totalClients").value(4))
                 .andExpect(jsonPath("$.topInstruments[0].symbol").value("NEXS"))
-                .andExpect(jsonPath("$.insights[0].name").value("most-traded-instrument"))
-                .andExpect(jsonPath("$.insights[0].value").value("NEXS"));
+                .andExpect(jsonPath("$.insights[0].name").value("most-filled-instrument"))
+                .andExpect(jsonPath("$.insights[0].value").value("FILL"))
+                .andExpect(jsonPath("$.insights[1].name").value("most-volume-instrument"))
+                .andExpect(jsonPath("$.insights[2].name").value("most-bought-instrument"))
+                .andExpect(jsonPath("$.insights[3].name").value("most-sold-instrument"));
 
         mockMvc.perform(get("/api/admin/analytics/insights").param("insight", "open-orders"))
                 .andExpect(status().isOk())
