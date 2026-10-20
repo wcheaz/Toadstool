@@ -88,7 +88,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   private updateLayoutVisibility(url: string) {
-    const mainLayoutPages = ['/homepage', '/news', '/activity', '/trading'];
+    const mainLayoutPages = ['/homepage', '/news', '/activity', '/trading', '/manage-accounts'];
     this.isShowingMainLayout = mainLayoutPages.some(page => url.startsWith(page));
   }
 
@@ -98,6 +98,7 @@ export class App implements OnInit, OnDestroy {
       '/news',
       '/activity',
       '/trading',
+      '/manage-accounts',
       '/admin-dashboard',
       '/admin-client/',
       '/admin-audit'

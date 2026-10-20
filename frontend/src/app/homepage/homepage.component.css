@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  min-width: 0;
 }
 
 /* Dashboard Content */
@@ -66,6 +67,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   min-height: 100%;
+  min-width: 0;
 }
 
 .dashboard-column {
@@ -73,6 +75,7 @@
   flex-direction: column;
   gap: 24px;
   min-height: 100%;
+  min-width: 0;
 }
 
 /* Dashboard Module */
@@ -417,6 +420,23 @@
 
   .content-tabs {
     gap: 24px;
+  }
+
+  .tab-button {
+    padding: 14px 0;
+    font-size: 16px;
+  }
+
+  .news-date {
+    font-size: 13px;
+  }
+
+  .news-title {
+    font-size: 15px;
+  }
+
+  .news-description {
+    font-size: 14px;
   }
 }
 

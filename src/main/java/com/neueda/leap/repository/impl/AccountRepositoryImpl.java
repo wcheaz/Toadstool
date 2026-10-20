@@ -49,4 +49,14 @@ public class AccountRepositoryImpl implements AccountRepository {
     public void updateBalance(UUID accountId, BigDecimal balance) {
         accountMapper.updateAccountBalance(accountId, balance);
     }
+
+    @Override
+    public int updateAccountName(UUID accountId, String accountName) {
+        return accountMapper.updateAccountName(accountId, accountName);
+    }
+
+    @Override
+    public int updateStatus(UUID accountId, String status) {
+        return accountMapper.updateStatus(accountId, status);
+    }
 }

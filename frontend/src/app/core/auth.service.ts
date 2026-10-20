@@ -4,7 +4,7 @@ import { finalize, Observable, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuthResponse } from './api/api.models';
 import { ApiService } from './api/api.service';
-import { clearAuthSession, getAccessToken, getAccountId as readAccountId, getClientDisplayName, getRefreshToken, storeAuthSession } from '../auth-storage';
+import { clearAuthSession, getAccessToken, getAccountId as readAccountId, getClientDisplayName, getClientEmail, getRefreshToken, storeAuthSession } from '../auth-storage';
 
 /**
  * Handles the client session stored for the current browser tab.
@@ -36,6 +36,10 @@ export class AuthService {
 
   getClientName(): string {
     return getClientDisplayName() || 'User';
+  }
+
+  getClientEmail(): string {
+    return getClientEmail() || '';
   }
 
   getClientId(): string {

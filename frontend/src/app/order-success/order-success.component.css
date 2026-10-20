@@ -463,7 +463,66 @@
   }
 
   .success-title {
-    font-size: 22px;
+    font-size: 27px;
+  }
+
+  .status-message {
+    font-size: 15px;
+  }
+
+  .summary-text {
+    font-size: 21px;
+  }
+
+  .summary-subtext,
+  .detail-row,
+  .value-row,
+  .activity-note,
+  .footer-note {
+    font-size: 17px;
+  }
+
+  .asset-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 15px;
+  }
+
+  .asset-info h3 {
+    font-size: 19px;
+  }
+
+  .asset-info p {
+    font-size: 16px;
+  }
+
+  .filled-badge,
+  .section-title,
+  .order-type-badge {
+    font-size: 15px;
+  }
+
+  .mono {
+    font-size: 15px;
+  }
+
+  .detail-label {
+    font-size: 15px;
+  }
+
+  .detail-value {
+    font-size: 17px;
+  }
+
+  .value-row.divider .total {
+    font-size: 19px;
+  }
+
+  .btn-activity,
+  .btn-return {
+    min-height: 56px;
+    padding: 14px 16px;
+    font-size: 17px;
   }
 
   .execution-grid {

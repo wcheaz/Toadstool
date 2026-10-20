@@ -27,17 +27,26 @@ export class ProfileComponent implements OnInit, OnChanges {
 
   constructor(private authService: AuthService, private apiService: ApiService) {
     this.clientName = this.authService.getClientName();
+    this.email = this.authService.getClientEmail();
     this.accountId = this.authService.getAccountId();
   }
 
   ngOnInit() {
-    this.email = `${this.clientName.toLowerCase().replace(/\s+/g, '.')}@toadstool.io`;
+    this.refreshClientDetails();
     this.joinDate = 'January 15, 2024';
     this.loadAccountBalance();
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['isOpen']?.currentValue === true) this.loadAccountBalance();
+    if (changes['isOpen']?.currentValue === true) {
+      this.refreshClientDetails();
+      this.loadAccountBalance();
+    }
+  }
+
+  private refreshClientDetails() {
+    this.clientName = this.authService.getClientName();
+    this.email = this.authService.getClientEmail();
   }
 
   private loadAccountBalance() {
@@ -58,17 +67,4 @@ export class ProfileComponent implements OnInit, OnChanges {
     this.close.emit();
   }
 
-  updateProfile() {
-    alert('Profile editing coming soon');
-  }
-
-  changePassword() {
-    alert('Password change feature coming soon');
-  }
-
-  logout() {
-    if (confirm('Are you sure you want to sign out?')) {
-      this.authService.logout();
-    }
-  }
 }

@@ -59,3 +59,13 @@
 .module-handle:active {
   cursor: grabbing;
 }
+
+@media (max-width: 768px) {
+  .module-header h3 {
+    font-size: 17px;
+  }
+
+  .module-handle {
+    font-size: 14px;
+  }
+}

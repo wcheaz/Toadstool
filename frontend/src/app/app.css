@@ -102,3 +102,13 @@
   cursor: wait;
   opacity: 0.7;
 }
+
+@media (max-width: 768px) {
+  .app-wrapper {
+    flex-direction: column;
+  }
+
+  .main-layout {
+    width: 100%;
+  }
+}
