@@ -57,6 +57,7 @@ public class InstrumentController {
             @RequestParam(required = false) String assetClass,
             @RequestParam(required = false, defaultValue = "TRADABLE") String status,
             @RequestParam(required = false) String symbol,
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset) {
 
@@ -68,8 +69,12 @@ public class InstrumentController {
 
             List<Instrument> instruments;
             int totalCount;
+            String searchTerm = search != null && !search.isBlank() ? search.trim() : symbol;
 
-            if (status != null && !status.isEmpty()) {
+            if (searchTerm != null && !searchTerm.isBlank() && status != null && !status.isEmpty()) {
+                instruments = instrumentService.listInstrumentsByStatusAndSearch(status, searchTerm, limit, offset);
+                totalCount = instrumentService.countInstrumentsByStatusAndSearch(status, searchTerm);
+            } else if (status != null && !status.isEmpty()) {
                 instruments = instrumentService.listInstrumentsByStatus(status, limit, offset);
                 totalCount = instrumentService.listInstrumentsByStatus(status).size();
             } else {

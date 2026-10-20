@@ -45,6 +45,29 @@ public interface InstrumentMapper {
     @Select("SELECT instrument_id as instrumentId, symbol, name, asset_class as assetClass, status FROM trading.instruments WHERE status = #{status} LIMIT #{limit} OFFSET #{offset}")
     List<Instrument> selectInstrumentsByStatus(@Param("status") String status, @Param("limit") int limit, @Param("offset") int offset);
 
+    @Select({
+            "<script>",
+            "SELECT instrument_id as instrumentId, symbol, name, asset_class as assetClass, status",
+            "FROM trading.instruments",
+            "WHERE status = #{status}",
+            "AND (LOWER(symbol) LIKE CONCAT('%', LOWER(#{search}), '%')",
+            "OR LOWER(name) LIKE CONCAT('%', LOWER(#{search}), '%'))",
+            "ORDER BY symbol LIMIT #{limit} OFFSET #{offset}",
+            "</script>"
+    })
+    List<Instrument> selectInstrumentsByStatusAndSearch(@Param("status") String status, @Param("search") String search,
+                                                         @Param("limit") int limit, @Param("offset") int offset);
+
+    @Select({
+            "<script>",
+            "SELECT COUNT(*) FROM trading.instruments",
+            "WHERE status = #{status}",
+            "AND (LOWER(symbol) LIKE CONCAT('%', LOWER(#{search}), '%')",
+            "OR LOWER(name) LIKE CONCAT('%', LOWER(#{search}), '%'))",
+            "</script>"
+    })
+    int countInstrumentsByStatusAndSearch(@Param("status") String status, @Param("search") String search);
+
     @Select("SELECT instrument_id as instrumentId, symbol, name, asset_class as assetClass, status FROM trading.instruments WHERE asset_class = #{assetClass} LIMIT #{limit} OFFSET #{offset}")
     List<Instrument> selectInstrumentsByAssetClass(@Param("assetClass") String assetClass, @Param("limit") int limit, @Param("offset") int offset);
 

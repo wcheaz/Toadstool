@@ -1,10 +1,8 @@
 package com.neueda.leap.service;
 
-import com.neueda.leap.Instrument;
 import com.neueda.leap.News;
 import com.neueda.leap.dto.EarningsEventResponse;
 import com.neueda.leap.dto.FinnhubNewsResponse;
-import com.neueda.leap.enums.AssetClass;
 import com.neueda.leap.repository.NewsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +18,13 @@ public class NewsService {
     private static final Logger logger = LoggerFactory.getLogger(NewsService.class);
     private final FinnhubNewsService finnhubNewsService;
     private final NewsRepository newsRepository;
-    private final InstrumentService instrumentService;
     private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final List<String> NEWS_SYMBOLS = List.of(
+            "AAPL", "AMZN", "GOOGL", "MSFT", "META",
+            "NVDA", "TSLA", "JPM", "SPY", "MMM",
+            "AMD", "ADBE", "CRM", "NFLX", "ORCL",
+            "INTC", "CSCO", "DIS", "NKE", "WMT"
+    );
     private static final int MAX_NEWS_PER_SYMBOL = 5;
     private static final int MAX_GENERAL_NEWS = 5;
     private static final int EARNINGS_LOOKAHEAD_DAYS = 30;
@@ -29,10 +32,9 @@ public class NewsService {
     /** Upcoming earnings for tradable equities, refreshed hourly alongside the news. */
     private volatile List<EarningsEventResponse> earningsCalendar = Collections.emptyList();
 
-    public NewsService(FinnhubNewsService finnhubNewsService, NewsRepository newsRepository, InstrumentService instrumentService) {
+    public NewsService(FinnhubNewsService finnhubNewsService, NewsRepository newsRepository) {
         this.finnhubNewsService = finnhubNewsService;
         this.newsRepository = newsRepository;
-        this.instrumentService = instrumentService;
     }
 
     public void refreshNewsForAllAccounts() {
@@ -42,7 +44,7 @@ public class NewsService {
             List<News> allNews = new ArrayList<>();
 
             // Finnhub company news only covers equities; crypto/FX are covered by the general news categories
-            List<String> symbols = getEquitySymbols();
+            List<String> symbols = NEWS_SYMBOLS;
 
             logger.info("Found {} equity instruments for company news fetching", symbols.size());
 
@@ -136,7 +138,7 @@ public class NewsService {
             String to = today.plusDays(EARNINGS_LOOKAHEAD_DAYS).format(dateFormatter);
 
             List<EarningsEventResponse> events = new ArrayList<>();
-            for (String symbol : getEquitySymbols()) {
+            for (String symbol : NEWS_SYMBOLS) {
                 events.addAll(finnhubNewsService.fetchEarningsCalendar(symbol, from, to));
             }
             events.sort(Comparator.comparing(EarningsEventResponse::getDate));
@@ -151,11 +153,8 @@ public class NewsService {
         return earningsCalendar;
     }
 
-    private List<String> getEquitySymbols() {
-        return instrumentService.listAllInstruments().stream()
-                .filter(instrument -> instrument.getAssetClass() == AssetClass.EQUITY)
-                .map(Instrument::getSymbol)
-                .collect(Collectors.toList());
+    public List<String> getNewsSymbols() {
+        return NEWS_SYMBOLS;
     }
 
     public List<News> getLatestNewsBySymbols(List<String> symbols) {
@@ -179,4 +178,3 @@ public class NewsService {
         return companyNews;
     }
 }
-

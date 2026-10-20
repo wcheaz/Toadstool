@@ -184,3 +184,10 @@
 .no-holding {
   color: #6b7280;
 }
+
+.empty-state {
+  padding: 28px 16px;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+}

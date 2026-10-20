@@ -69,6 +69,7 @@
 
 .recommendations-panel {
   grid-area: recommendations;
+  align-self: start;
   padding: 24px;
 }
 
