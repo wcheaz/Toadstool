@@ -30,13 +30,17 @@ export class MarketAssetsTableComponent {
     return this.holdings.get(instrumentId) ?? 0;
   }
 
+  get ownedInstruments(): Instrument[] {
+    return this.instruments.filter((instrument) => this.getHolding(instrument.instrumentId) > 0);
+  }
+
   getHoldingValue(instrument: Instrument): number | null {
     const price = this.getQuote(instrument.instrumentId)?.price;
     return price ? price * this.getHolding(instrument.instrumentId) : null;
   }
 
   get heldCount(): number {
-    return this.instruments.filter((instrument) => this.getHolding(instrument.instrumentId) > 0).length;
+    return this.ownedInstruments.length;
   }
 
   getPriceChangeClass(changePercent: number | undefined): string {

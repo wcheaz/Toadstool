@@ -16,7 +16,7 @@
     </div>
 
     <!-- Live instruments from Fauxnance API -->
-    <div *ngFor="let instrument of instruments" class="table-row" [class.held-row]="getHolding(instrument.instrumentId) > 0">
+    <div *ngFor="let instrument of ownedInstruments" class="table-row">
       <div class="table-cell">
         <span class="asset-name">{{ instrument.symbol }}</span>
         <span class="asset-full">{{ instrument.name }}</span>
@@ -37,9 +37,8 @@
       <div class="table-cell"><button class="trade-btn" (click)="onTradeClick(instrument, getQuote(instrument.instrumentId))">Trade</button></div>
     </div>
 
-    <!-- Fallback: No instruments loaded -->
-    <div *ngIf="instruments.length === 0 && !loading" class="table-row">
-      <div class="table-cell" colspan="5">No instruments available</div>
+    <div *ngIf="ownedInstruments.length === 0 && !loading" class="empty-state">
+      Start trading using the Trading tab!
     </div>
   </div>
 </div>
