@@ -105,11 +105,11 @@ class InstrumentPricingServiceTest {
         
         Instrument instrument = new Instrument();
         instrument.setInstrumentId(instrumentId);
-        instrument.setSymbol("EUR/USD");
+        instrument.setSymbol("FX:EURUSD");
         instrument.setAssetClass(AssetClass.FX);
         
         when(instrumentService.getInstrumentById(instrumentId)).thenReturn(instrument);
-        when(fauxnanceService.getQuote("EUR/USD")).thenReturn(new FauxnanceService.QuoteResponse("EUR/USD", 1.08, 1.079, 1.081, 0.01, 0.9, "2026-10-05"));
+        when(fauxnanceService.getQuote("FX:EURUSD")).thenReturn(new FauxnanceService.QuoteResponse("FX:EURUSD", 1.08, 1.079, 1.081, 0.01, 0.9, "2026-10-05"));
         
         BigDecimal price = pricingService.getPrice(AssetClass.FX, instrumentId);
         
@@ -268,11 +268,11 @@ class InstrumentPricingServiceTest {
         
         Instrument instrument = new Instrument();
         instrument.setInstrumentId(instrumentId);
-        instrument.setSymbol("GBP/USD");
+        instrument.setSymbol("FX:GBPUSD");
         instrument.setAssetClass(AssetClass.FX);
         
         when(instrumentService.getInstrumentById(instrumentId)).thenReturn(instrument);
-        when(fauxnanceService.getQuote("GBP/USD")).thenReturn(new FauxnanceService.QuoteResponse("GBP/USD", 1.27, 1.269, 1.271, 0.01, 0.8, "2026-10-05"));
+        when(fauxnanceService.getQuote("FX:GBPUSD")).thenReturn(new FauxnanceService.QuoteResponse("FX:GBPUSD", 1.27, 1.269, 1.271, 0.01, 0.8, "2026-10-05"));
         
         BigDecimal price = pricingService.getPrice(AssetClass.FX, instrumentId);
         assertNotNull(price);
