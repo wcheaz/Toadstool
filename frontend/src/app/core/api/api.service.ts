@@ -74,9 +74,16 @@ export class ApiService {
   /**
    * Get all instruments (without live prices)
    */
-  getInstruments(limit: number = 50, offset: number = 0): Observable<PaginatedResponse<Instrument>> {
+  getInstruments(limit: number = 50, offset: number = 0, search?: string): Observable<PaginatedResponse<Instrument>> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset)
+    });
+    if (search?.trim()) {
+      params.set('search', search.trim());
+    }
     return this.http.get<PaginatedResponse<Instrument>>(
-      `${this.apiUrl}/instruments?limit=${limit}&offset=${offset}`
+      `${this.apiUrl}/instruments?${params.toString()}`
     );
   }
 

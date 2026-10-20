@@ -19,7 +19,7 @@
 
       <label class="search-box">
         <span class="search-icon"></span>
-        <input type="search" [(ngModel)]="searchTerm" placeholder="Search by ticker or company name" aria-label="Search assets">
+        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="searchAssets($event)" placeholder="Search by ticker or company name" aria-label="Search assets">
         <kbd>⌕</kbd>
       </label>
 

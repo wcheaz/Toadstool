@@ -96,6 +96,14 @@ public class InstrumentService {
         return instrumentRepository.findByStatus(status, Integer.MAX_VALUE, 0);
     }
 
+    public List<Instrument> listInstrumentsByStatusAndSearch(String status, String search, int limit, int offset) {
+        return instrumentRepository.findByStatusAndSearch(status, search, limit, offset);
+    }
+
+    public int countInstrumentsByStatusAndSearch(String status, String search) {
+        return instrumentRepository.countByStatusAndSearch(status, search);
+    }
+
     /**
      * List instruments by asset class
      */

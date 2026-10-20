@@ -60,6 +60,16 @@ public class InstrumentRepositoryImpl implements InstrumentRepository {
     }
 
     @Override
+    public List<Instrument> findByStatusAndSearch(String status, String search, int limit, int offset) {
+        return instrumentMapper.selectInstrumentsByStatusAndSearch(status, search, limit, offset);
+    }
+
+    @Override
+    public int countByStatusAndSearch(String status, String search) {
+        return instrumentMapper.countInstrumentsByStatusAndSearch(status, search);
+    }
+
+    @Override
     public List<Instrument> findByAssetClass(String assetClass, int limit, int offset) {
         return instrumentMapper.selectInstrumentsByAssetClass(assetClass, limit, offset);
     }
