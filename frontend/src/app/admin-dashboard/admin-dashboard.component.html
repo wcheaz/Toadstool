@@ -5,8 +5,7 @@
     <header class="topbar">
       <button class="profile-button" type="button" (click)="logout()" title="Sign out">
         <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        <span>{{ adminName }}</span>
-        <span class="chevron">⌄</span>
+        <span>Sign out</span>
       </button>
     </header>
 
@@ -18,9 +17,9 @@
       <section class="overview-strip" *ngIf="overview" aria-label="Platform overview">
         <article class="overview-card"><small>CLIENTS</small><strong>{{ overview.totalClients | number }}</strong><span>{{ overview.activeClients | number }} active · {{ overview.totalAccounts | number }} accounts</span></article>
         <article class="overview-card"><small>CASH HELD</small><strong>{{ formatMoney(overview.totalCash) }}</strong><span>Across all client accounts</span></article>
-        <article class="overview-card"><small>GROSS VOLUME · 30D</small><strong>{{ formatMoney(overview.grossVolumeLast30Days) }}</strong><span>{{ overview.ordersLast30Days | number }} orders · {{ formatMoney(overview.feesLast30Days) }} fees</span></article>
+        <article class="overview-card"><small>GROSS VOLUME · {{ timeframe | uppercase }}</small><strong>{{ formatMoney(overview.grossVolumeLast30Days) }}</strong><span>{{ overview.ordersLast30Days | number }} orders · {{ formatMoney(overview.feesLast30Days) }} fees</span></article>
         <article class="overview-card"><small>ORDERS</small><strong>{{ overview.filledOrders | number }} / {{ overview.totalOrders | number }}</strong><span>Filled · {{ overview.openOrders | number }} awaiting execution</span></article>
-        <article class="overview-card" [class.alert]="overview.failedLoginsLast24Hours > 0"><small>FAILED SIGN-INS · 24H</small><strong>{{ overview.failedLoginsLast24Hours | number }}</strong><span>From the login audit log</span></article>
+        <article class="overview-card" [class.alert]="overview.failedLoginsLast24Hours > 0"><small>FAILED SIGN-INS · {{ timeframe | uppercase }}</small><strong>{{ overview.failedLoginsLast24Hours | number }}</strong><span>From the login audit log</span></article>
       </section>
 
       <section class="panel search-panel" aria-labelledby="find-client-heading">
@@ -65,10 +64,19 @@
         </div>
       </section>
 
-      <section class="panel insights-panel" *ngIf="insights.length > 0" aria-labelledby="insights-heading">
-        <div class="panel-heading"><h2 id="insights-heading">Platform insights</h2><span>Live from trading data</span></div>
+      <section class="panel insights-panel" *ngIf="visibleInsights.length > 0" aria-labelledby="insights-heading">
+        <div class="panel-heading">
+          <h2 id="insights-heading">Platform insights</h2>
+          <label class="insight-timeframe">Timeframe
+            <select [(ngModel)]="timeframe" (ngModelChange)="onTimeframeChange()" aria-label="Insight timeframe">
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+            </select>
+          </label>
+        </div>
         <div class="insight-grid">
-          <article class="insight" *ngFor="let insight of insights"><small>{{ insight.title }}</small><strong>{{ insight.value }}</strong><span>{{ insight.detail }}</span></article>
+          <article class="insight" *ngFor="let insight of visibleInsights"><small>{{ insight.title }}</small><strong>{{ insight.value }}</strong><span>{{ insight.detail }}</span></article>
         </div>
       </section>
 

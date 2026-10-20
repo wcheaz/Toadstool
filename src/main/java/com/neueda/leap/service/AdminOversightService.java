@@ -5,6 +5,7 @@ import com.neueda.leap.dto.AdminDtos.ClientDetail;
 import com.neueda.leap.dto.AdminDtos.ClientSummary;
 import com.neueda.leap.dto.AdminDtos.CashEventRow;
 import com.neueda.leap.dto.AdminDtos.InstrumentActivityRow;
+import com.neueda.leap.dto.AdminDtos.InstrumentSideRatio;
 import com.neueda.leap.dto.AdminDtos.LoginEventRow;
 import com.neueda.leap.dto.AdminDtos.PlatformActivityRow;
 import com.neueda.leap.dto.AdminDtos.PlatformOverview;
@@ -124,12 +125,28 @@ public class AdminOversightService {
         return adminQueryMapper.countInstrumentActivity(instrumentId, fromDate, toDate);
     }
 
-    public PlatformOverview getPlatformOverview() {
-        return adminQueryMapper.selectPlatformOverview();
+    public PlatformOverview getPlatformOverview(int days) {
+        return adminQueryMapper.selectPlatformOverview(days);
     }
 
-    public List<TopInstrument> listTopInstruments(int limit) {
-        return adminQueryMapper.selectTopInstruments(limit);
+    public List<TopInstrument> listTopInstruments(int limit, int days) {
+        return adminQueryMapper.selectTopInstruments(limit, days);
+    }
+
+    public TopInstrument getMostFilledInstrument(int days) {
+        return adminQueryMapper.selectMostFilledInstrument(days);
+    }
+
+    public TopInstrument getTopInstrumentBySide(String side, int days) {
+        return adminQueryMapper.selectTopInstrumentBySide(side, days);
+    }
+
+    public InstrumentSideRatio getHighestBuySellRatio(int days) {
+        return adminQueryMapper.selectHighestBuySellRatio(days);
+    }
+
+    public InstrumentSideRatio getHighestSellBuyRatio(int days) {
+        return adminQueryMapper.selectHighestSellBuyRatio(days);
     }
 
     private static String blankToNull(String value) {
