@@ -118,8 +118,15 @@ export interface OrderResponse {
   side: string;
   quantity: string;
   idempotencyKey: string;
+  /** ACCEPTED (passed the trading rules, awaiting execution), FILLED or REJECTED. */
   status: string;
   submittedAt: string | number;
+  orderType?: 'MARKET' | 'LIMIT';
+  limitPrice?: string | null;
+  /** Execution price once FILLED. */
+  fillPrice?: string | null;
+  /** Why execution was REJECTED. */
+  rejectionReason?: string | null;
 }
 
 export interface DepthLevel {

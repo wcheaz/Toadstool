@@ -15,4 +15,7 @@ public interface FillRepository {
     List<Fill> findByAccountId(UUID accountId, int limit, int offset);
     int countByAccountId(UUID accountId);
     void save(UUID orderId, String price, String quantity, String status, String fee);
+
+    /** Records a rejected execution and why. */
+    void saveFailed(UUID orderId, String price, String quantity, String reason);
 }

@@ -67,7 +67,7 @@ public class AdminOrderController {
                 side,
                 order.getQuantity().toPlainString(),
                 order.getIdempotencyKey(),
-                order.getStatus() != null ? order.getStatus() : "SUBMITTED",
+                order.getStatus() != null ? order.getStatus() : "ACCEPTED",
                 order.getSubmittedAt());
     }
 }

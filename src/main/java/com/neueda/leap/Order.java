@@ -16,6 +16,14 @@ public class Order {
     private OffsetDateTime submittedAt;
     private BigDecimal totalPrice;
     private String status;
+    /** MARKET or LIMIT. */
+    private String orderType = "MARKET";
+    /** Worst acceptable execution price for LIMIT orders; null for MARKET. */
+    private BigDecimal limitPrice;
+    /** Execution price once filled. */
+    private BigDecimal fillPrice;
+    /** Why execution was rejected, when it was. */
+    private String rejectionReason;
 
     // Constructors
     public Order() {
@@ -104,12 +112,44 @@ public class Order {
         this.totalPrice = totalPrice;
     }
 
-    /** Derived from the order's latest fill: FILLED, FAILED, PENDING, or SUBMITTED when unfilled. */
+    /** Derived from the order's execution outcome: FILLED, REJECTED, or ACCEPTED while awaiting execution. */
     public String getStatus() {
         return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    public BigDecimal getLimitPrice() {
+        return limitPrice;
+    }
+
+    public void setLimitPrice(BigDecimal limitPrice) {
+        this.limitPrice = limitPrice;
+    }
+
+    public BigDecimal getFillPrice() {
+        return fillPrice;
+    }
+
+    public void setFillPrice(BigDecimal fillPrice) {
+        this.fillPrice = fillPrice;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

@@ -10,6 +10,7 @@ import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.FauxnanceService;
 import com.neueda.leap.service.HoldingsService;
+import com.neueda.leap.service.OrderExecutionService;
 import com.neueda.leap.dto.PlaceOrderRequest;
 import com.neueda.leap.dto.OrderResponse;
 import com.neueda.leap.dto.PaginatedResponse;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.OffsetDateTime;
@@ -41,8 +43,11 @@ public class OrderController {
     private final InstrumentService instrumentService;
     private final FauxnanceService fauxnanceService;
     private final HoldingsService holdingsService;
+    private final OrderExecutionService orderExecutionService;
 
-    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService, HoldingsService holdingsService) {
+    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService, HoldingsService holdingsService,
+                           OrderExecutionService orderExecutionService) {
+        this.orderExecutionService = orderExecutionService;
         this.orderService = orderService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
@@ -55,7 +60,7 @@ public class OrderController {
      * Place a new buy/sell order
      */
     @PostMapping("/accounts/{accountId}/orders")
-    public ResponseEntity<OrderResponse> placeOrder(
+    public ResponseEntity<?> placeOrder(
             @PathVariable UUID accountId,
             @RequestBody PlaceOrderRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
@@ -74,16 +79,6 @@ public class OrderController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            // Validate SELL orders have sufficient holdings
-            if ("SELL".equalsIgnoreCase(request.getSide())) {
-                Optional<Holdings> holdings = holdingsService.getHolding(accountId, request.getInstrumentId());
-                BigDecimal requestedQuantity = new BigDecimal(request.getQuantity());
-                if (holdings.isEmpty() || holdings.get().getQuantity().compareTo(requestedQuantity) < 0) {
-                    BigDecimal availableQuantity = holdings.isPresent() ? holdings.get().getQuantity() : BigDecimal.ZERO;
-                    throw new IllegalArgumentException("Insufficient holdings. Available: " + availableQuantity + ", Requested: " + requestedQuantity);
-                }
-            }
-
             // Generate idempotency key if not provided
             if (idempotencyKey == null || idempotencyKey.trim().isEmpty()) {
                 idempotencyKey = "order-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8);
@@ -96,15 +91,21 @@ public class OrderController {
                         .body(mapToOrderResponse(existing));
             }
 
-            // Create order
-            Order order = orderService.createOrder(accountId, request.getInstrumentId(), 
-                    request.getSide(), request.getQuantity(), idempotencyKey);
+            // Accept and record the order (trading rules incl. SELL holdings are checked in OrderService)
+            Order order = orderService.createOrder(accountId, request.getInstrumentId(),
+                    request.getSide(), request.getQuantity(), idempotencyKey,
+                    request.getOrderType() != null ? request.getOrderType() : OrderService.ORDER_TYPE_MARKET,
+                    request.getLimitPrice());
+
+            // Execution happens afterwards, on the server, against the live quote (BR-06/BR-08);
+            // the client follows the order's status until it is FILLED or REJECTED (BR-07)
+            orderExecutionService.executeAsync(order.getOrderId());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToOrderResponse(order));
 
         } catch (IllegalArgumentException e) {
             LOGGER.warn("Order placement rejected for account {}: {}", accountId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             LOGGER.error("Order placement failed for account {}", accountId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -135,12 +136,10 @@ public class OrderController {
 
     /**
      * POST /api/orders/{orderId}/fill
-     * Fill/execute an order at a specified price
+     * Execute an order now if it is still awaiting execution. The server prices it from the live quote
      */
     @PostMapping("/orders/{orderId}/fill")
-    public ResponseEntity<OrderResponse> fillOrder(
-            @PathVariable UUID orderId,
-            @RequestParam java.math.BigDecimal price) {
+    public ResponseEntity<OrderResponse> fillOrder(@PathVariable UUID orderId) {
         try {
             Order order = orderService.getOrderById(orderId);
             if (order == null) {
@@ -155,7 +154,8 @@ public class OrderController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            orderService.fillOrder(orderId, price);
+            // The server prices the order from the live quote; clients cannot choose the fill price (BR-08)
+            orderExecutionService.executeNow(orderId);
             order = orderService.getOrderById(orderId);
             return ResponseEntity.ok(mapToOrderResponse(order));
         } catch (IllegalArgumentException e) {
@@ -267,16 +267,21 @@ public class OrderController {
     private OrderResponse mapToOrderResponse(Order order) {
         String sideStr = order.getSide() != null ? order.getSide().toString() : "BUY";
         
-        return new OrderResponse(
+        OrderResponse response = new OrderResponse(
                 order.getOrderId(),
                 order.getAccountId(),
                 order.getInstrumentId(),
                 sideStr,
                 order.getQuantity().toPlainString(),
                 order.getIdempotencyKey(),
-                order.getStatus() != null ? order.getStatus() : "SUBMITTED",
+                order.getStatus() != null ? order.getStatus() : "ACCEPTED",
                 order.getSubmittedAt()
         );
+        response.setOrderType(order.getOrderType());
+        response.setLimitPrice(order.getLimitPrice() != null ? order.getLimitPrice().stripTrailingZeros().toPlainString() : null);
+        response.setFillPrice(order.getFillPrice() != null ? order.getFillPrice().stripTrailingZeros().toPlainString() : null);
+        response.setRejectionReason(order.getRejectionReason());
+        return response;
     }
 
     /**

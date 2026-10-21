@@ -418,7 +418,7 @@ export class AdminClientDetailsComponent implements OnInit {
         gross,
         fee,
         net,
-        status: order.status || 'SUBMITTED'
+        status: order.status || 'ACCEPTED'
       };
     }).sort((a, b) => (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0));
 
@@ -426,7 +426,7 @@ export class AdminClientDetailsComponent implements OnInit {
     this.filledTrades = filled.length;
     this.grossVolume = filled.reduce((sum, fill) => sum + Number(fill.price) * Number(fill.quantity), 0);
     this.feesPaid = filled.reduce((sum, fill) => sum + Number(fill.fee ?? 0), 0);
-    this.openOrders = this.journal.filter((row) => row.status === 'SUBMITTED' || row.status === 'PENDING').length;
+    this.openOrders = this.journal.filter((row) => row.status === 'ACCEPTED' || row.status === 'PENDING').length;
   }
 
   private buildActivities(): void {

@@ -66,6 +66,10 @@ public interface AccountMapper {
         @Update("UPDATE trading.accounts SET balance = balance + #{delta} WHERE account_id = #{accountId} AND balance + #{delta} >= 0")
         int applyBalanceDelta(@Param("accountId") UUID accountId, @Param("delta") BigDecimal delta);
 
+        /** Lock the account row for the rest of the transaction; serialises order execution per account. */
+        @Select("SELECT 1 FROM trading.accounts WHERE account_id = #{accountId} FOR UPDATE")
+        Integer lockForUpdate(@Param("accountId") UUID accountId);
+
         @Update("UPDATE trading.accounts SET account_name = #{accountName} WHERE account_id = #{accountId}")
         int updateAccountName(@Param("accountId") UUID accountId, @Param("accountName") String accountName);
 

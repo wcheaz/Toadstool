@@ -76,6 +76,20 @@ public class TradeEventService {
     }
 
     /**
+     * Record the pricing decision for an order: the market quote it was priced against (BR-14/BR-15)
+     */
+    public void recordOrderPriced(UUID clientId, UUID orderId, String details) {
+        recordTradeEvent(clientId, "ORDER", orderId, "PRICED", details);
+    }
+
+    /**
+     * Record that an order's execution was rejected, and why
+     */
+    public void recordOrderRejected(UUID clientId, UUID orderId, String details) {
+        recordTradeEvent(clientId, "ORDER", orderId, "REJECTED", details);
+    }
+
+    /**
      * Validate trade event input
      */
     private void validateTradeEvent(String entityType, String action) {

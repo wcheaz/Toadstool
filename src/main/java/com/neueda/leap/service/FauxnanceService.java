@@ -43,7 +43,17 @@ public class FauxnanceService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Latest quote in USD, the platform's account currency. Quotes in other currencies (e.g. INR for
+     * Indian equities, pence for UK equities, the quote currency of an FX pair) are converted with the
+     * live FX rate; the local price and rate are kept on the quote. Null when no quote or rate is available.
+     */
     public QuoteResponse getQuote(String symbol) {
+        return toUsd(getRawQuote(symbol));
+    }
+
+    /** Provider quote in its own currency, cached for CACHE_TTL_MS. */
+    private QuoteResponse getRawQuote(String symbol) {
         String cacheKey = quoteCacheKey(symbol);
         CacheEntry<?> cached = cache.get(cacheKey);
         if (cached != null && !cached.isExpired(CACHE_TTL_MS)) {
@@ -90,6 +100,7 @@ public class FauxnanceService {
 
         return requestedSymbols.stream()
                 .map(quotesBySymbol::get)
+                .map(this::toUsd)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -103,6 +114,10 @@ public class FauxnanceService {
         return "quote:" + extractBaseSymbol(symbol);
     }
 
+    /**
+     * Daily candles in USD. Candles in another currency are converted with that day's FX close
+     * (falling back to the latest rate for days without one); empty when no rate is available.
+     */
     @SuppressWarnings("unchecked")
     public List<CandleResponse> getCandles(String symbol, String fromDate, String toDate) {
         String cacheKey = "candles:" + symbol + ":" + fromDate + ":" + toDate;
@@ -111,11 +126,122 @@ public class FauxnanceService {
             return (List<CandleResponse>) cached.value;
         }
 
-        List<CandleResponse> candles = fetchCandles(symbol, fromDate, toDate);
-        if (candles != null) {
-            cache.put(cacheKey, new CacheEntry<>(candles));
-        }
+        List<CandleResponse> candles = toUsd(getRawCandles(symbol, fromDate, toDate), fromDate, toDate);
+        cache.put(cacheKey, new CacheEntry<>(candles));
         return candles;
+    }
+
+    /** Provider candles in their own currency, cached for CACHE_TTL_MS. */
+    private CandleSeries getRawCandles(String symbol, String fromDate, String toDate) {
+        String cacheKey = "rawcandles:" + extractBaseSymbol(symbol) + ":" + fromDate + ":" + toDate;
+        CacheEntry<?> cached = cache.get(cacheKey);
+        if (cached != null && !cached.isExpired(CACHE_TTL_MS)) {
+            return (CandleSeries) cached.value;
+        }
+        CandleSeries series = fetchCandles(symbol, fromDate, toDate);
+        if (!series.candles.isEmpty()) {
+            cache.put(cacheKey, new CacheEntry<>(series));
+        }
+        return series;
+    }
+
+    // ---- Currency conversion to USD ----
+
+    /** Currencies Fauxnance quotes as FX:{CCY}USD (USD per unit); others are quoted as FX:USD{CCY}. */
+    private static final Set<String> QUOTED_AGAINST_USD = Set.of("EUR", "GBP", "AUD", "NZD");
+    /** UK equities are priced in pence (GBp/GBX). */
+    private static final Set<String> PENCE_STERLING = Set.of("GBp", "GBX", "GBx");
+
+    private static boolean isUsd(String currency) {
+        return currency == null || currency.isBlank() || "USD".equals(currency);
+    }
+
+    /** FX pair whose price gives the USD value of one unit of the currency. */
+    private static String usdRatePair(String currency) {
+        return QUOTED_AGAINST_USD.contains(currency) ? "FX:" + currency + "USD" : "FX:USD" + currency;
+    }
+
+    private static double usdPerUnitFromPair(String currency, double pairPrice) {
+        return QUOTED_AGAINST_USD.contains(currency) ? pairPrice : 1.0 / pairPrice;
+    }
+
+    /** Current USD value of one unit of the currency, or null if no rate is available. */
+    private Double usdPerUnit(String currency) {
+        if (isUsd(currency)) {
+            return 1.0;
+        }
+        if (PENCE_STERLING.contains(currency)) {
+            Double perPound = usdPerUnit("GBP");
+            return perPound != null ? perPound / 100.0 : null;
+        }
+        QuoteResponse pair = getRawQuote(usdRatePair(currency));
+        if (pair == null || !(pair.getPrice() > 0)) {
+            logger.warn("No FX rate available to convert {} to USD", currency);
+            return null;
+        }
+        return usdPerUnitFromPair(currency, pair.getPrice());
+    }
+
+    private QuoteResponse toUsd(QuoteResponse quote) {
+        if (quote == null || isUsd(quote.getCurrency())) {
+            return quote;
+        }
+        Double rate = usdPerUnit(quote.getCurrency());
+        if (rate == null) {
+            return null; // never price in the wrong currency
+        }
+        QuoteResponse converted = new QuoteResponse(quote.getSymbol(), quote.getPrice() * rate, quote.getBid() * rate,
+                quote.getAsk() * rate, quote.getChange() * rate, quote.getChangePercent(), quote.getAsOf());
+        converted.localCurrency = quote.getCurrency();
+        converted.localPrice = quote.getPrice();
+        converted.fxRate = rate;
+        return converted;
+    }
+
+    private List<CandleResponse> toUsd(CandleSeries series, String fromDate, String toDate) {
+        if (isUsd(series.currency) || series.candles.isEmpty()) {
+            return series.candles;
+        }
+        Double latestRate = usdPerUnit(series.currency);
+        if (latestRate == null) {
+            return Collections.emptyList();
+        }
+        Map<String, Double> dailyRates = dailyUsdRates(series.currency, fromDate, toDate);
+        List<CandleResponse> converted = new ArrayList<>();
+        for (CandleResponse candle : series.candles) {
+            double rate = dailyRates.getOrDefault(candle.getDate(), latestRate);
+            converted.add(new CandleResponse(candle.getDate(), candle.getOpen() * rate, candle.getHigh() * rate,
+                    candle.getLow() * rate, candle.getClose() * rate, candle.getVolume()));
+        }
+        return converted;
+    }
+
+    /** USD per unit of the currency for each day, from the FX pair's daily closes. */
+    private Map<String, Double> dailyUsdRates(String currency, String fromDate, String toDate) {
+        double scale = 1.0;
+        String rateCurrency = currency;
+        if (PENCE_STERLING.contains(currency)) {
+            rateCurrency = "GBP";
+            scale = 0.01;
+        }
+        Map<String, Double> rates = new HashMap<>();
+        for (CandleResponse candle : getRawCandles(usdRatePair(rateCurrency), fromDate, toDate).candles) {
+            if (candle.getClose() > 0) {
+                rates.put(candle.getDate(), usdPerUnitFromPair(rateCurrency, candle.getClose()) * scale);
+            }
+        }
+        return rates;
+    }
+
+    /** Candles plus the currency they are priced in. */
+    private static class CandleSeries {
+        final String currency;
+        final List<CandleResponse> candles;
+
+        CandleSeries(String currency, List<CandleResponse> candles) {
+            this.currency = currency;
+            this.candles = candles;
+        }
     }
 
     public SymbolResponse getSymbol(String symbol) {
@@ -151,7 +277,7 @@ public class FauxnanceService {
             JsonNode root = objectMapper.readTree(response.getBody());
             JsonNode data = root.get("data");
             if (data != null) {
-                return new QuoteResponse(
+                QuoteResponse quote = new QuoteResponse(
                         data.get("symbol").asText(),
                         data.get("price").asDouble(),
                         data.get("bid").asDouble(),
@@ -160,6 +286,8 @@ public class FauxnanceService {
                         data.get("changePercent").asDouble(),
                         data.get("asOf").asText()
                 );
+                quote.currency = data.path("currency").asText("USD");
+                return quote;
             }
             logger.warn("Fauxnance API response missing 'data' field for symbol {}", symbol);
             return null;
@@ -195,7 +323,7 @@ public class FauxnanceService {
                 quotesArray.forEach(entry -> {
                     if (entry.has("quote") && !entry.has("error")) {
                         JsonNode quote = entry.get("quote");
-                        quotes.add(new QuoteResponse(
+                        QuoteResponse parsed = new QuoteResponse(
                                 quote.get("symbol").asText(),
                                 quote.get("price").asDouble(),
                                 quote.get("bid").asDouble(),
@@ -203,7 +331,9 @@ public class FauxnanceService {
                                 quote.get("change").asDouble(),
                                 quote.get("changePercent").asDouble(),
                                 quote.get("asOf").asText()
-                        ));
+                        );
+                        parsed.currency = quote.path("currency").asText("USD");
+                        quotes.add(parsed);
                     } else if (entry.has("error")) {
                         logger.warn("Fauxnance batch quote error for symbol {}: {}",
                                 entry.get("symbol").asText(),
@@ -218,7 +348,7 @@ public class FauxnanceService {
         }
     }
 
-    private List<CandleResponse> fetchCandles(String symbol, String fromDate, String toDate) {
+    private CandleSeries fetchCandles(String symbol, String fromDate, String toDate) {
         try {
             String baseSymbol = extractBaseSymbol(symbol);
             String url = properties.getBaseUrl() + "/candles/" + baseSymbol + "?from=" + fromDate + "&to=" + toDate;
@@ -226,12 +356,12 @@ public class FauxnanceService {
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 logger.warn("Fauxnance API returned non-success status {} for candles {}", response.getStatusCode(), symbol);
-                return Collections.emptyList();
+                return new CandleSeries("USD", Collections.emptyList());
             }
             
             if (response.getBody() == null) {
                 logger.warn("Fauxnance API returned empty body for candles {}", symbol);
-                return Collections.emptyList();
+                return new CandleSeries("USD", Collections.emptyList());
             }
 
             JsonNode root = objectMapper.readTree(response.getBody());
@@ -248,10 +378,11 @@ public class FauxnanceService {
                         candle.get("volume").asLong()
                 )));
             }
-            return candles;
+            String currency = data != null ? data.path("currency").asText("USD") : "USD";
+            return new CandleSeries(currency, candles);
         } catch (Exception e) {
             logger.error("Error fetching candles for symbol {}: {}", symbol, e.getMessage(), e);
-            return Collections.emptyList();
+            return new CandleSeries("USD", Collections.emptyList());
         }
     }
 
@@ -315,6 +446,13 @@ public class FauxnanceService {
         public double change;
         public double changePercent;
         public String asOf;
+        /** Currency of price/bid/ask/change: USD once converted by FauxnanceService.getQuote. */
+        public String currency = "USD";
+        /** Provider currency and price before conversion; null for USD-priced instruments. */
+        public String localCurrency;
+        public Double localPrice;
+        /** USD per unit of localCurrency used for the conversion. */
+        public Double fxRate;
 
         public QuoteResponse(String symbol, double price, double bid, double ask, double change, double changePercent, String asOf) {
             this.symbol = symbol;
@@ -333,6 +471,10 @@ public class FauxnanceService {
         public double getChange() { return change; }
         public double getChangePercent() { return changePercent; }
         public String getAsOf() { return asOf; }
+        public String getCurrency() { return currency; }
+        public String getLocalCurrency() { return localCurrency; }
+        public Double getLocalPrice() { return localPrice; }
+        public Double getFxRate() { return fxRate; }
     }
 
     public static class CandleResponse {

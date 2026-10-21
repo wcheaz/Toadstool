@@ -174,7 +174,9 @@ export class ApiService {
     instrumentId: string,
     side: string,
     quantity: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    orderType: 'MARKET' | 'LIMIT' = 'MARKET',
+    limitPrice?: number
   ): Observable<OrderResponse> {
     const headers: any = {};
     if (idempotencyKey) {
@@ -184,7 +186,9 @@ export class ApiService {
     const body = {
       instrumentId: instrumentId,
       side: side,
-      quantity: quantity
+      quantity: quantity,
+      orderType: orderType,
+      ...(orderType === 'LIMIT' ? { limitPrice: limitPrice } : {})
     };
 
     return this.http.post<OrderResponse>(
@@ -208,13 +212,11 @@ export class ApiService {
   }
 
   /**
-   * Fill/execute an order at a specified price
+   * Get one order, including its status (ACCEPTED, FILLED or REJECTED). Orders are priced and
+   * executed by the server after they are accepted, so clients follow the status instead of filling.
    */
-  fillOrder(orderId: string, price: number): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(
-      `${this.apiUrl}/orders/${orderId}/fill?price=${price}`,
-      {}
-    );
+  getOrder(orderId: string): Observable<OrderResponse> {
+    return this.http.get<OrderResponse>(`${this.apiUrl}/orders/${orderId}`);
   }
 
   getFills(accountId: string, limit: number = 1000, offset: number = 0): Observable<PaginatedResponse<FillResponse>> {

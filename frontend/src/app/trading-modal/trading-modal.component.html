@@ -5,6 +5,15 @@
       ✕
     </button>
 
+    <!-- Server-side execution in progress -->
+    <div class="executing-overlay" *ngIf="isSubmitting" role="status" aria-live="polite">
+      <div class="executing-card">
+        <span class="executing-spinner" aria-hidden="true"></span>
+        <strong>Executing your order at the live market price…</strong>
+        <small>This usually takes a second or two.</small>
+      </div>
+    </div>
+
     <!-- Error State -->
     <div *ngIf="apiError" class="error-state">
       <div class="error-content">
@@ -89,7 +98,7 @@
     [selectedAsset]="selectedAsset"
     [orderType]="pendingTicket?.orderSide ?? 'buy'"
     [quantity]="pendingTicket?.quantity ?? 50"
-    [filledPrice]="selectedAsset?.price || 0"
+    [filledPrice]="filledPrice"
     (returnToDashboard)="onReturnToDashboard()"
     (viewActivity)="onViewActivity()">
   </app-order-success>
