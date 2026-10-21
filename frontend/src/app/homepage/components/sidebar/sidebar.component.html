@@ -80,7 +80,10 @@
         </button>
         <div class="account-menu-divider"></div>
         <button class="account-action" type="button" (click)="manageAccounts()">
-          <span class="action-icon">+</span>
+          <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l1.2 1.9 2.2.4 1.6-1.3 1.8 1.8-1.3 1.6.4 2.2L21 11v2l-2.1 1.4-.4 2.2 1.3 1.6-1.8 1.8-1.6-1.3-2.2.4L12 21l-1.2-1.9-2.2-.4L7 20l-1.8-1.8 1.3-1.6-.4-2.2L3 13v-2l2.1-1.4.4-2.2-1.3-1.6L6 4l1.6 1.3 2.2-.4L12 3z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
           Manage accounts
         </button>
         <button class="account-action account-action-primary" type="button" (click)="createAccount()" [disabled]="isCreatingAccount">

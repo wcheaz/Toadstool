@@ -10,6 +10,8 @@
   flex-direction: column;
   position: sticky;
   top: 0;
+  background-color: var(--color-surface-raised);
+  border-right: 1px solid var(--color-border);
 }
 
 .sidebar {
@@ -18,13 +20,13 @@
   width: 200px;
   flex: 1;
   min-height: 0;
-  background-color: var(--color-surface-raised);
+  background-color: transparent;
   padding: 16px 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  border-right: 1px solid var(--color-border);
+  border-right: 0;
 }
 
 .account-panel {
@@ -259,6 +261,7 @@
     position: static;
     width: 100%;
     height: auto;
+    border-right: 0;
   }
 
   .sidebar {
