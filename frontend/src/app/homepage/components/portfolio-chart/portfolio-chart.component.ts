@@ -16,8 +16,8 @@ const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const FALLBACK_CHART_HEIGHT = 240;
 
 const CHART_THEMES = {
-  dark: { text: '#aeb5bb', grid: 'rgba(148, 163, 184, 0.1)', line: '#2f9e70', top: 'rgba(0, 116, 74, 0.35)', bottom: 'rgba(0, 116, 74, 0.02)' },
-  light: { text: '#596268', grid: 'rgba(36, 39, 42, 0.08)', line: '#00613e', top: 'rgba(0, 116, 74, 0.25)', bottom: 'rgba(0, 116, 74, 0.02)' }
+  dark: { text: '#aeb5bb', grid: 'rgba(148, 163, 184, 0.1)', line: '#55b990', top: 'rgba(0, 116, 74, 0.35)', bottom: 'rgba(0, 116, 74, 0.02)' },
+  light: { text: '#596268', grid: 'rgba(36, 39, 42, 0.08)', line: '#087a52', top: 'rgba(0, 116, 74, 0.25)', bottom: 'rgba(0, 116, 74, 0.02)' }
 };
 
 /**

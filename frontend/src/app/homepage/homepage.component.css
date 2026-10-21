@@ -53,8 +53,8 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #00744A;
-  box-shadow: 0 0 10px rgba(0, 116, 74, 0.5);
+  background-color: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary-soft);
 }
 
 .tab-content {
@@ -191,8 +191,8 @@
 }
 
 .dashboard-module:hover {
-  border-color: rgba(0, 116, 74, 0.5);
-  box-shadow: 0 15px 40px rgba(0, 116, 74, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 15px 40px var(--color-primary-soft);
 }
 
 .module-header {
@@ -229,8 +229,8 @@
 }
 
 .module-handle:hover {
-  color: #00744A;
-  background-color: rgba(0, 116, 74, 0.1);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
 .module-handle:active {
@@ -279,7 +279,7 @@
 
 .news-item:hover {
   background: rgba(45, 49, 53, 0.72);
-  border-color: rgba(0, 116, 74, 0.3);
+  border-color: var(--color-primary);
 }
 
 .news-date {
@@ -361,7 +361,7 @@
 }
 
 .table-row:hover {
-  background-color: rgba(0, 116, 74, 0.05);
+  background-color: var(--color-primary-soft);
 }
 
 .table-row:last-child {
@@ -388,7 +388,7 @@
 }
 
 .change-positive {
-  color: #2f9e70;
+  color: var(--color-success);
   font-weight: 500;
 }
 
@@ -403,7 +403,7 @@
 
 .trade-btn {
   padding: 4px 10px;
-  background-color: #00744A;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -414,7 +414,7 @@
 }
 
 .trade-btn:hover {
-  background-color: #005c3a;
+  background-color: var(--color-primary-strong);
 }
 
 /* Placeholder */

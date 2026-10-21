@@ -6,8 +6,8 @@
   --line: rgba(148, 163, 184, 0.28);
   --text: #f2f4f8;
   --muted: #aeb5bb;
-  --green: #00744A;
-  --green-text: #55b990;
+  --green: var(--color-primary);
+  --green-text: var(--color-success);
   --red-text: #f0645a;
   color: var(--text);
   font-family: 'Avenir Next', 'Segoe UI', sans-serif;
@@ -17,7 +17,7 @@
 .trading-page {
   min-height: 100%;
   padding: 0 40px 40px;
-  background: radial-gradient(circle at 78% 5%, rgba(0, 116, 74, 0.12), transparent 28%), var(--desk-bg);
+  background: radial-gradient(circle at 78% 5%, var(--color-primary-soft), transparent 28%), var(--desk-bg);
 }
 
 /* Heading */
@@ -42,7 +42,7 @@
 }
 
 .market-status {
-  color: #2f9e70;
+  color: var(--green-text);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -55,7 +55,7 @@
   margin-right: 8px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 10px rgba(0, 116, 74, 0.7);
+  box-shadow: 0 0 10px var(--color-primary-soft);
 }
 
 /* Layout */
@@ -140,8 +140,8 @@
 }
 
 .search-box:focus-within {
-  border-color: #00744A;
-  box-shadow: 0 0 0 2px rgba(0, 116, 74, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
 }
 
 .search-box input {
@@ -229,7 +229,7 @@
 
 .stock-row:hover,
 .stock-row.selected {
-  border-color: rgba(0, 116, 74, 0.65);
+  border-color: var(--color-primary);
   background: #20352c;
 }
 
@@ -294,7 +294,7 @@
   place-items: center;
   min-height: 34px;
   border-radius: 6px;
-  background: #00744A;
+  background: var(--color-primary);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -302,7 +302,7 @@
 }
 
 .trade-button:hover {
-  background: #005c3a;
+  background: var(--color-primary-strong);
 }
 
 .trade-button.disabled {
@@ -409,7 +409,7 @@
   padding: 11px 16px;
   border: 0;
   border-radius: 6px;
-  background: #00744A;
+  background: var(--color-primary);
   color: #fff;
   font: inherit;
   font-size: 15px;
@@ -418,7 +418,7 @@
 }
 
 .open-trade-button:hover {
-  background: #005c3a;
+  background: var(--color-primary-strong);
 }
 
 /* Selected asset news */

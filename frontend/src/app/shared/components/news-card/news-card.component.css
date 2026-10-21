@@ -33,7 +33,7 @@
 
 .category-tag {
   background-color: rgba(0, 116, 74, 0.15);
-  color: #00744A;
+  color: var(--color-primary);
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;
@@ -91,7 +91,7 @@
 
 .asset-tag.selectable:hover,
 .asset-tag.selectable:focus-visible {
-  border-color: #00744A;
+  border-color: var(--color-primary);
   color: #f3f4f6;
 }
 

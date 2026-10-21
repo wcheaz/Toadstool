@@ -91,4 +91,19 @@
     (close)="closeDepositModal()"
     (submit)="onDepositSubmit($event)">
   </app-deposit-modal>
+
+  <app-withdrawal-modal
+    [isOpen]="isWithdrawalModalOpen"
+    [availableBalance]="currentBalance"
+    (close)="closeWithdrawalModal()"
+    (submit)="onWithdrawalSubmit($event)">
+  </app-withdrawal-modal>
+
+  <app-transfer-modal
+    [isOpen]="isTransferModalOpen"
+    [accounts]="accounts"
+    [sourceAccountId]="accountId"
+    (close)="closeTransferModal()"
+    (submit)="onTransferSubmit($event)">
+  </app-transfer-modal>
 </div>

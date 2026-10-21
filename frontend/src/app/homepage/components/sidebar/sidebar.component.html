@@ -54,8 +54,7 @@
     </ul>
   </nav>
   <div class="admin-workspace" *ngIf="adminMode"><p>ADMIN WORKSPACE</p><span>Client data · Read-only oversight</span></div>
-</aside>
-<section class="account-panel" *ngIf="!adminMode">
+  <section class="account-panel" *ngIf="!adminMode">
     <div class="account-panel-heading">
       <span class="account-panel-kicker">Trading account</span>
       <span class="account-status-dot" aria-hidden="true"></span>
@@ -67,7 +66,7 @@
           <strong>{{ selectedAccount?.accountName || 'No account selected' }}</strong>
           <small>{{ selectedAccount ? (selectedAccount.balance | currency:'USD':'symbol':'1.2-2') : 'Account unavailable' }}</small>
         </span>
-        <span class="account-chevron">v</span>
+        <span class="account-chevron" aria-hidden="true"></span>
       </summary>
       <div class="account-menu-list">
         <div class="account-empty" *ngIf="accounts.length === 0">No accounts available</div>
@@ -80,7 +79,10 @@
         </button>
         <div class="account-menu-divider"></div>
         <button class="account-action" type="button" (click)="manageAccounts()">
-          <span class="action-icon">+</span>
+          <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l1.2 1.9 2.2.4 1.6-1.3 1.8 1.8-1.3 1.6.4 2.2L21 11v2l-2.1 1.4-.4 2.2 1.3 1.6-1.8 1.8-1.6-1.3-2.2.4L12 21l-1.2-1.9-2.2-.4L7 20l-1.8-1.8 1.3-1.6-.4-2.2L3 13v-2l2.1-1.4.4-2.2-1.3-1.6L6 4l1.6 1.3 2.2-.4L12 3z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
           Manage accounts
         </button>
         <button class="account-action account-action-primary" type="button" (click)="createAccount()" [disabled]="isCreatingAccount">
@@ -89,5 +91,6 @@
         </button>
       </div>
     </details>
-</section>
+  </section>
+</aside>
 </div>
