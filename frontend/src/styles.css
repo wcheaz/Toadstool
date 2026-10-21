@@ -17,7 +17,14 @@
   --color-primary: #00744A;
   --color-primary-strong: #005c3a;
   --color-primary-soft: rgba(0, 116, 74, 0.14);
-  --color-success: #2f9e70;
+  --color-success: #55b990;
+  --color-balance-start: #1e302a;
+  --color-balance-end: #27664d;
+  --color-balance-border: rgba(131, 209, 173, 0.3);
+  --color-balance-heading: #ffffff;
+  --color-balance-muted: #b9d6d0;
+  --color-balance-value: #ecfff5;
+  --color-balance-secondary: #d7f5e8;
   --color-warning: #fbbf24;
   --color-danger: #f87171;
   --color-danger-soft: rgba(239, 68, 68, 0.14);
@@ -49,7 +56,14 @@
   --color-primary: #005c3a;
   --color-primary-strong: #00452c;
   --color-primary-soft: rgba(0, 116, 74, 0.1);
-  --color-success: #00613e;
+  --color-success: #087a52;
+  --color-balance-start: #e8f4ef;
+  --color-balance-end: #d5ebe1;
+  --color-balance-border: rgba(0, 116, 74, 0.2);
+  --color-balance-heading: #173b2e;
+  --color-balance-muted: #41675a;
+  --color-balance-value: #173b2e;
+  --color-balance-secondary: #245d48;
   --color-admin-muted: #596268;
 }
 
@@ -987,4 +1001,168 @@ a {
 :root[data-theme='dark'] .activity-container .stat-value,
 :root[data-theme='dark'] .activity-container .pagination-btn {
   color: var(--color-text) !important;
+}
+
+/* Normalize the legacy cash and order modals in light mode. */
+:root[data-theme='light'] .withdrawal-modal,
+:root[data-theme='light'] .transfer-modal,
+:root[data-theme='light'] .trading-modal,
+:root[data-theme='light'] .order-confirmation-modal,
+:root[data-theme='light'] .order-success-modal {
+  color: var(--color-text) !important;
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%) !important;
+  border-color: var(--color-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal-overlay,
+:root[data-theme='light'] .transfer-modal-overlay,
+:root[data-theme='light'] .trading-modal-overlay,
+:root[data-theme='light'] .order-confirmation-overlay,
+:root[data-theme='light'] .order-success-overlay {
+  background: rgba(36, 39, 42, 0.42) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .modal-header,
+:root[data-theme='light'] .withdrawal-modal .progress-indicator,
+:root[data-theme='light'] .withdrawal-modal .modal-footer,
+:root[data-theme='light'] .transfer-modal .modal-header,
+:root[data-theme='light'] .transfer-modal .modal-footer,
+:root[data-theme='light'] .order-confirmation-modal .modal-header {
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .modal-title,
+:root[data-theme='light'] .withdrawal-modal .step-title,
+:root[data-theme='light'] .withdrawal-modal .form-label,
+:root[data-theme='light'] .withdrawal-modal .review-card strong,
+:root[data-theme='light'] .transfer-modal .modal-header h1,
+:root[data-theme='light'] .transfer-modal .field-group label,
+:root[data-theme='light'] .transfer-modal .summary strong {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .modal-subtitle,
+:root[data-theme='light'] .withdrawal-modal .step-description,
+:root[data-theme='light'] .withdrawal-modal .balance-hint,
+:root[data-theme='light'] .withdrawal-modal .review-card div,
+:root[data-theme='light'] .withdrawal-modal .security-note,
+:root[data-theme='light'] .withdrawal-modal .terms,
+:root[data-theme='light'] .transfer-modal .modal-header p,
+:root[data-theme='light'] .transfer-modal .field-group small,
+:root[data-theme='light'] .transfer-modal .summary div,
+:root[data-theme='light'] .transfer-modal .cancel-button {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .amount-input,
+:root[data-theme='light'] .withdrawal-modal .account-card,
+:root[data-theme='light'] .withdrawal-modal .review-card,
+:root[data-theme='light'] .transfer-modal .field-group select,
+:root[data-theme='light'] .transfer-modal .amount-input input,
+:root[data-theme='light'] .order-confirmation-modal .order-section,
+:root[data-theme='light'] .order-success-modal .asset-card,
+:root[data-theme='light'] .order-success-modal .confirmation-details,
+:root[data-theme='light'] .order-success-modal .execution-section,
+:root[data-theme='light'] .trading-modal .order-ticket,
+:root[data-theme='light'] .trading-modal .market-depth {
+  color: var(--color-text) !important;
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .step-number,
+:root[data-theme='light'] .withdrawal-modal .btn-secondary,
+:root[data-theme='light'] .withdrawal-modal .btn-cancel,
+:root[data-theme='light'] .transfer-modal .cancel-button,
+:root[data-theme='light'] .trading-modal .btn-preview,
+:root[data-theme='light'] .trading-modal .side-selector,
+:root[data-theme='light'] .trading-modal .order-type-selector,
+:root[data-theme='light'] .order-confirmation-modal .btn-edit,
+:root[data-theme='light'] .order-success-modal .btn-activity {
+  color: var(--color-text-muted) !important;
+  background: var(--color-surface-raised) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .info-box,
+:root[data-theme='light'] .transfer-modal .summary,
+:root[data-theme='light'] .trading-modal .price-section,
+:root[data-theme='light'] .trading-modal .summary-section,
+:root[data-theme='light'] .trading-modal .ticker-badge,
+:root[data-theme='light'] .order-confirmation-modal .asset-summary,
+:root[data-theme='light'] .order-confirmation-modal .summary-section,
+:root[data-theme='light'] .order-success-modal .order-summary,
+:root[data-theme='light'] .order-success-modal .summary-values,
+:root[data-theme='light'] .order-success-modal .activity-note {
+  color: var(--color-text) !important;
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-modal .order-ticket h3,
+:root[data-theme='light'] .trading-modal .asset-info h2,
+:root[data-theme='light'] .trading-modal .price-value,
+:root[data-theme='light'] .trading-modal .summary-row,
+:root[data-theme='light'] .trading-modal .info-value,
+:root[data-theme='light'] .order-confirmation-modal .modal-title,
+:root[data-theme='light'] .order-confirmation-modal .asset-details h3,
+:root[data-theme='light'] .order-confirmation-modal .detail-value,
+:root[data-theme='light'] .order-confirmation-modal .summary-value,
+:root[data-theme='light'] .order-success-modal .success-title,
+:root[data-theme='light'] .order-success-modal .summary-text,
+:root[data-theme='light'] .order-success-modal .detail-row span:last-child,
+:root[data-theme='light'] .order-success-modal .detail-value {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme='light'] .trading-modal .price-label,
+:root[data-theme='light'] .trading-modal .price-range,
+:root[data-theme='light'] .trading-modal .form-section label,
+:root[data-theme='light'] .trading-modal .unit-label,
+:root[data-theme='light'] .trading-modal .info-label,
+:root[data-theme='light'] .trading-modal .summary-row span:first-child,
+:root[data-theme='light'] .order-confirmation-modal .section-title,
+:root[data-theme='light'] .order-confirmation-modal .detail-label,
+:root[data-theme='light'] .order-confirmation-modal .summary-label,
+:root[data-theme='light'] .order-confirmation-modal .confirmation-note,
+:root[data-theme='light'] .order-success-modal .section-title,
+:root[data-theme='light'] .order-success-modal .detail-row span:first-child,
+:root[data-theme='light'] .order-success-modal .summary-subtext,
+:root[data-theme='light'] .order-success-modal .detail-label,
+:root[data-theme='light'] .order-success-modal .activity-note {
+  color: var(--color-text-muted) !important;
+}
+
+:root[data-theme='light'] .trading-modal .quantity-input,
+:root[data-theme='light'] .trading-modal .form-section input,
+:root[data-theme='light'] .trading-modal .duration-select,
+:root[data-theme='light'] .order-confirmation-modal .btn-edit,
+:root[data-theme='light'] .order-success-modal .btn-activity {
+  color: var(--color-text) !important;
+  background: var(--color-surface-input) !important;
+  border-color: var(--color-border-input) !important;
+}
+
+:root[data-theme='light'] .withdrawal-modal .btn-primary,
+:root[data-theme='light'] .withdrawal-modal .btn-withdraw,
+:root[data-theme='light'] .transfer-modal .confirm-button,
+:root[data-theme='light'] .trading-modal .btn-place.buy,
+:root[data-theme='light'] .order-confirmation-modal .btn-confirm.buy,
+:root[data-theme='light'] .order-success-modal .btn-return {
+  color: #ffffff !important;
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-modal .side-btn.active,
+:root[data-theme='light'] .trading-modal .type-btn.active {
+  color: #ffffff !important;
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:root[data-theme='light'] .trading-modal .btn-place.sell,
+:root[data-theme='light'] .order-confirmation-modal .btn-confirm.sell {
+  color: #ffffff !important;
 }

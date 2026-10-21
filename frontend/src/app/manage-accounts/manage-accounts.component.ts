@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { AccountResponse } from '../core/api/api.models';
@@ -28,17 +28,29 @@ export class ManageAccountsComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(private accountState: AccountStateService, private apiService: ApiService) {}
+  constructor(
+    private accountState: AccountStateService,
+    private apiService: ApiService,
+    private changeDetectorRef: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.accountState.accounts$.pipe(takeUntil(this.destroy$)).subscribe(accounts => {
       this.accounts = accounts;
-      if (!this.selectedAccount || !accounts.some(account => account.accountId === this.selectedAccount?.accountId)) {
+      const updatedSelectedAccount = this.selectedAccount
+        ? accounts.find(account => account.accountId === this.selectedAccount?.accountId)
+        : null;
+      if (updatedSelectedAccount) {
+        this.selectedAccount = updatedSelectedAccount;
+        this.accountName = updatedSelectedAccount.accountName;
+      } else {
         this.selectAccount(accounts[0] || null);
       }
+      this.changeDetectorRef.detectChanges();
     });
     this.accountState.selectedAccount$.pipe(takeUntil(this.destroy$)).subscribe(account => {
-      if (account) this.selectAccount(account);
+      this.selectAccount(account);
+      this.changeDetectorRef.detectChanges();
     });
     this.accountState.loadAccounts();
   }
@@ -64,9 +76,14 @@ export class ManageAccountsComponent implements OnInit, OnDestroy {
 
   saveAccountName(): void {
     if (!this.selectedAccount || !this.accountName.trim() || this.isBusy) return;
+    const updatedName = this.accountName.trim();
     this.isBusy = true;
-    this.apiService.updateAccount(this.selectedAccount.accountId, { accountName: this.accountName.trim() }).subscribe({
-      next: account => { this.accountState.updateAccount(account); this.showNotice('Account name updated.', 'success'); this.isBusy = false; },
+    this.apiService.updateAccount(this.selectedAccount.accountId, { accountName: updatedName }).subscribe({
+      next: account => {
+        this.accountState.updateAccount({ ...account, accountName: updatedName });
+        this.showNotice('Account name updated.', 'success');
+        this.isBusy = false;
+      },
       error: () => { this.showNotice('We could not update that account name.', 'error'); this.isBusy = false; }
     });
   }

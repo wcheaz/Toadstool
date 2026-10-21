@@ -23,13 +23,21 @@ export class AccountStateService {
 
     this.apiService.getAccountsByClientId(clientId).subscribe({
       next: (response) => {
-        this.accountsSubject.next(response.items);
-        const selected = response.items.find(account => account.accountId === this.authService.getAccountId())
-          || response.items[0]
+        const accounts = response.items ?? [];
+        this.accountsSubject.next(accounts);
+        const selected = accounts.find(account => account.accountId === this.authService.getAccountId())
+          || accounts[0]
           || null;
-        if (selected) this.selectAccount(selected);
+        if (selected) {
+          this.selectAccount(selected);
+        } else {
+          this.selectedAccountSubject.next(null);
+        }
       },
-      error: (error) => console.error('Failed to load accounts:', error)
+      error: (error) => {
+        this.hasLoaded = false;
+        console.error('Failed to load accounts:', error);
+      }
     });
   }
 

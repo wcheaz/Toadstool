@@ -54,8 +54,7 @@
     </ul>
   </nav>
   <div class="admin-workspace" *ngIf="adminMode"><p>ADMIN WORKSPACE</p><span>Client data · Read-only oversight</span></div>
-</aside>
-<section class="account-panel" *ngIf="!adminMode">
+  <section class="account-panel" *ngIf="!adminMode">
     <div class="account-panel-heading">
       <span class="account-panel-kicker">Trading account</span>
       <span class="account-status-dot" aria-hidden="true"></span>
@@ -67,7 +66,7 @@
           <strong>{{ selectedAccount?.accountName || 'No account selected' }}</strong>
           <small>{{ selectedAccount ? (selectedAccount.balance | currency:'USD':'symbol':'1.2-2') : 'Account unavailable' }}</small>
         </span>
-        <span class="account-chevron">v</span>
+        <span class="account-chevron" aria-hidden="true"></span>
       </summary>
       <div class="account-menu-list">
         <div class="account-empty" *ngIf="accounts.length === 0">No accounts available</div>
@@ -92,5 +91,6 @@
         </button>
       </div>
     </details>
-</section>
+  </section>
+</aside>
 </div>
