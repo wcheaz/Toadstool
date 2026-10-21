@@ -47,7 +47,7 @@
           <section class="overview-grid">
             <article class="panel chart-panel">
               <div class="section-heading"><h2>Portfolio value over time</h2><div class="range-tabs"><button type="button" *ngFor="let days of chartRanges" [class.selected]="chartDays === days" (click)="setChartRange(days)">{{ days }} D</button></div></div>
-              <p class="chart-summary" *ngIf="chartChange as change" [class.negative]="change.amount < 0">{{ formatMoney(change.amount, true) }} ({{ formatPercent(change.percent) }}) over {{ chartDays }} days</p>
+              <p class="chart-summary" *ngIf="chartChange as change" [class.negative]="change.amount < 0">{{ formatMoney(change.amount, true) }}<ng-container *ngIf="change.percent !== null"> ({{ formatPercent(change.percent) }})</ng-container> investment gain over {{ chartDays }} days<span class="chart-summary-note" *ngIf="change.netDeposits !== 0"> · excludes {{ formatMoney(change.netDeposits, true) }} net deposits</span></p>
               <div class="chart" *ngIf="chartLine; else noChart">
                 <div class="grid-line line-one"></div><div class="grid-line line-two"></div><div class="grid-line line-three"></div>
                 <svg viewBox="0 0 600 145" preserveAspectRatio="none" aria-label="Portfolio value trend"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4b9f4a" stop-opacity=".28"/><stop offset="1" stop-color="#4b9f4a" stop-opacity="0"/></linearGradient></defs><path [attr.d]="chartArea" fill="url(#chartFill)"/><path [attr.d]="chartLine" fill="none" stroke="#58b548" stroke-width="2"/></svg>
