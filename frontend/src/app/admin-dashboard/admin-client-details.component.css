@@ -54,6 +54,7 @@ table { width: 100%; border-collapse: collapse; font-size: 7px; }th { padding: 1
 .range-tabs { gap: 8px; }
 .range-tabs button { padding: 5px 9px; font-size: 12px; }
 .chart-summary { margin: 12px 0 6px; font-size: 13px; }
+.chart-summary-note { color: var(--color-admin-muted, #aeb5bb); font-weight: 400; }
 .chart { height: 170px; }
 .chart svg { height: 160px; }
 .line-one { top: 40px; }

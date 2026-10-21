@@ -16,6 +16,7 @@
 
       <!-- News Feed -->
       <div class="news-feed">
+        <app-news-notice [articles]="filteredNewsArticles" [loading]="isLoadingNews" [error]="newsLoadError"></app-news-notice>
         <app-news-card *ngFor="let article of filteredNewsArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
       </div>
     </section>

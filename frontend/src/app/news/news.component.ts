@@ -8,6 +8,7 @@ import { NewsService, NewsResponse, EarningsEvent } from '../services/news.servi
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 import { NewsCardComponent } from '../shared/components/news-card/news-card.component';
 import { NewsDetailModalComponent } from '../shared/components/news-detail-modal/news-detail-modal.component';
+import { NewsNoticeComponent } from '../shared/components/news-notice/news-notice.component';
 import { NewsArticle, toNewsArticle } from '../shared/models/news-article.model';
 import { Subscription, interval } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -46,7 +47,7 @@ const EARNINGS_HOUR_LABELS: { [hour: string]: string } = {
 @Component({
   selector: 'app-news',
   standalone: true,
-  imports: [CommonModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent],
+  imports: [CommonModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent, NewsNoticeComponent],
   templateUrl: './news.component.html',
   styleUrl: './news.component.css'
 })

@@ -11,6 +11,7 @@ import { Asset } from '../shared/models/asset.model';
 import { NewsArticle, toNewsArticle } from '../shared/models/news-article.model';
 import { NewsCardComponent } from '../shared/components/news-card/news-card.component';
 import { NewsDetailModalComponent } from '../shared/components/news-detail-modal/news-detail-modal.component';
+import { NewsNoticeComponent } from '../shared/components/news-notice/news-notice.component';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 
 interface RecommendedAsset {
@@ -28,7 +29,7 @@ const NEWS_REFRESH_MS = 300000;
 @Component({
   selector: 'app-trading',
   standalone: true,
-  imports: [CommonModule, FormsModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent],
+  imports: [CommonModule, FormsModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent, NewsNoticeComponent],
   templateUrl: './trading.component.html',
   styleUrl: './trading.component.css'
 })

@@ -1,13 +1,31 @@
 <div class="dashboard-module news-module">
   <div class="module-header">
     <h3>News</h3>
-    <div class="module-handle">⋮⋮</div>
+    <ng-content select="[cardControls]"></ng-content>
   </div>
   <div class="news-section">
-    <p class="news-status" *ngIf="loading">Loading news...</p>
-    <p class="news-status" *ngIf="error">{{ error }}</p>
-    <p class="news-status" *ngIf="!loading && !error && newsArticles.length === 0">No news available yet.</p>
-    <app-news-card *ngFor="let article of newsArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
+    @if (linkedSymbol; as symbol) {
+      <div class="link-chip" role="status">
+        <span><span aria-hidden="true">🔗</span> Showing {{ symbol }} news</span>
+        <button type="button" (click)="setLinked(false)">Show all news</button>
+      </div>
+    } @else if (unlinkedSymbol; as symbol) {
+      <div class="link-chip">
+        <span>Showing all news</span>
+        <button type="button" (click)="setLinked(true)">Show {{ symbol }} only</button>
+      </div>
+    }
+    <app-news-notice
+      [articles]="newsArticles"
+      [loading]="loading"
+      [error]="error"
+      [emptyTitle]="linkedSymbol ? 'No recent ' + linkedSymbol + ' news' : 'No news available'"></app-news-notice>
+    <app-news-card
+      *ngFor="let article of newsArticles"
+      [article]="article"
+      [selectableAssets]="selectableSymbols"
+      (assetSelected)="onSymbolSelected($event)"
+      (open)="openNewsDetail($event)"></app-news-card>
   </div>
 </div>
 

@@ -11,7 +11,16 @@
 
   <div class="article-footer">
     <div class="article-assets">
-      <span *ngFor="let asset of article.assets" class="asset-tag">{{ asset }}</span>
+      <ng-container *ngFor="let asset of article.assets">
+        <button
+          *ngIf="isSelectable(asset); else plainTag"
+          type="button"
+          class="asset-tag selectable"
+          [title]="'Show ' + asset + ' in linked cards'"
+          (click)="selectAsset($event, asset)"
+          (keydown.enter)="$event.stopPropagation()">{{ asset }}</button>
+        <ng-template #plainTag><span class="asset-tag">{{ asset }}</span></ng-template>
+      </ng-container>
     </div>
     <small class="market-info">{{ article.market }}</small>
   </div>

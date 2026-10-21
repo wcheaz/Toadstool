@@ -1,5 +1,13 @@
-/* Shared styles for dashboard module cards (header, handle, chrome).
+/* Shared styles for dashboard module cards (header, chrome).
    Imported by each homepage module component via styleUrls. */
+
+/* Each card fills the grid cell its size preset gives it (see homepage .dashboard-card). */
+:host {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
 
 .dashboard-module {
   background: rgba(45, 49, 53, 0.78);
@@ -8,8 +16,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 100%;
   transition: all 0.2s ease;
-  cursor: move;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
@@ -40,32 +48,8 @@
   gap: 16px;
 }
 
-.module-handle {
-  font-size: 12px;
-  color: #64748b;
-  cursor: grab;
-  font-weight: bold;
-  letter-spacing: -2px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.module-handle:hover {
-  color: #00744A;
-  background-color: rgba(0, 116, 74, 0.1);
-}
-
-.module-handle:active {
-  cursor: grabbing;
-}
-
 @media (max-width: 768px) {
   .module-header h3 {
     font-size: 17px;
-  }
-
-  .module-handle {
-    font-size: 14px;
   }
 }

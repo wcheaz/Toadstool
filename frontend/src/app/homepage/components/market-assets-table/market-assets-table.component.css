@@ -1,30 +1,10 @@
-:host {
-  display: block;
-  min-width: 0;
-}
-
-.market-module {
-  min-height: auto;
-  flex: 1;
-}
-
-.view-exchange {
-  font-size: 12px;
-  color: #00744A;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.view-exchange:hover {
-  color: #005c3a;
-}
-
 .market-assets-table {
   background-color: transparent;
   border-radius: 0;
   margin-bottom: 0;
-  overflow-x: auto;
+  overflow: auto;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   box-shadow: none;
@@ -190,4 +170,19 @@
   color: #9ca3af;
   font-size: 13px;
   text-align: center;
+}
+
+/* Linked-symbol selection: rows pick the symbol the news card is filtered to */
+.table-row {
+  cursor: pointer;
+}
+
+.table-row.linked {
+  box-shadow: inset 3px 0 0 var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.table-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }

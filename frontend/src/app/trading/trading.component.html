@@ -90,8 +90,7 @@
       <h3 class="news-list-heading" *ngIf="selectedAsset">
         {{ showingMarketNews ? 'No recent ' + selectedAsset.instrument.symbol + ' news · latest market news' : 'Latest ' + selectedAsset.instrument.symbol + ' news' }}
       </h3>
-      <p class="news-status" *ngIf="isLoadingNews">Loading news...</p>
-      <p class="news-status" *ngIf="!isLoadingNews && selectedArticles.length === 0">No news available yet.</p>
+      <app-news-notice [articles]="selectedArticles" [loading]="isLoadingNews"></app-news-notice>
       <div class="news-list">
         <app-news-card *ngFor="let article of selectedArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
       </div>

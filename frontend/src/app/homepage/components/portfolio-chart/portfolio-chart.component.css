@@ -1,0 +1,98 @@
+.portfolio-module {
+  cursor: default;
+}
+
+.range-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.range-tabs button {
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.range-tabs button:hover {
+  color: var(--color-text);
+}
+
+.range-tabs button.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+.portfolio-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.portfolio-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portfolio-total {
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-change {
+  margin: 0;
+  color: var(--color-success);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.portfolio-change.negative {
+  color: var(--color-danger);
+}
+
+.portfolio-note {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.chart-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 160px;
+}
+
+/* Fills the space left in the card; the chart is resized to match (see ResizeObserver). */
+.chart-container {
+  position: absolute;
+  inset: 0;
+}
+
+.chart-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 24px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.portfolio-updated {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
