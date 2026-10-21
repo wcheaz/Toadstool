@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AccountResponse } from '../../../core/api/api.models';
 import { AccountStateService } from '../../../core/account-state.service';
@@ -20,11 +20,18 @@ export class SidebarComponent implements OnInit {
   isAccountMenuOpen = false;
   isCreatingAccount = false;
 
-  constructor(private router: Router, private accountState: AccountStateService) {}
+  constructor(
+    private router: Router,
+    private accountState: AccountStateService,
+    private changeDetectorRef: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.accountState.accounts$.subscribe(accounts => this.accounts = accounts);
-    this.accountState.selectedAccount$.subscribe(account => this.selectedAccount = account);
+    this.accountState.selectedAccount$.subscribe(account => {
+      this.selectedAccount = account;
+      this.changeDetectorRef.markForCheck();
+    });
     if (!this.adminMode) this.accountState.loadAccounts();
   }
 

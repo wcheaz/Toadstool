@@ -14,8 +14,8 @@
 }
 
 .dashboard-module:hover {
-  border-color: rgba(0, 116, 74, 0.5);
-  box-shadow: 0 15px 40px rgba(0, 116, 74, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 15px 40px var(--color-primary-soft);
 }
 
 .module-header {
@@ -52,8 +52,8 @@
 }
 
 .module-handle:hover {
-  color: #00744A;
-  background-color: rgba(0, 116, 74, 0.1);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
 .module-handle:active {
