@@ -21,6 +21,7 @@ services:
       retries: 5
     networks:
       - toadstool-network
+      - shared-app-network
 
   api:
     build: .
@@ -44,3 +45,8 @@ volumes:
 networks:
   toadstool-network:
     driver: bridge
+
+  # Shared with the separately deployed Superset Compose project.
+  shared-app-network:
+    external: true
+    name: shared-app-network
