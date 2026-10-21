@@ -5,11 +5,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { AccountResponse } from '../core/api/api.models';
 import { ApiService } from '../core/api/api.service';
 import { AccountStateService } from '../core/account-state.service';
+import { WithdrawalModalComponent, WithdrawalSummary } from '../withdrawal-modal/withdrawal-modal.component';
 
 @Component({
   selector: 'app-manage-accounts',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, WithdrawalModalComponent],
   templateUrl: './manage-accounts.component.html',
   styleUrl: './manage-accounts.component.css'
 })
@@ -23,6 +24,7 @@ export class ManageAccountsComponent implements OnInit, OnDestroy {
   notice = '';
   noticeType: 'success' | 'error' | 'info' = 'info';
   isLiquidationOpen = false;
+  isWithdrawalOpen = false;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -90,9 +92,17 @@ export class ManageAccountsComponent implements OnInit, OnDestroy {
   }
 
   withdrawFunds(): void {
+    if (!this.selectedAccount || this.isBusy || Number(this.selectedAccount.balance) <= 0) return;
+    this.isWithdrawalOpen = true;
+  }
+
+  closeWithdrawal(): void {
+    this.isWithdrawalOpen = false;
+  }
+
+  submitWithdrawal(summary: WithdrawalSummary): void {
     if (!this.selectedAccount || this.isBusy) return;
-    const amount = Number(window.prompt('Withdrawal amount') || 0);
-    if (!amount || amount <= 0 || amount > Number(this.selectedAccount.balance)) return;
+    const amount = summary.amount;
     this.isBusy = true;
     this.apiService.postCashEvent(this.selectedAccount.accountId, { eventType: 'WITHDRAWAL', amount }).subscribe({
       next: account => { this.accountState.updateAccount(account); this.showNotice(`Withdrawal of ${this.money(amount)} submitted.`, 'success'); this.isBusy = false; },

@@ -7,6 +7,8 @@ import { AuthService } from '../core/auth.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 import { ErrorModalComponent } from '../shared/components/error-modal/error-modal.component';
 import { DepositModalComponent } from '../deposit-modal/deposit-modal.component';
+import { WithdrawalModalComponent, WithdrawalSummary } from '../withdrawal-modal/withdrawal-modal.component';
+import { TransferModalComponent, TransferSummary } from '../transfer-modal/transfer-modal.component';
 import { BalanceWidgetComponent } from './components/balance-widget/balance-widget.component';
 import { NewsFeedComponent } from './components/news-feed/news-feed.component';
 import { MarketAssetsTableComponent } from './components/market-assets-table/market-assets-table.component';
@@ -23,6 +25,8 @@ import { takeUntil } from 'rxjs/operators';
     TradingModalComponent,
     ErrorModalComponent,
     DepositModalComponent,
+    WithdrawalModalComponent,
+    TransferModalComponent,
     BalanceWidgetComponent,
     NewsFeedComponent,
     MarketAssetsTableComponent,
@@ -53,6 +57,8 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   // Deposit modal state
   isDepositModalOpen: boolean = false;
+  isWithdrawalModalOpen: boolean = false;
+  isTransferModalOpen: boolean = false;
 
   // UI state
   isBalanceVisible: boolean = true;
@@ -288,17 +294,24 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.isDepositModalOpen = true;
   }
 
+  closeWithdrawalModal() {
+    this.isWithdrawalModalOpen = false;
+  }
+
+  openWithdrawalModal() {
+    this.isWithdrawalModalOpen = true;
+  }
+
   onWithdrawClicked() {
-    const amount = Number(window.prompt('Withdrawal amount') || 0);
-    if (!amount || amount <= 0 || !this.accountId) return;
-    this.apiService.postCashEvent(this.accountId, { eventType: 'WITHDRAWAL', amount }).subscribe({
-      next: (account) => this.accountState.updateAccount(account),
-      error: () => alert('Withdrawal failed. Check the amount and available balance.')
-    });
+    this.openWithdrawalModal();
   }
 
   onTransferClicked() {
-    alert('Transfer functionality coming soon');
+    this.isTransferModalOpen = true;
+  }
+
+  closeTransferModal() {
+    this.isTransferModalOpen = false;
   }
 
   onDepositSubmit(summary: any) {
@@ -309,6 +322,32 @@ export class HomepageComponent implements OnInit, OnDestroy {
         alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} completed successfully!`);
       },
       error: () => alert('Deposit failed. Please try again.')
+    });
+  }
+
+  onWithdrawalSubmit(summary: WithdrawalSummary) {
+    if (!this.accountId) return;
+    this.apiService.postCashEvent(this.accountId, { eventType: 'WITHDRAWAL', amount: summary.amount }).subscribe({
+      next: (account) => {
+        this.accountState.updateAccount(account);
+        alert(`Withdrawal of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} submitted successfully.`);
+      },
+      error: () => alert('Withdrawal failed. Check the amount and available balance.')
+    });
+  }
+
+  onTransferSubmit(summary: TransferSummary) {
+    this.apiService.postCashEvent(summary.sourceAccount.accountId, { eventType: 'WITHDRAWAL', amount: summary.amount }).subscribe({
+      next: source => this.apiService.postCashEvent(summary.destinationAccount.accountId, { eventType: 'DEPOSIT', amount: summary.amount }).subscribe({
+        next: destination => {
+          this.accountState.updateAccount(source);
+          this.accountState.updateAccount(destination);
+          this.accountState.selectAccount(source);
+          alert(`Transfer of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} completed successfully.`);
+        },
+        error: () => alert('The destination account could not receive the funds.')
+      }),
+      error: () => alert('Transfer declined. Check the available balance.')
     });
   }
 
