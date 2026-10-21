@@ -1,7 +1,10 @@
 package com.neueda.leap.service;
 
+import com.neueda.leap.Instrument;
+import com.neueda.leap.enums.AssetClass;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -18,6 +21,13 @@ public class MarketStatusService {
     private static final LocalTime MARKET_OPEN = LocalTime.of(9, 30);    // 9:30 AM EST
     private static final LocalTime MARKET_CLOSE = LocalTime.of(16, 0);   // 4:00 PM EST
     private static final ZoneId MARKET_TIMEZONE = ZoneId.of("America/New_York");
+    private static final ZoneId INDIA_TIMEZONE = ZoneId.of("Asia/Kolkata");
+    private static final LocalTime INDIA_OPEN = LocalTime.of(9, 15);
+    private static final LocalTime INDIA_CLOSE = LocalTime.of(15, 30);
+    private static final ZoneId LONDON_TIMEZONE = ZoneId.of("Europe/London");
+    private static final LocalTime LONDON_OPEN = LocalTime.of(8, 0);
+    private static final LocalTime LONDON_CLOSE = LocalTime.of(16, 30);
+    private static final LocalTime FX_WEEK_BOUNDARY = LocalTime.of(17, 0);
 
     private final Environment environment;
 
@@ -41,6 +51,61 @@ public class MarketStatusService {
         }
 
         return isWithinMarketHours();
+    }
+
+    /**
+     * Checks if the market an instrument trades on is currently open (always true in test environments).
+     * Each market keeps its own session: crypto trades continuously, FX from Sunday 5pm to Friday 5pm
+     * New York time, Indian equities 09:15-15:30 IST, UK equities 08:00-16:30 London time, and other
+     * equities the US session.
+     */
+    public boolean isMarketOpen(Instrument instrument) {
+        if (isTestEnvironment()) {
+            return true;
+        }
+        return isMarketOpenAt(instrument, ZonedDateTime.now());
+    }
+
+    /** Market status for an instrument at a given time (for testing). */
+    protected boolean isMarketOpenAt(Instrument instrument, ZonedDateTime time) {
+        AssetClass assetClass = instrument != null ? instrument.getAssetClass() : null;
+        if (assetClass == AssetClass.CRYPTO) {
+            return true;
+        }
+        if (assetClass == AssetClass.FX) {
+            return isFxMarketOpenAt(time.withZoneSameInstant(MARKET_TIMEZONE));
+        }
+        String symbol = instrument != null && instrument.getSymbol() != null ? instrument.getSymbol().toUpperCase() : "";
+        if (symbol.endsWith(".NS") || symbol.endsWith(".BO")) {
+            return isWeekdaySessionOpen(time.withZoneSameInstant(INDIA_TIMEZONE), INDIA_OPEN, INDIA_CLOSE);
+        }
+        if (symbol.endsWith(".L")) {
+            return isWeekdaySessionOpen(time.withZoneSameInstant(LONDON_TIMEZONE), LONDON_OPEN, LONDON_CLOSE);
+        }
+        return isMarketOpenAt(time.withZoneSameInstant(MARKET_TIMEZONE));
+    }
+
+    private static boolean isWeekdaySessionOpen(ZonedDateTime local, LocalTime open, LocalTime close) {
+        DayOfWeek day = local.getDayOfWeek();
+        boolean isWeekday = day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY;
+        LocalTime time = local.toLocalTime();
+        return isWeekday && !time.isBefore(open) && time.isBefore(close);
+    }
+
+    /** FX trades around the clock from Sunday 17:00 to Friday 17:00 New York time. */
+    private static boolean isFxMarketOpenAt(ZonedDateTime newYork) {
+        DayOfWeek day = newYork.getDayOfWeek();
+        LocalTime time = newYork.toLocalTime();
+        if (day == DayOfWeek.SATURDAY) {
+            return false;
+        }
+        if (day == DayOfWeek.SUNDAY) {
+            return !time.isBefore(FX_WEEK_BOUNDARY);
+        }
+        if (day == DayOfWeek.FRIDAY) {
+            return time.isBefore(FX_WEEK_BOUNDARY);
+        }
+        return true;
     }
 
     /**

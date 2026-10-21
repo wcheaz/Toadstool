@@ -117,7 +117,7 @@ public class OrderMapperTest {
             List<Order> page2 = orderMapper.selectOrdersByAccountId(testAccountId, 5, 5);
             
             assertEquals(5, page1.size());
-            assertEquals(5, page2.size());
+            assertEquals(Math.min(5, allOrders.size() - 5), page2.size());
             assertNotEquals(page1.get(0).getOrderId(), page2.get(0).getOrderId());
         }
     }

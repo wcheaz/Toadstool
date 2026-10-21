@@ -81,7 +81,7 @@
             <div class="filters">
               <select [(ngModel)]="assetFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by asset"><option value="">All assets</option><option *ngFor="let symbol of assetOptions" [value]="symbol">{{ symbol }}</option></select>
               <select [(ngModel)]="sideFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by side"><option value="">All sides</option><option value="BUY">Buy</option><option value="SELL">Sell</option></select>
-              <select [(ngModel)]="statusFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by status"><option value="">All statuses</option><option value="FILLED">Filled</option><option value="SUBMITTED">Submitted</option><option value="FAILED">Failed</option></select>
+              <select [(ngModel)]="statusFilter" (ngModelChange)="onJournalFilterChange()" aria-label="Filter by status"><option value="">All statuses</option><option value="FILLED">Filled</option><option value="ACCEPTED">Accepted</option><option value="REJECTED">Rejected</option></select>
             </div>
             <table>
               <thead><tr><th>Time / Order ID (UTC)</th><th>Asset</th><th>Side</th><th>Quantity</th><th>Price</th><th>Gross total</th><th>Fee</th><th>Net cash</th><th>Status</th></tr></thead>

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * REST Controller for Analytics endpoints (admin-only, reporting).
- * Daily figures come from the analytics fact tables, which a trigger on trading.fills keeps current.
+ * Daily figures come from the analytics fact tables, which AnalyticsProjectionJob keeps current off the trading path.
  */
 @RestController
 @RequestMapping("/api/admin/analytics")
@@ -108,7 +108,8 @@ public class AdminAnalyticsController {
 
     /**
      * GET /api/admin/analytics/insights
-     * Headline platform numbers plus named insights derived from live trading data.
+     * Headline platform numbers plus named insights. Trading activity comes from the analytics fact
+     * tables (BR-16); only point-in-time counts (clients, accounts, cash, open orders) read live tables.
      * Pass insight=<name> to return a single named insight.
      */
     @GetMapping("/insights")

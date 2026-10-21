@@ -31,6 +31,9 @@ import java.util.UUID;
 @Service
 public class OrderService {
 
+    public static final String ORDER_TYPE_MARKET = "MARKET";
+    public static final String ORDER_TYPE_LIMIT = "LIMIT";
+
     private final OrderRepository orderRepository;
     private final InstrumentPricingService pricingService;
     private final MarketStatusService marketStatusService;
@@ -146,13 +149,19 @@ public class OrderService {
      * @throws RuntimeException if account or instrument not found
      */
     public Order createOrder(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey) {
+        return createOrder(accountId, instrumentId, side, quantity, idempotencyKey, ORDER_TYPE_MARKET, null);
+    }
+
+    /**
+     * Create a MARKET or LIMIT order. The order is only accepted and recorded here; it is priced
+     * and executed afterwards by OrderExecutionService (BR-06). A LIMIT order is executed only if
+     * the live quote is at or better than its limit, otherwise it is rejected.
+     */
+    public Order createOrder(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey,
+                             String orderType, BigDecimal limitPrice) {
         // Step 1: Validate order input using validator
         orderValidator.validate(new OrderValidationRequest(side, quantity));
-
-        // Step 2: Validate market is open
-        if (!marketStatusService.isMarketOpen()) {
-            throw new IllegalArgumentException("Cannot place order: Market is closed");
-        }
+        String normalizedOrderType = normalizeOrderType(orderType, limitPrice);
 
         // Step 3: Validate account exists and is ACTIVE
         Account account = accountService.getAccountById(accountId);
@@ -172,6 +181,11 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot place order: Instrument status is " + instrument.getStatus());
         }
 
+        // Validate the instrument's own market is open (crypto 24/7, FX, US/UK/Indian equity sessions)
+        if (!marketStatusService.isMarketOpen(instrument)) {
+            throw new IllegalArgumentException("Cannot place order: Market is closed");
+        }
+
         // Step 5: Fetch instrument price
         BigDecimal instrumentPrice = pricingService.getPrice(instrument.getAssetClass(), instrumentId);
         
@@ -180,9 +194,10 @@ public class OrderService {
             throw new RuntimeException("Pricing service returned null price for instrument: " + instrumentId);
         }
 
-        // Step 6: Parse quantity and calculate order value
+        // Step 6: Parse quantity and calculate order value (a LIMIT BUY can cost up to its limit)
         BigDecimal orderQuantity = new BigDecimal(quantity);
-        BigDecimal orderValue = instrumentPrice.multiply(orderQuantity);
+        BigDecimal referencePrice = ORDER_TYPE_LIMIT.equals(normalizedOrderType) ? limitPrice : instrumentPrice;
+        BigDecimal orderValue = referencePrice.multiply(orderQuantity);
 
         // Step 7: Calculate fee using strategy pattern
         FeeStrategy feeStrategy = feeStrategyFactory.getStrategy(instrument.getAssetClass());
@@ -200,8 +215,22 @@ public class OrderService {
                     + totalPrice + ", Available: " + account.getBalance());
         }
 
+        // Reject SELL orders for more than is held, counting sells already awaiting execution (BR-05)
+        if (OrderSide.SELL.equals(OrderSide.valueOf(side.toUpperCase()))) {
+            BigDecimal held = holdingsService.getHolding(accountId, instrumentId)
+                    .map(holding -> holding.getQuantity())
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal pendingSells = orderRepository.pendingSellQuantity(accountId, instrumentId);
+            BigDecimal available = held.subtract(pendingSells != null ? pendingSells : BigDecimal.ZERO);
+            if (available.compareTo(orderQuantity) < 0) {
+                throw new IllegalArgumentException("Insufficient holdings. Available: "
+                        + available.max(BigDecimal.ZERO).stripTrailingZeros().toPlainString() + ", Requested: " + quantity);
+            }
+        }
+
         // Step 9: Insert order into database
-        orderRepository.save(accountId, instrumentId, side, quantity, idempotencyKey);
+        orderRepository.save(accountId, instrumentId, side, quantity, idempotencyKey, normalizedOrderType,
+                ORDER_TYPE_LIMIT.equals(normalizedOrderType) ? limitPrice : null);
 
         // Step 10: Retrieve and return the created order
         Order order = getOrderByIdempotencyKey(accountId, idempotencyKey);
@@ -214,17 +243,29 @@ public class OrderService {
         // Step 11: Set totalPrice on the order object (not persisted to DB, calculated at submission time)
         order.setTotalPrice(totalPrice);
 
-        tradeEventService.recordOrderSubmitted(
-                account.getClientId(),
-                order.getOrderId(),
-                buildOrderEventDetails(account.getClientId(), accountId, instrumentId, side, quantity, idempotencyKey)
-        );
+        String eventDetails = buildOrderEventDetails(account.getClientId(), accountId, instrumentId, side, quantity,
+                idempotencyKey, normalizedOrderType, limitPrice);
+        tradeEventService.recordOrderSubmitted(account.getClientId(), order.getOrderId(), eventDetails);
+        // The order passed the trading rules and is recorded as a firm commitment (BR-06/BR-07)
+        tradeEventService.recordOrderAccepted(account.getClientId(), order.getOrderId(), eventDetails);
         
         return order;
     }
 
+    private static String normalizeOrderType(String orderType, BigDecimal limitPrice) {
+        String type = orderType == null || orderType.isBlank() ? ORDER_TYPE_MARKET : orderType.trim().toUpperCase();
+        if (!ORDER_TYPE_MARKET.equals(type) && !ORDER_TYPE_LIMIT.equals(type)) {
+            throw new IllegalArgumentException("Unsupported order type: " + orderType);
+        }
+        if (ORDER_TYPE_LIMIT.equals(type) && (limitPrice == null || limitPrice.signum() <= 0)) {
+            throw new IllegalArgumentException("A limit order needs a limit price greater than zero");
+        }
+        return type;
+    }
+
     private String buildOrderEventDetails(UUID ownerClientId, UUID accountId, UUID instrumentId,
-                                          String side, String quantity, String idempotencyKey) {
+                                          String side, String quantity, String idempotencyKey,
+                                          String orderType, BigDecimal limitPrice) {
         AuthenticatedUser authenticatedUser = SecurityAccess.currentUser();
         UUID authenticatedUserId = authenticatedUser != null && authenticatedUser.getClientId() != null
                 ? authenticatedUser.getClientId()
@@ -234,7 +275,10 @@ public class OrderService {
                 + "\",\"instrumentId\":\"" + instrumentId
                 + "\",\"side\":\"" + side
                 + "\",\"quantity\":\"" + quantity
-                + "\",\"idempotencyKey\":\"" + idempotencyKey + "\"}";
+                + "\",\"idempotencyKey\":\"" + idempotencyKey
+                + "\",\"orderType\":\"" + orderType
+                + (limitPrice != null && ORDER_TYPE_LIMIT.equals(orderType) ? "\",\"limitPrice\":\"" + limitPrice.toPlainString() : "")
+                + "\"}";
     }
     /**
      * Execute/fill an order and update holdings and account balance.
