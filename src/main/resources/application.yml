@@ -24,6 +24,13 @@ spring:
     table: flyway_schema_history
     validateOnMigrate: false
 
+reporting:
+  datasource:
+    url: ${REPORTING_DB_URL:jdbc:postgresql://${REPORTING_DB_HOST:${DB_HOST:localhost}}:${REPORTING_DB_PORT:${DB_PORT:5432}}/${REPORTING_DB_NAME:toadstool_reporting}}
+    username: ${REPORTING_DB_USERNAME:${spring.datasource.username}}
+    password: ${REPORTING_DB_PASSWORD:${spring.datasource.password}}
+    driver-class-name: org.postgresql.Driver
+
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.neueda.leap

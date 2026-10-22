@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { ApiService } from '../core/api/api.service';
-import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -26,7 +25,7 @@ export class RegisterComponent {
   showConfirmPassword: boolean = false;
   activeLegalDocument: 'terms' | 'privacy' | null = null;
 
-  constructor(private router: Router, private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) {}
+  constructor(private router: Router, private apiService: ApiService, private cdr: ChangeDetectorRef) {}
 
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
@@ -140,14 +139,9 @@ export class RegisterComponent {
       username: this.username.trim(),
       password: this.password
     }).subscribe({
-      next: (response) => {
-        // Registration successful - store client info for the current session
-        this.authService.storeClientSession(response);
-
-        console.log('Registration successful:', response);
-        
-        // Navigate to homepage
-        this.router.navigate(['/homepage']);
+      next: () => {
+        this.isLoading = false;
+        this.router.navigate(['/login']);
       },
       error: (error) => {
         this.isLoading = false;

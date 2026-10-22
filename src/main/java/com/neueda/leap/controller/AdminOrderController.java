@@ -1,10 +1,10 @@
 package com.neueda.leap.controller;
 
-import com.neueda.leap.Order;
+import com.neueda.leap.dto.AdminDtos.AdminOrderRow;
 import com.neueda.leap.dto.OrderResponse;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.security.SecurityAccess;
-import com.neueda.leap.service.OrderService;
+import com.neueda.leap.service.AdminOversightService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,10 +23,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/admin/orders")
 public class AdminOrderController {
 
-    private final OrderService orderService;
+    private final AdminOversightService adminOversightService;
 
-    public AdminOrderController(OrderService orderService) {
-        this.orderService = orderService;
+    public AdminOrderController(AdminOversightService adminOversightService) {
+        this.adminOversightService = adminOversightService;
     }
 
     /**
@@ -48,26 +48,26 @@ public class AdminOrderController {
         }
 
         try {
-            List<OrderResponse> orders = orderService.listAllOrders(from, to, limit, offset).stream()
+            List<OrderResponse> orders = adminOversightService.listAllOrders(from, to, limit, offset).stream()
                     .map(this::mapToOrderResponse)
                     .collect(Collectors.toList());
-            int totalCount = orderService.countAllOrders(from, to);
+            int totalCount = adminOversightService.countAllOrders(from, to);
             return ResponseEntity.ok(new PaginatedResponse<>(orders, limit, offset, totalCount));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    private OrderResponse mapToOrderResponse(Order order) {
-        String side = order.getSide() != null ? order.getSide().toString() : "BUY";
+    private OrderResponse mapToOrderResponse(AdminOrderRow order) {
+        String side = order.side != null ? order.side : "BUY";
         return new OrderResponse(
-                order.getOrderId(),
-                order.getAccountId(),
-                order.getInstrumentId(),
+                order.orderId,
+                order.accountId,
+                order.instrumentId,
                 side,
-                order.getQuantity().toPlainString(),
-                order.getIdempotencyKey(),
-                order.getStatus() != null ? order.getStatus() : "ACCEPTED",
-                order.getSubmittedAt());
+                order.quantity != null ? order.quantity.stripTrailingZeros().toPlainString() : "0",
+                order.idempotencyKey,
+                order.status != null ? order.status : "SUBMITTED",
+                order.submittedAt);
     }
 }

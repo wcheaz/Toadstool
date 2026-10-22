@@ -7,7 +7,6 @@ import com.neueda.leap.enums.AdminRole;
 import com.neueda.leap.enums.AdminUserStatus;
 import com.neueda.leap.enums.ClientStatus;
 import com.neueda.leap.mapper.AccountMapper;
-import com.neueda.leap.auth.AdminCredentialMapper;
 import com.neueda.leap.mapper.AdminUserMapper;
 import com.neueda.leap.mapper.ClientMapper;
 import com.neueda.leap.mapper.LoginEventMapper;

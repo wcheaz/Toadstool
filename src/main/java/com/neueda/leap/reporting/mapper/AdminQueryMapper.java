@@ -1,6 +1,7 @@
-package com.neueda.leap.mapper;
+package com.neueda.leap.reporting.mapper;
 
 import com.neueda.leap.dto.AdminDtos.AccessEvent;
+import com.neueda.leap.dto.AdminDtos.AdminOrderRow;
 import com.neueda.leap.dto.AdminDtos.ClientAccount;
 import com.neueda.leap.dto.AdminDtos.ClientSummary;
 import com.neueda.leap.dto.AdminDtos.CashEventRow;
@@ -11,12 +12,12 @@ import com.neueda.leap.dto.AdminDtos.PlatformOverview;
 import com.neueda.leap.dto.AdminDtos.TopInstrument;
 import com.neueda.leap.dto.AdminDtos.InstrumentSideRatio;
 import com.neueda.leap.dto.AdminDtos.TradeEventRow;
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,93 +27,162 @@ import java.util.UUID;
 @Mapper
 public interface AdminQueryMapper {
 
-    String CLIENT_SUMMARY_COLUMNS =
-            "SELECT c.client_id, c.display_name, c.email, cc.username, c.status, c.created_at, "
-            + "COALESCE(a.account_count, 0) AS account_count, COALESCE(a.total_cash, 0) AS total_cash, "
-            + "pa.account_id AS primary_account_id, pa.account_name AS primary_account_name, "
-            + "la.activity AS latest_activity, la.occurred_at AS latest_activity_at, "
-            + "cc.last_login_at "
-            + "FROM trading.clients c "
-            + "LEFT JOIN LATERAL (SELECT username, last_login_at FROM trading.client_credentials "
-            + "  WHERE client_id = c.client_id ORDER BY created_at LIMIT 1) cc ON true "
-            + "LEFT JOIN LATERAL (SELECT COUNT(*) AS account_count, SUM(balance) AS total_cash "
-            + "  FROM trading.accounts WHERE client_id = c.client_id) a ON true "
-            + "LEFT JOIN LATERAL (SELECT account_id, account_name FROM trading.accounts "
-            + "  WHERE client_id = c.client_id ORDER BY opened_at LIMIT 1) pa ON true "
-            + "LEFT JOIN LATERAL (SELECT activity, occurred_at FROM ("
-            + "    SELECT te.action AS activity, te.occurred_at FROM trading.trade_events te WHERE te.client_id = c.client_id "
-            + "    UNION ALL "
-            + "    SELECT ce.event_type AS activity, ce.occurred_at FROM trading.cash_events ce "
-            + "      JOIN trading.accounts ca ON ca.account_id = ce.account_id WHERE ca.client_id = c.client_id"
-            + "  ) activity ORDER BY occurred_at DESC LIMIT 1) la ON true ";
+    String CLIENT_BASE =
+            "SELECT "
+            + "a.client_id, "
+            + "COALESCE(MAX(NULLIF(a.client_email, '')), ll.email_attempted, '') AS display_name, "
+            + "COALESCE(MAX(NULLIF(a.client_email, '')), ll.email_attempted, '') AS email, "
+            + "NULL::varchar AS username, "
+            + "CASE WHEN BOOL_OR(a.status = 'ACTIVE') THEN 'ACTIVE' ELSE 'INACTIVE' END AS status, "
+            + "MIN(a.opened_at) AS created_at, "
+            + "COUNT(*) AS account_count, "
+            + "COALESCE(SUM(a.balance), 0) AS total_cash, "
+            + "(ARRAY_AGG(a.account_id ORDER BY a.opened_at, a.account_id))[1] AS primary_account_id, "
+            + "(ARRAY_AGG(COALESCE(a.account_name, 'Account') ORDER BY a.opened_at, a.account_id))[1] AS primary_account_name, "
+            + "la.activity AS latest_activity, "
+            + "la.occurred_at AS latest_activity_at, "
+            + "ll.last_login_at "
+            + "FROM analytics.accounts a "
+            + "LEFT JOIN LATERAL ("
+            + "    SELECT le.email_attempted, le.occurred_at AS last_login_at "
+            + "    FROM analytics.login_events le "
+            + "    WHERE le.client_id = a.client_id AND le.outcome = 'SUCCESS' "
+            + "    ORDER BY le.occurred_at DESC LIMIT 1"
+            + ") ll ON true "
+            + "LEFT JOIN LATERAL ("
+            + "    SELECT activity, occurred_at FROM ("
+            + "        SELECT 'ORDER_SUBMITTED' AS activity, o.submitted_at AS occurred_at "
+            + "        FROM analytics.orders o "
+            + "        WHERE o.client_id = a.client_id "
+            + "        UNION ALL "
+            + "        SELECT cm.event_type AS activity, cm.occurred_at "
+            + "        FROM analytics.cash_movements cm "
+            + "        WHERE cm.client_id = a.client_id"
+            + "    ) events ORDER BY occurred_at DESC LIMIT 1"
+            + ") la ON true ";
 
     String CLIENT_SEARCH_FILTER =
             "<where>"
-            + "<if test='q != null'>(c.display_name ILIKE '%' || #{q} || '%' OR c.email ILIKE '%' || #{q} || '%' "
-            + "OR cc.username ILIKE '%' || #{q} || '%' OR c.client_id::text ILIKE #{q} || '%')</if>"
-            + "<if test='status != null'> AND c.status = #{status}</if>"
+            + "<if test='q != null'>(base.display_name ILIKE '%' || #{q} || '%' OR base.email ILIKE '%' || #{q} || '%' "
+            + "OR base.client_id::text ILIKE #{q} || '%' OR base.primary_account_name ILIKE '%' || #{q} || '%')</if>"
+            + "<if test='status != null'> AND base.status = #{status}</if>"
             + "</where>";
 
-    @Select({"<script>", CLIENT_SUMMARY_COLUMNS, CLIENT_SEARCH_FILTER,
-            "ORDER BY c.display_name, c.client_id LIMIT #{limit} OFFSET #{offset}", "</script>"})
+    @Select({"<script>",
+            "SELECT base.client_id, base.display_name, base.email, base.username, base.status, base.created_at,",
+            "base.account_count, base.total_cash, base.primary_account_id, base.primary_account_name,",
+            "base.latest_activity, base.latest_activity_at, base.last_login_at",
+            "FROM (", CLIENT_BASE, "GROUP BY a.client_id, ll.email_attempted, ll.last_login_at, la.activity, la.occurred_at", ") base",
+            CLIENT_SEARCH_FILTER,
+            "ORDER BY base.display_name, base.client_id LIMIT #{limit} OFFSET #{offset}",
+            "</script>"})
     List<ClientSummary> searchClients(@Param("q") String q, @Param("status") String status,
                                       @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM trading.clients c",
-            "LEFT JOIN LATERAL (SELECT username FROM trading.client_credentials WHERE client_id = c.client_id ORDER BY created_at LIMIT 1) cc ON true",
-            CLIENT_SEARCH_FILTER, "</script>"})
+    @Select({"<script>",
+            "SELECT COUNT(*) FROM (",
+            "SELECT base.client_id FROM (", CLIENT_BASE, "GROUP BY a.client_id, ll.email_attempted, ll.last_login_at, la.activity, la.occurred_at", ") base",
+            CLIENT_SEARCH_FILTER,
+            ") counted",
+            "</script>"})
     int countClients(@Param("q") String q, @Param("status") String status);
 
-    @Select({CLIENT_SUMMARY_COLUMNS, "WHERE c.client_id = #{clientId}"})
+    @Select({"<script>",
+            "SELECT base.client_id, base.display_name, base.email, base.username, base.status, base.created_at,",
+            "base.account_count, base.total_cash, base.primary_account_id, base.primary_account_name,",
+            "base.latest_activity, base.latest_activity_at, base.last_login_at",
+            "FROM (", CLIENT_BASE, "GROUP BY a.client_id, ll.email_attempted, ll.last_login_at, la.activity, la.occurred_at", ") base",
+            "WHERE base.client_id = #{clientId}",
+            "</script>"})
     ClientSummary selectClientSummary(@Param("clientId") UUID clientId);
 
-    @Select("SELECT account_id, account_name, status, opened_at, balance FROM trading.accounts "
+    @Select("SELECT account_id, account_name, status, opened_at, balance FROM analytics.accounts "
             + "WHERE client_id = #{clientId} ORDER BY opened_at")
     List<ClientAccount> selectClientAccounts(@Param("clientId") UUID clientId);
 
-    // ---- Audit: admin access ----
+    String ORDER_FILTER = "<where>"
+            + "<if test='fromSubmittedAt != null'>submitted_at &gt;= #{fromSubmittedAt}</if>"
+            + "<if test='toSubmittedAt != null'> AND submitted_at &lt; #{toSubmittedAt}</if>"
+            + "</where>";
 
-    @Insert("INSERT INTO trading.admin_access_events (admin_user_id, admin_email, client_id, action, details) "
-            + "VALUES (#{adminUserId}, #{adminEmail}, #{clientId}, #{action}, CAST(#{details} AS jsonb))")
-    void insertAccessEvent(@Param("adminUserId") UUID adminUserId, @Param("adminEmail") String adminEmail,
-                           @Param("clientId") UUID clientId, @Param("action") String action,
-                           @Param("details") String details);
+    @Select({"<script>",
+            "SELECT order_id, account_id, instrument_id, side, quantity, idempotency_key,",
+            "CASE WHEN EXISTS (",
+            "  SELECT 1 FROM analytics.cash_movements cm",
+            "  WHERE cm.order_id = analytics.orders.order_id AND cm.event_type IN ('BUY', 'SELL')",
+            ") THEN 'FILLED' ELSE 'SUBMITTED' END AS status,",
+            "submitted_at",
+            "FROM analytics.orders",
+            ORDER_FILTER,
+            "ORDER BY submitted_at DESC LIMIT #{limit} OFFSET #{offset}",
+            "</script>"})
+    List<AdminOrderRow> selectAllOrders(@Param("fromSubmittedAt") OffsetDateTime fromSubmittedAt,
+                                        @Param("toSubmittedAt") OffsetDateTime toSubmittedAt,
+                                        @Param("limit") int limit,
+                                        @Param("offset") int offset);
+
+    @Select({"<script>", "SELECT COUNT(*) FROM analytics.orders", ORDER_FILTER, "</script>"})
+    int countAllOrders(@Param("fromSubmittedAt") OffsetDateTime fromSubmittedAt,
+                       @Param("toSubmittedAt") OffsetDateTime toSubmittedAt);
+
+    // ---- Audit: admin access ----
 
     String ACCESS_FILTER = "<where><if test='clientId != null'>e.client_id = #{clientId}</if></where>";
 
     @Select({"<script>",
-            "SELECT e.access_event_id, e.admin_user_id, e.admin_email, e.client_id, c.display_name AS client_name,",
+            "SELECT e.access_event_id, e.admin_user_id, e.admin_email, e.client_id,",
+            "COALESCE(NULLIF(c.client_email, ''), ll.email_attempted) AS client_name,",
             "e.action, e.occurred_at, e.details::text AS details",
-            "FROM trading.admin_access_events e LEFT JOIN trading.clients c ON c.client_id = e.client_id",
-            ACCESS_FILTER, "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
+            "FROM analytics.admin_access_events e",
+            "LEFT JOIN LATERAL (",
+            "  SELECT a.client_email",
+            "  FROM analytics.accounts a",
+            "  WHERE a.client_id = e.client_id",
+            "  ORDER BY a.opened_at, a.account_id",
+            "  LIMIT 1",
+            ") c ON true",
+            "LEFT JOIN LATERAL (",
+            "  SELECT le.email_attempted",
+            "  FROM analytics.login_events le",
+            "  WHERE le.client_id = e.client_id AND le.outcome = 'SUCCESS'",
+            "  ORDER BY le.occurred_at DESC",
+            "  LIMIT 1",
+            ") ll ON true",
+            ACCESS_FILTER, "ORDER BY e.occurred_at DESC, e.access_event_id DESC LIMIT #{limit} OFFSET #{offset}",
+            "</script>"})
     List<AccessEvent> selectAccessEvents(@Param("clientId") UUID clientId,
                                          @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM trading.admin_access_events e", ACCESS_FILTER, "</script>"})
+    @Select({"<script>", "SELECT COUNT(*) FROM analytics.admin_access_events e", ACCESS_FILTER, "</script>"})
     int countAccessEvents(@Param("clientId") UUID clientId);
 
     // ---- Audit: trade events across the platform ----
 
     String TRADE_FILTER = "<where>"
-            + "<if test='clientId != null'>e.client_id = #{clientId}</if>"
-            + "<if test='action != null'> AND e.action = #{action}</if>"
+            + "<if test='clientId != null'>o.client_id = #{clientId}</if>"
+            + "<if test='action != null'> AND UPPER(#{action}) = 'ORDER_SUBMITTED'</if>"
             + "</where>";
 
     @Select({"<script>",
-            "SELECT e.trade_event_id, e.client_id, c.display_name AS client_name,",
-            "a.account_id, a.account_name, e.entity_type, e.entity_id,",
-            "e.action, e.occurred_at, e.details::text AS details",
-            "FROM trading.trade_events e",
-            "LEFT JOIN trading.clients c ON c.client_id = e.client_id",
-            "LEFT JOIN trading.orders o ON e.entity_type = 'ORDER' AND o.order_id = e.entity_id",
-            "LEFT JOIN trading.fills f ON e.entity_type = 'FILL' AND f.fill_id = e.entity_id",
-            "LEFT JOIN trading.accounts a ON a.account_id = COALESCE(o.account_id,",
-            "(SELECT fo.account_id FROM trading.orders fo WHERE fo.order_id = f.order_id))",
-            TRADE_FILTER, "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
+            "SELECT o.order_id AS trade_event_id, o.client_id,",
+            "COALESCE(NULLIF(a.client_email, ''), ll.email_attempted) AS client_name,",
+            "o.account_id, a.account_name, 'ORDER' AS entity_type, o.order_id AS entity_id,",
+            "'ORDER_SUBMITTED' AS action, o.submitted_at AS occurred_at,",
+            "json_build_object('side', o.side, 'quantity', o.quantity, 'instrumentId', o.instrument_id)::text AS details",
+            "FROM analytics.orders o",
+            "LEFT JOIN analytics.accounts a ON a.account_id = o.account_id",
+            "LEFT JOIN LATERAL (",
+            "  SELECT le.email_attempted",
+            "  FROM analytics.login_events le",
+            "  WHERE le.client_id = o.client_id AND le.outcome = 'SUCCESS'",
+            "  ORDER BY le.occurred_at DESC",
+            "  LIMIT 1",
+            ") ll ON true",
+            TRADE_FILTER, "ORDER BY o.submitted_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<TradeEventRow> selectTradeEvents(@Param("clientId") UUID clientId, @Param("action") String action,
                                           @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM trading.trade_events e", TRADE_FILTER, "</script>"})
+    @Select({"<script>", "SELECT COUNT(*) FROM analytics.orders e", TRADE_FILTER, "</script>"})
     int countTradeEvents(@Param("clientId") UUID clientId, @Param("action") String action);
 
     // ---- Audit: login events with filters ----
@@ -124,15 +194,22 @@ public interface AdminQueryMapper {
             + "</where>";
 
     @Select({"<script>",
-            "SELECT e.login_event_id, e.client_id, c.display_name AS client_name, e.email_attempted, e.outcome,",
+            "SELECT e.login_event_id, e.client_id, COALESCE(NULLIF(c.client_email, ''), e.email_attempted) AS client_name, e.email_attempted, e.outcome,",
             "e.occurred_at, e.details::text AS details",
-            "FROM trading.login_events e LEFT JOIN trading.clients c ON c.client_id = e.client_id",
+            "FROM analytics.login_events e",
+            "LEFT JOIN LATERAL (",
+            "  SELECT a.client_email",
+            "  FROM analytics.accounts a",
+            "  WHERE a.client_id = e.client_id",
+            "  ORDER BY a.opened_at, a.account_id",
+            "  LIMIT 1",
+            ") c ON true",
             LOGIN_FILTER, "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<LoginEventRow> selectLoginEvents(@Param("clientId") UUID clientId, @Param("outcome") String outcome,
                                           @Param("emailAttempted") String emailAttempted,
                                           @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM trading.login_events e", LOGIN_FILTER, "</script>"})
+    @Select({"<script>", "SELECT COUNT(*) FROM analytics.login_events e", LOGIN_FILTER, "</script>"})
     int countLoginEvents(@Param("clientId") UUID clientId, @Param("outcome") String outcome,
                          @Param("emailAttempted") String emailAttempted);
 
@@ -144,55 +221,82 @@ public interface AdminQueryMapper {
             + "</where>";
 
     @Select({"<script>",
-            "SELECT e.cash_event_id, e.account_id, a.client_id, c.display_name AS client_name,",
+            "SELECT e.cash_event_id, e.account_id, a.client_id, COALESCE(NULLIF(a.client_email, ''), ll.email_attempted) AS client_name,",
             "a.account_name, e.event_type, e.amount, e.occurred_at, e.details::text AS details",
-            "FROM trading.cash_events e",
-            "JOIN trading.accounts a ON a.account_id = e.account_id",
-            "JOIN trading.clients c ON c.client_id = a.client_id",
+            "FROM analytics.cash_movements e",
+            "JOIN analytics.accounts a ON a.account_id = e.account_id",
+            "LEFT JOIN LATERAL (",
+            "  SELECT le.email_attempted",
+            "  FROM analytics.login_events le",
+            "  WHERE le.client_id = a.client_id AND le.outcome = 'SUCCESS'",
+            "  ORDER BY le.occurred_at DESC",
+            "  LIMIT 1",
+            ") ll ON true",
             CASH_EVENT_FILTER,
             "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<CashEventRow> selectCashEvents(@Param("clientId") UUID clientId,
                                          @Param("eventType") String eventType,
                                          @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM trading.cash_events e",
-            "JOIN trading.accounts a ON a.account_id = e.account_id",
+    @Select({"<script>", "SELECT COUNT(*) FROM analytics.cash_movements e",
+            "JOIN analytics.accounts a ON a.account_id = e.account_id",
             CASH_EVENT_FILTER, "</script>"})
     int countCashEvents(@Param("clientId") UUID clientId, @Param("eventType") String eventType);
 
     // ---- Analytics ----
 
     String DATE_FILTER = "<where>"
-            + "<if test='fromDate != null'>activity_date &gt;= #{fromDate}</if>"
-            + "<if test='toDate != null'> AND activity_date &lt;= #{toDate}</if>"
+            + "<if test='fromDate != null'>o.order_date &gt;= #{fromDate}</if>"
+            + "<if test='toDate != null'> AND o.order_date &lt;= #{toDate}</if>"
             + "</where>";
 
     @Select({"<script>",
-            "SELECT activity_date, order_count, filled_quantity, gross_amount, updated_at",
-            "FROM analytics.fact_daily_platform_activity", DATE_FILTER,
+            "SELECT order_date AS activity_date,",
+            "COUNT(*)::integer AS order_count,",
+            "COALESCE(SUM(quantity), 0) AS filled_quantity,",
+            "COALESCE(SUM(ABS(cm.signed_amount)) FILTER (WHERE cm.event_type IN ('BUY', 'SELL')), 0) AS gross_amount,",
+            "MAX(COALESCE(cm.occurred_at, o.submitted_at)) AS updated_at",
+            "FROM analytics.orders o",
+            "LEFT JOIN analytics.cash_movements cm ON cm.order_id = o.order_id",
+            DATE_FILTER,
+            "GROUP BY order_date",
             "ORDER BY activity_date DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<PlatformActivityRow> selectPlatformActivity(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate,
                                                      @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM analytics.fact_daily_platform_activity", DATE_FILTER, "</script>"})
+    @Select({"<script>", "SELECT COUNT(*) FROM (",
+            "SELECT order_date FROM analytics.orders", DATE_FILTER, "GROUP BY order_date",
+            ") counted", "</script>"})
     int countPlatformActivity(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
     String INSTRUMENT_DATE_FILTER = "<where>"
-            + "<if test='instrumentId != null'>f.instrument_id = #{instrumentId}</if>"
-            + "<if test='fromDate != null'> AND f.activity_date &gt;= #{fromDate}</if>"
-            + "<if test='toDate != null'> AND f.activity_date &lt;= #{toDate}</if>"
+            + "<if test='instrumentId != null'>o.instrument_id = #{instrumentId}</if>"
+            + "<if test='fromDate != null'> AND o.order_date &gt;= #{fromDate}</if>"
+            + "<if test='toDate != null'> AND o.order_date &lt;= #{toDate}</if>"
             + "</where>";
 
     @Select({"<script>",
-            "SELECT f.activity_date, f.instrument_id, i.symbol, f.order_count, f.filled_quantity, f.gross_amount, f.updated_at",
-            "FROM analytics.fact_daily_instrument_activity f JOIN trading.instruments i ON i.instrument_id = f.instrument_id",
+            "SELECT o.order_date AS activity_date, o.instrument_id,",
+            "COALESCE(MAX(o.instrument_symbol), MAX(i.symbol), 'N/A') AS symbol,",
+            "COUNT(*)::integer AS order_count,",
+            "COALESCE(SUM(o.quantity), 0) AS filled_quantity,",
+            "COALESCE(SUM(ABS(cm.signed_amount)) FILTER (WHERE cm.event_type IN ('BUY', 'SELL')), 0) AS gross_amount,",
+            "MAX(COALESCE(cm.occurred_at, o.submitted_at)) AS updated_at",
+            "FROM analytics.orders o",
+            "LEFT JOIN analytics.instruments i ON i.instrument_id = o.instrument_id",
+            "LEFT JOIN analytics.cash_movements cm ON cm.order_id = o.order_id",
             INSTRUMENT_DATE_FILTER,
-            "ORDER BY f.activity_date DESC, f.gross_amount DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
+            "GROUP BY o.order_date, o.instrument_id",
+            "ORDER BY activity_date DESC, gross_amount DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<InstrumentActivityRow> selectInstrumentActivity(@Param("instrumentId") UUID instrumentId,
                                                          @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate,
                                                          @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select({"<script>", "SELECT COUNT(*) FROM analytics.fact_daily_instrument_activity f", INSTRUMENT_DATE_FILTER, "</script>"})
+    @Select({"<script>", "SELECT COUNT(*) FROM (",
+            "SELECT o.order_date, o.instrument_id FROM analytics.orders o",
+            INSTRUMENT_DATE_FILTER,
+            "GROUP BY o.order_date, o.instrument_id",
+            ") counted", "</script>"})
     int countInstrumentActivity(@Param("instrumentId") UUID instrumentId,
                                 @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
@@ -206,7 +310,6 @@ public interface AdminQueryMapper {
             + "(SELECT COUNT(*) FROM trading.orders o WHERE NOT EXISTS "
             + "  (SELECT 1 FROM trading.fills f WHERE f.order_id = o.order_id)) AS open_orders, "
             + "(SELECT COUNT(*) FROM trading.orders WHERE submitted_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS orders_last30_days, "
-            // Trading activity comes from the analytics facts (BR-16), not from scanning fills
             + "p.gross_volume AS gross_volume_last30_days, p.fees AS fees_last30_days, "
             + "p.buy_fills AS buy_fills_last30_days, p.sell_fills AS sell_fills_last30_days, "
             + "p.buy_quantity AS buy_quantity_last30_days, p.sell_quantity AS sell_quantity_last30_days, "

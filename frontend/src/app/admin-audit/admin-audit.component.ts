@@ -183,8 +183,8 @@ export class AdminAuditComponent implements OnInit {
           ...page,
           items: page.items.map((event) => ({
             at: event.occurredAt,
-            who: event.clientName ?? 'Unknown client',
-            whoDetail: event.emailAttempted,
+            who: event.clientName ?? event.emailAttempted ?? 'Unknown client',
+            whoDetail: event.clientId ?? '',
             accountName: '--',
             clientId: event.clientId,
             event: event.outcome === 'SUCCESS' ? 'Successful sign-in' : 'Failed sign-in',
@@ -201,7 +201,7 @@ export class AdminAuditComponent implements OnInit {
           items: page.items.map((event) => ({
             at: event.occurredAt,
             who: event.clientName ?? 'Unknown client',
-            whoDetail: event.clientId ? event.clientId.slice(0, 8) : '',
+            whoDetail: event.clientId ?? '',
             accountName: event.accountName ?? '--',
             clientId: event.clientId,
             event: humanize(event.action),
@@ -217,11 +217,13 @@ export class AdminAuditComponent implements OnInit {
             items: page.items.map((event) => ({
               at: event.occurredAt,
               who: event.adminEmail,
-              whoDetail: 'Admin',
+              whoDetail: '',
               accountName: '--',
               clientId: event.clientId,
               event: humanize(event.action),
-              details: event.clientName ? `Client: ${event.clientName}` : 'Platform data',
+              details: event.clientName
+                ? `Client: ${event.clientName}${event.clientId ? ` · ${event.clientId}` : ''}`
+                : 'Platform data',
               status: 'LOGGED',
               tone: 'neutral' as const
             }))
@@ -233,7 +235,7 @@ export class AdminAuditComponent implements OnInit {
             items: page.items.map((event) => ({
               at: event.occurredAt,
               who: event.clientName,
-              whoDetail: event.clientId ? event.clientId.slice(0, 8) : '',
+              whoDetail: event.clientId ?? '',
               accountName: event.accountName,
               clientId: event.clientId,
               event: humanize(event.eventType),
