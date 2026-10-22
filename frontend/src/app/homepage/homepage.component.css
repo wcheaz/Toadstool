@@ -53,8 +53,8 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #00744A;
-  box-shadow: 0 0 10px rgba(0, 116, 74, 0.5);
+  background-color: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary-soft);
 }
 
 .tab-content {
@@ -62,20 +62,119 @@
 }
 
 /* Dashboard Grid Layout */
+/*
+ * Cards sit on a 12-column grid of 20px rows (GRID_COLUMNS in dashboard-layout.service.ts).
+ * Each card spans --card-cols x --card-rows tracks; dense packing lets later cards fill gaps
+ * left by resizing, so the rest of the dashboard reflows automatically.
+ */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  min-height: 100%;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 20px;
+  grid-auto-flow: row dense;
+  column-gap: 24px;
+  row-gap: 16px;
   min-width: 0;
 }
 
-.dashboard-column {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-height: 100%;
+.dashboard-card {
+  position: relative;
   min-width: 0;
+  min-height: 0;
+  grid-column: span var(--card-cols, 6);
+  grid-row: span var(--card-rows, 13);
+}
+
+/* Bottom-right corner grip; drag (or arrow keys) to resize */
+.resize-handle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border-radius: 0 0 8px 0;
+  cursor: nwse-resize;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  background:
+    linear-gradient(135deg, transparent 0 50%, var(--color-text-subtle) 50% 56%, transparent 56% 68%,
+      var(--color-text-subtle) 68% 74%, transparent 74%);
+}
+
+.dashboard-card:hover .resize-handle,
+.resize-handle:focus-visible,
+.resize-handle:active {
+  opacity: 1;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background:
+    linear-gradient(135deg, transparent 0 50%, var(--color-primary) 50% 56%, transparent 56% 68%,
+      var(--color-primary) 68% 74%, transparent 74%);
+}
+
+.resize-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Touch screens have no hover: always show a larger handle */
+@media (pointer: coarse) {
+  .resize-handle {
+    width: 32px;
+    height: 32px;
+    opacity: 1;
+  }
+}
+
+/* Drag and drop (Angular CDK) */
+.dashboard-card.cdk-drag-preview {
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  opacity: 0.95;
+}
+
+.dashboard-card.cdk-drag-placeholder {
+  border: 2px dashed var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+}
+
+.dashboard-card.cdk-drag-placeholder > * {
+  visibility: hidden;
+}
+
+.dashboard-card.cdk-drag-animating,
+.dashboard-grid.cdk-drop-list-dragging .dashboard-card:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.layout-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.reset-layout {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.reset-layout:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 /* Dashboard Module */
@@ -92,8 +191,8 @@
 }
 
 .dashboard-module:hover {
-  border-color: rgba(0, 116, 74, 0.5);
-  box-shadow: 0 15px 40px rgba(0, 116, 74, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 15px 40px var(--color-primary-soft);
 }
 
 .module-header {
@@ -130,8 +229,8 @@
 }
 
 .module-handle:hover {
-  color: #00744A;
-  background-color: rgba(0, 116, 74, 0.1);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
 .module-handle:active {
@@ -180,7 +279,7 @@
 
 .news-item:hover {
   background: rgba(45, 49, 53, 0.72);
-  border-color: rgba(0, 116, 74, 0.3);
+  border-color: var(--color-primary);
 }
 
 .news-date {
@@ -262,7 +361,7 @@
 }
 
 .table-row:hover {
-  background-color: rgba(0, 116, 74, 0.05);
+  background-color: var(--color-primary-soft);
 }
 
 .table-row:last-child {
@@ -289,7 +388,7 @@
 }
 
 .change-positive {
-  color: #2f9e70;
+  color: var(--color-success);
   font-weight: 500;
 }
 
@@ -304,7 +403,7 @@
 
 .trade-btn {
   padding: 4px 10px;
-  background-color: #00744A;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -315,63 +414,7 @@
 }
 
 .trade-btn:hover {
-  background-color: #005c3a;
-}
-
-/* Features Module */
-.features-module {
-  min-height: 300px;
-  flex: 1;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 16px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.features-grid::-webkit-scrollbar {
-  width: 4px;
-}
-
-.features-grid::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.features-grid::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
-  border-radius: 2px;
-}
-
-.feature-card {
-  background: rgba(45, 49, 53, 0.5);
-  padding: 16px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 116, 74, 0.3);
-  transition: all 0.2s ease;
-}
-
-.feature-card:hover {
-  background: rgba(45, 49, 53, 0.72);
-  border-color: rgba(0, 116, 74, 0.6);
-  box-shadow: 0 4px 12px rgba(0, 116, 74, 0.1);
-}
-
-.feature-card h4 {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.feature-card p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  line-height: 1.4;
+  background-color: var(--color-primary-strong);
 }
 
 /* Placeholder */
@@ -414,9 +457,11 @@
     margin: 0 0 24px;
   }
 
-  .dashboard-grid { grid-template-columns: 1fr; }
+  /* One column: every card is full width; only height is resizable */
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-card { grid-column: 1 / -1; }
+  .layout-toolbar > span { display: none; }
   .news-module { min-height: 420px; }
-  .features-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .content-tabs {
     gap: 24px;
@@ -442,6 +487,5 @@
 
 @media (max-width: 480px) {
   .homepage-content { padding: 16px 12px 28px; }
-  .dashboard-grid, .dashboard-column { gap: 16px; }
-  .features-grid { grid-template-columns: 1fr; }
+  .dashboard-grid { gap: 16px; }
 }

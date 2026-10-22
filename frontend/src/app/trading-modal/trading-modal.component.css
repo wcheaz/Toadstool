@@ -352,3 +352,57 @@
     font-size: 16px;
   }
 }
+
+/* Shown while the server prices and executes a submitted order */
+.trading-modal {
+  position: relative;
+}
+
+.executing-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.executing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  padding: 24px 28px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.executing-card small {
+  color: var(--color-text-muted);
+}
+
+.executing-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: executing-spin 0.8s linear infinite;
+}
+
+@keyframes executing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .executing-spinner {
+    animation: none;
+  }
+}

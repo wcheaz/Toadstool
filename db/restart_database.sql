@@ -218,12 +218,10 @@ INSERT INTO trading.instruments (symbol, name, asset_class, status) VALUES
 ('JPM', 'JPMorgan Chase & Co.', 'EQUITY', 'TRADABLE'),
 ('GLD', 'SPDR Gold Shares', 'EQUITY', 'TRADABLE'),
 ('SPY', 'SPDR S&P 500 ETF Trust', 'EQUITY', 'TRADABLE'),
-('BTC/USD', 'Bitcoin to US Dollar', 'CRYPTO', 'TRADABLE'),
-('ETH/USD', 'Ethereum to US Dollar', 'CRYPTO', 'TRADABLE'),
-('XRP/USD', 'XRP to US Dollar', 'CRYPTO', 'TRADABLE'),
-('EUR/USD', 'Euro to US Dollar', 'FX', 'TRADABLE'),
-('GBP/USD', 'British Pound to US Dollar', 'FX', 'TRADABLE'),
-('JPY/USD', 'Japanese Yen to US Dollar', 'FX', 'TRADABLE');
+('BTC-USD', 'Bitcoin to US Dollar', 'CRYPTO', 'TRADABLE'),
+('ETH-USD', 'Ethereum to US Dollar', 'CRYPTO', 'TRADABLE'),
+('XRP-USD', 'XRP to US Dollar', 'CRYPTO', 'TRADABLE'),
+('FX:EURUSD', 'Euro / US Dollar', 'FX', 'TRADABLE');
 
 -- Create 25 test clients with accounts
 WITH client_data AS (
@@ -282,9 +280,9 @@ INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempoten
 -- Large SELL order for Microsoft - bob.smith account
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'bob.smith@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'MSFT'), 'SELL', 500, 'TEST-SELL-MSFT-500', now() - interval '3 days'),
 -- Crypto BUY order for Bitcoin - carol.white account
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC/USD'), 'BUY', 0.5, 'TEST-BUY-BTC-0.5', now() - interval '2 days'),
--- FX order for EUR/USD - alice.johnson account (second order for alice)
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'EUR/USD'), 'BUY', 100000, 'TEST-BUY-EUR-100K', now() - interval '1 day'),
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC-USD'), 'BUY', 0.5, 'TEST-BUY-BTC-0.5', now() - interval '2 days'),
+-- FX order for FX:EURUSD - alice.johnson account (second order for alice)
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'FX:EURUSD'), 'BUY', 100000, 'TEST-BUY-EUR-100K', now() - interval '1 day'),
 -- Small order for ETF - alice.johnson account (third order for alice)
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'alice.johnson@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'SPY'), 'BUY', 10, 'TEST-BUY-SPY-10', now() - interval '12 hours');
 

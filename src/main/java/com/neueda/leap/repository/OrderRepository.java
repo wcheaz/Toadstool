@@ -17,4 +17,13 @@ public interface OrderRepository {
     int countByAccountId(UUID accountId);
     int countAll(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt);
     void save(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey);
+
+    void save(UUID accountId, UUID instrumentId, String side, String quantity, String idempotencyKey,
+              String orderType, java.math.BigDecimal limitPrice);
+
+    /** Orders still awaiting execution, submitted before the given time, oldest first. */
+    List<Order> findUnexecuted(OffsetDateTime submittedBefore, int limit);
+
+    /** Quantity committed to SELL orders that have not executed yet. */
+    java.math.BigDecimal pendingSellQuantity(UUID accountId, UUID instrumentId);
 }

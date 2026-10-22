@@ -1,4 +1,6 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import { EMPTY, Subscription, timer } from 'rxjs';
+import { catchError, filter, switchMap, take, timeout } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../core/api/api.service';
 import { CandleResponse, DepthLevel, OrderResponse } from '../core/api/api.models';
@@ -9,6 +11,11 @@ import { OrderConfirmationComponent } from '../order-confirmation/order-confirma
 import { OrderSuccessComponent } from '../order-success/order-success.component';
 import { OrderTicketComponent, OrderTicketValue } from './components/order-ticket/order-ticket.component';
 import { MarketDepthComponent } from './components/market-depth/market-depth.component';
+
+/** How the ticket follows server-side execution of a submitted order. */
+const ORDER_STATUS_FIRST_CHECK_MS = 500;
+const ORDER_STATUS_INTERVAL_MS = 1000;
+const ORDER_STATUS_TIMEOUT_MS = 30000;
 
 @Component({
   selector: 'app-trading-modal',
@@ -25,7 +32,7 @@ import { MarketDepthComponent } from './components/market-depth/market-depth.com
   templateUrl: './trading-modal.component.html',
   styleUrl: './trading-modal.component.css'
 })
-export class TradingModalComponent implements OnChanges {
+export class TradingModalComponent implements OnChanges, OnDestroy {
   @Input() isOpen: boolean = false;
   @Input() selectedAsset: Asset | null = null;
   @Input() accountId: string = '';
@@ -55,7 +62,11 @@ export class TradingModalComponent implements OnChanges {
   isErrorOpen: boolean = false;
   errorMessage: string = '';
   errorDetails: string = '';
+  /** True from submission until the server reports the order FILLED or REJECTED. */
   isSubmitting: boolean = false;
+  /** Price the server actually executed the last order at. */
+  filledPrice: number = 0;
+  private orderStatusSubscription: Subscription | null = null;
   pendingTicket: OrderTicketValue | null = null;
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {}
@@ -156,17 +167,18 @@ export class TradingModalComponent implements OnChanges {
     this.isPreviewOpen = false;
     this.isSubmitting = true;
 
-    // Place the order first
+    // The server accepts the order, then prices and executes it against the live quote (BR-06/BR-08)
+    const isLimit = ticket.orderType === 'limit';
     this.apiService.placeOrder(
       this.accountId,
       this.selectedAsset.instrumentId,
       ticket.orderSide.toUpperCase(),
-      ticket.quantity.toString()
+      ticket.quantity.toString(),
+      undefined,
+      isLimit ? 'LIMIT' : 'MARKET',
+      isLimit ? ticket.limitPrice : undefined
     ).subscribe({
-      next: (response: OrderResponse) => {
-        console.log('Order placed successfully:', response);
-        this.fillOrder(response.orderId, this.selectedAsset!.price);
-      },
+      next: (response: OrderResponse) => this.followOrder(response.orderId),
       error: (error: any) => {
         this.isSubmitting = false;
         console.error('Order placement failed:', error);
@@ -214,23 +226,45 @@ export class TradingModalComponent implements OnChanges {
     return '';
   }
 
-  private fillOrder(orderId: string, fillPrice: number) {
-    // Call backend to fill the order
-    this.apiService.fillOrder(orderId, fillPrice).subscribe({
-      next: () => {
+  /** Follow an accepted order until the server reports it FILLED or REJECTED (BR-07). */
+  private followOrder(orderId: string) {
+    this.orderStatusSubscription?.unsubscribe();
+    this.orderStatusSubscription = timer(ORDER_STATUS_FIRST_CHECK_MS, ORDER_STATUS_INTERVAL_MS).pipe(
+      // A failed status check is retried on the next tick
+      switchMap(() => this.apiService.getOrder(orderId).pipe(catchError(() => EMPTY))),
+      filter(order => order.status !== 'ACCEPTED' && order.status !== 'PENDING'),
+      take(1),
+      timeout({ first: ORDER_STATUS_TIMEOUT_MS })
+    ).subscribe({
+      next: (order) => this.onOrderOutcome(order),
+      error: () => {
         this.isSubmitting = false;
-        this.isSuccessOpen = true;
-        this.orderCompleted.emit();
-        console.log('Order filled at price:', fillPrice);
-      },
-      error: (error) => {
-        this.isSubmitting = false;
-        console.error('Order fill failed:', error);
-        this.errorMessage = 'Order placement succeeded but filling failed. Order is pending.';
-        this.errorDetails = error.status ? `Error ${error.status}` : 'Network error';
+        this.errorMessage = 'Your order was received and is still being executed.';
+        this.errorDetails = 'Check Activity in a moment to see whether it filled.';
         this.isErrorOpen = true;
+        this.orderCompleted.emit();
+        this.cdr.detectChanges();
       }
     });
+  }
+
+  private onOrderOutcome(order: OrderResponse) {
+    this.isSubmitting = false;
+    if (order.status === 'FILLED') {
+      this.filledPrice = Number(order.fillPrice) || 0;
+      this.isSuccessOpen = true;
+    } else {
+      this.errorMessage = 'Your order was not executed.';
+      this.errorDetails = order.rejectionReason || 'The order was rejected.';
+      this.isErrorOpen = true;
+    }
+    // Refresh cash and holdings either way
+    this.orderCompleted.emit();
+    this.cdr.detectChanges();
+  }
+
+  ngOnDestroy() {
+    this.orderStatusSubscription?.unsubscribe();
   }
 
   closeErrorModal() {

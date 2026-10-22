@@ -1,9 +1,7 @@
 package com.neueda.leap.controller;
 
-import com.neueda.leap.Instrument;
 import com.neueda.leap.News;
 import com.neueda.leap.dto.EarningsEventResponse;
-import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.NewsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +17,9 @@ import java.util.stream.Collectors;
 public class NewsController {
     private static final Logger logger = LoggerFactory.getLogger(NewsController.class);
     private final NewsService newsService;
-    private final InstrumentService instrumentService;
 
-    public NewsController(NewsService newsService, InstrumentService instrumentService) {
+    public NewsController(NewsService newsService) {
         this.newsService = newsService;
-        this.instrumentService = instrumentService;
     }
 
     @GetMapping("/latest")
@@ -35,13 +31,7 @@ public class NewsController {
                 List<String> symbolList = Arrays.asList(symbols.split(","));
                 news = newsService.getLatestNewsBySymbols(symbolList);
             } else {
-                // Dynamically fetch news for all available market assets + market news
-                List<Instrument> allInstruments = instrumentService.listAllInstruments();
-                List<String> marketAssetSymbols = allInstruments.stream()
-                        .map(Instrument::getSymbol)
-                        .collect(Collectors.toList());
-
-                List<News> companyNews = newsService.getLatestNewsBySymbols(marketAssetSymbols);
+                List<News> companyNews = newsService.getLatestNewsBySymbols(newsService.getNewsSymbols());
                 List<News> marketNews = newsService.getGeneralMarketNews();
 
                 news = new ArrayList<>(companyNews);

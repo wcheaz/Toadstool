@@ -6,12 +6,19 @@ import { Asset } from '../shared/models/asset.model';
 import { AuthService } from '../core/auth.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 import { ErrorModalComponent } from '../shared/components/error-modal/error-modal.component';
+import { PortfolioChartComponent } from './components/portfolio-chart/portfolio-chart.component';
 import { DepositModalComponent } from '../deposit-modal/deposit-modal.component';
+import { WithdrawalModalComponent, WithdrawalSummary } from '../withdrawal-modal/withdrawal-modal.component';
+import { TransferModalComponent, TransferSummary } from '../transfer-modal/transfer-modal.component';
 import { BalanceWidgetComponent } from './components/balance-widget/balance-widget.component';
 import { NewsFeedComponent } from './components/news-feed/news-feed.component';
 import { MarketAssetsTableComponent } from './components/market-assets-table/market-assets-table.component';
-import { FeaturesGridComponent } from './components/features-grid/features-grid.component';
 import { AccountStateService } from '../core/account-state.service';
+import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CardControlsComponent } from './components/card-controls/card-controls.component';
+import { CardSize, DashboardCard, DashboardCardId, DashboardLayoutService } from './dashboard-layout.service';
+import { CardResizeHandleDirective } from './components/card-resize-handle/card-resize-handle.directive';
+import { SymbolLinkService } from './symbol-link.service';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -23,11 +30,19 @@ import { takeUntil } from 'rxjs/operators';
     TradingModalComponent,
     ErrorModalComponent,
     DepositModalComponent,
+    WithdrawalModalComponent,
+    TransferModalComponent,
     BalanceWidgetComponent,
     NewsFeedComponent,
     MarketAssetsTableComponent,
-    FeaturesGridComponent
+    PortfolioChartComponent,
+    CardControlsComponent,
+    CardResizeHandleDirective,
+    CdkDropList,
+    CdkDrag
   ],
+  // One shared symbol selection per dashboard, read by the linked cards
+  providers: [SymbolLinkService],
   templateUrl: './homepage.component.html',
   styleUrl: './homepage.component.css'
 })
@@ -53,16 +68,11 @@ export class HomepageComponent implements OnInit, OnDestroy {
 
   // Deposit modal state
   isDepositModalOpen: boolean = false;
+  isWithdrawalModalOpen: boolean = false;
+  isTransferModalOpen: boolean = false;
 
   // UI state
   isBalanceVisible: boolean = true;
-
-  // Available assets
-  assets: Asset[] = [
-    { instrumentId: '11111111-1111-1111-1111-111111111111', symbol: 'NEXS', name: 'Nexus Equity Fund', price: 142.10, change: 1.76, holdings: 40.0 },
-    { instrumentId: '22222222-2222-2222-2222-222222222222', symbol: 'USDT', name: 'US Digital Dollar', price: 1.00, change: 0.00, holdings: 12450.0 },
-    { instrumentId: '33333333-3333-3333-3333-333333333333', symbol: 'BTC', name: 'Bitcoin Vault Share', price: 67230.00, change: -0.45, holdings: 0.15 }
-  ];
 
   instruments: Instrument[] = [];
   instrumentQuotes: Map<string, QuoteResponse> = new Map();
@@ -77,17 +87,65 @@ export class HomepageComponent implements OnInit, OnDestroy {
   selectedInstrumentId: string = '';
   selectedTimeframeForChart: string = '90'; // default 3M
 
+  // Dashboard card order and sizes, saved per user in this browser
+  cards: DashboardCard[] = [];
+  private layoutUserId = '';
+  /** Tradable symbols that news ticker tags can link to. */
+  selectableSymbols: string[] = [];
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
     private accountState: AccountStateService,
+    private layoutService: DashboardLayoutService,
+    private symbolLink: SymbolLinkService,
     private cdr: ChangeDetectorRef
   ) {
     // Get client info from the current session
     this.clientName = this.authService.getClientName();
     this.accountId = this.authService.getAccountId();
+    this.layoutUserId = this.authService.getClientId();
+    this.cards = this.layoutService.load(this.layoutUserId);
+  }
+
+  get isDefaultLayout(): boolean {
+    return this.layoutService.isDefault(this.cards);
+  }
+
+  onCardDropped(event: CdkDragDrop<DashboardCard[]>) {
+    if (event.previousIndex === event.currentIndex) return;
+    const cards = [...this.cards];
+    moveItemInArray(cards, event.previousIndex, event.currentIndex);
+    this.setLayout(cards);
+  }
+
+  /** Keyboard alternative to dragging: move the card one position earlier (-1) or later (+1). */
+  moveCard(index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= this.cards.length) return;
+    const cards = [...this.cards];
+    moveItemInArray(cards, index, target);
+    this.setLayout(cards);
+  }
+
+  /** Live size updates while a card is being resized; saved once the resize ends. */
+  resizeCard(id: DashboardCardId, size: CardSize) {
+    this.cards = this.cards.map(card => card.id === id ? { ...card, ...size } : card);
+  }
+
+  saveLayout() {
+    this.layoutService.save(this.layoutUserId, this.cards);
+  }
+
+  resetLayout() {
+    this.cards = this.layoutService.reset(this.layoutUserId);
+  }
+
+  private setLayout(cards: DashboardCard[]) {
+    this.cards = cards;
+    this.saveLayout();
   }
 
   ngOnInit() {
@@ -167,6 +225,15 @@ export class HomepageComponent implements OnInit, OnDestroy {
     const held = all.filter(instrument => (this.holdings.get(instrument.instrumentId) ?? 0) > 0);
     const rest = all.filter(instrument => (this.holdings.get(instrument.instrumentId) ?? 0) <= 0);
     this.instruments = [...held, ...rest];
+    this.selectableSymbols = this.instruments.map(instrument => instrument.symbol);
+  }
+
+  /** A ticker tag in the news card was clicked: link every card to that instrument. */
+  selectSymbol(symbol: string) {
+    const instrument = this.instruments.find(item => item.symbol === symbol);
+    if (instrument) {
+      this.symbolLink.select(instrument);
+    }
   }
 
   ngOnDestroy() {
@@ -295,17 +362,24 @@ export class HomepageComponent implements OnInit, OnDestroy {
     this.isDepositModalOpen = true;
   }
 
+  closeWithdrawalModal() {
+    this.isWithdrawalModalOpen = false;
+  }
+
+  openWithdrawalModal() {
+    this.isWithdrawalModalOpen = true;
+  }
+
   onWithdrawClicked() {
-    const amount = Number(window.prompt('Withdrawal amount') || 0);
-    if (!amount || amount <= 0 || !this.accountId) return;
-    this.apiService.postCashEvent(this.accountId, { eventType: 'WITHDRAWAL', amount }).subscribe({
-      next: (account) => this.accountState.updateAccount(account),
-      error: () => alert('Withdrawal failed. Check the amount and available balance.')
-    });
+    this.openWithdrawalModal();
   }
 
   onTransferClicked() {
-    alert('Transfer functionality coming soon');
+    this.isTransferModalOpen = true;
+  }
+
+  closeTransferModal() {
+    this.isTransferModalOpen = false;
   }
 
   onDepositSubmit(summary: any) {
@@ -316,6 +390,32 @@ export class HomepageComponent implements OnInit, OnDestroy {
         alert(`Deposit of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} completed successfully!`);
       },
       error: () => alert('Deposit failed. Please try again.')
+    });
+  }
+
+  onWithdrawalSubmit(summary: WithdrawalSummary) {
+    if (!this.accountId) return;
+    this.apiService.postCashEvent(this.accountId, { eventType: 'WITHDRAWAL', amount: summary.amount }).subscribe({
+      next: (account) => {
+        this.accountState.updateAccount(account);
+        alert(`Withdrawal of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} submitted successfully.`);
+      },
+      error: () => alert('Withdrawal failed. Check the amount and available balance.')
+    });
+  }
+
+  onTransferSubmit(summary: TransferSummary) {
+    this.apiService.postCashEvent(summary.sourceAccount.accountId, { eventType: 'WITHDRAWAL', amount: summary.amount }).subscribe({
+      next: source => this.apiService.postCashEvent(summary.destinationAccount.accountId, { eventType: 'DEPOSIT', amount: summary.amount }).subscribe({
+        next: destination => {
+          this.accountState.updateAccount(source);
+          this.accountState.updateAccount(destination);
+          this.accountState.selectAccount(source);
+          alert(`Transfer of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summary.amount)} completed successfully.`);
+        },
+        error: () => alert('The destination account could not receive the funds.')
+      }),
+      error: () => alert('Transfer declined. Check the available balance.')
     });
   }
 

@@ -11,15 +11,15 @@
     <section class="panel recommendations-panel" aria-labelledby="recommendations-heading">
       <div class="panel-title">
         <div>
-          <h2 id="recommendations-heading">Recommended assets</h2>
-          <p>Ranked by news coverage. Find an asset by ticker or name, then select it to see its quote and news.</p>
+          <h2 id="recommendations-heading">Search assets</h2>
+          <p>Find an asset by ticker or name, then select it to see its quote and news.</p>
         </div>
         <span>{{ filteredAssets.length }} results</span>
       </div>
 
       <label class="search-box">
         <span class="search-icon"></span>
-        <input type="search" [(ngModel)]="searchTerm" placeholder="Search by ticker or company name" aria-label="Search assets">
+        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="searchAssets($event)" placeholder="Search by ticker or company name" aria-label="Search assets">
         <kbd>⌕</kbd>
       </label>
 
@@ -90,8 +90,7 @@
       <h3 class="news-list-heading" *ngIf="selectedAsset">
         {{ showingMarketNews ? 'No recent ' + selectedAsset.instrument.symbol + ' news · latest market news' : 'Latest ' + selectedAsset.instrument.symbol + ' news' }}
       </h3>
-      <p class="news-status" *ngIf="isLoadingNews">Loading news...</p>
-      <p class="news-status" *ngIf="!isLoadingNews && selectedArticles.length === 0">No news available yet.</p>
+      <app-news-notice [articles]="selectedArticles" [loading]="isLoadingNews"></app-news-notice>
       <div class="news-list">
         <app-news-card *ngFor="let article of selectedArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
       </div>

@@ -118,8 +118,15 @@ export interface OrderResponse {
   side: string;
   quantity: string;
   idempotencyKey: string;
+  /** ACCEPTED (passed the trading rules, awaiting execution), FILLED or REJECTED. */
   status: string;
   submittedAt: string | number;
+  orderType?: 'MARKET' | 'LIMIT';
+  limitPrice?: string | null;
+  /** Execution price once FILLED. */
+  fillPrice?: string | null;
+  /** Why execution was REJECTED. */
+  rejectionReason?: string | null;
 }
 
 export interface DepthLevel {
@@ -263,6 +270,12 @@ export interface PlatformOverview {
   ordersLast30Days: number;
   grossVolumeLast30Days: number;
   feesLast30Days: number;
+  buyFillsLast30Days: number;
+  sellFillsLast30Days: number;
+  buyQuantityLast30Days: number;
+  sellQuantityLast30Days: number;
+  buyValueLast30Days: number;
+  sellValueLast30Days: number;
   failedLoginsLast24Hours: number;
 }
 
@@ -277,5 +290,5 @@ export interface InsightsResponse {
   insights: Insight[];
   generatedAt: ApiTimestamp;
   overview: PlatformOverview | null;
-  topInstruments: Array<{ instrumentId: string; symbol: string; name: string; fillCount: number; grossAmount: number }>;
+  topInstruments: Array<{ instrumentId: string; symbol: string; name: string; fillCount: number; grossAmount: number; side?: string }>;
 }

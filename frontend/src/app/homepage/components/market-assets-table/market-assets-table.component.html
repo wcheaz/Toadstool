@@ -2,8 +2,7 @@
   <div class="module-header">
     <h3>Market Assets <span class="held-summary" *ngIf="heldCount > 0">{{ heldCount }} held</span></h3>
     <div class="header-actions">
-      <a href="#" class="view-exchange">View exchange</a>
-      <div class="module-handle">⋮⋮</div>
+      <ng-content select="[cardControls]"></ng-content>
     </div>
   </div>
   <div class="market-assets-table">
@@ -16,7 +15,15 @@
     </div>
 
     <!-- Live instruments from Fauxnance API -->
-    <div *ngFor="let instrument of instruments" class="table-row" [class.held-row]="getHolding(instrument.instrumentId) > 0">
+    <div
+      *ngFor="let instrument of ownedInstruments"
+      class="table-row"
+      [class.linked]="isLinked(instrument)"
+      tabindex="0"
+      [attr.aria-current]="isLinked(instrument) ? 'true' : null"
+      [attr.aria-label]="'Show ' + instrument.symbol + ' in linked cards'"
+      (click)="selectInstrument(instrument)"
+      (keydown.enter)="selectInstrument(instrument)">
       <div class="table-cell">
         <span class="asset-name">{{ instrument.symbol }}</span>
         <span class="asset-full">{{ instrument.name }}</span>
@@ -34,12 +41,11 @@
         </ng-container>
         <ng-template #noHolding><span class="no-holding">--</span></ng-template>
       </div>
-      <div class="table-cell"><button class="trade-btn" (click)="onTradeClick(instrument, getQuote(instrument.instrumentId))">Trade</button></div>
+      <div class="table-cell"><button class="trade-btn" (click)="$event.stopPropagation(); onTradeClick(instrument, getQuote(instrument.instrumentId))" (keydown.enter)="$event.stopPropagation()">Trade</button></div>
     </div>
 
-    <!-- Fallback: No instruments loaded -->
-    <div *ngIf="instruments.length === 0 && !loading" class="table-row">
-      <div class="table-cell" colspan="5">No instruments available</div>
+    <div *ngIf="ownedInstruments.length === 0 && !loading" class="empty-state">
+      Start trading using the Trading tab!
     </div>
   </div>
 </div>

@@ -6,6 +6,8 @@ export interface NewsArticle {
   title: string;
   description: string;
   timestamp: string;
+  /** Publish time in ms since epoch; null when Finnhub gave none. */
+  publishedAt: number | null;
   assets: string[];
   market?: string;
   sourceUrl?: string;
@@ -20,6 +22,7 @@ export function toNewsArticle(news: NewsResponse): NewsArticle {
     title: news.headline,
     description: news.summary || '',
     timestamp,
+    publishedAt: news.publishedTimestamp ? news.publishedTimestamp * 1000 : null,
     assets: [news.symbol],
     market: `${news.source} • ${timestamp}`,
     sourceUrl: news.sourceUrl,

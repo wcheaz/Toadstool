@@ -12,6 +12,7 @@ import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.FauxnanceService;
 import com.neueda.leap.service.HoldingsService;
+import com.neueda.leap.service.OrderExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import static org.mockito.ArgumentMatchers.anyString;
 import org.junit.jupiter.api.DisplayName;
@@ -56,12 +57,15 @@ class OrderControllerTest {
     @Mock
     private HoldingsService holdingsService;
 
+    @Mock
+    private OrderExecutionService orderExecutionService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         ControllerTestSupport.clearAuthentication();
-        mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService, fauxnanceService, holdingsService));
+        mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService, fauxnanceService, holdingsService, orderExecutionService));
     }
 
     @Test
@@ -85,7 +89,7 @@ class OrderControllerTest {
         when(instrumentService.getInstrumentById(instrumentId))
                 .thenReturn(new Instrument(instrumentId, "AAPL", "Apple Inc.", AssetClass.EQUITY, InstrumentStatus.TRADABLE));
         when(orderService.getOrderByIdempotencyKey(accountId, "idem-123")).thenReturn(null);
-        when(orderService.createOrder(accountId, instrumentId, "BUY", "2.5000000000", "idem-123")).thenReturn(order);
+        when(orderService.createOrder(accountId, instrumentId, "BUY", "2.5000000000", "idem-123", "MARKET", null)).thenReturn(order);
 
         mockMvc.perform(post("/api/accounts/{accountId}/orders", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,10 +102,12 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.side").value("BUY"))
                 .andExpect(jsonPath("$.quantity").value("2.5000000000"))
                 .andExpect(jsonPath("$.idempotencyKey").value("idem-123"))
-                .andExpect(jsonPath("$.status").value("SUBMITTED"))
+                .andExpect(jsonPath("$.status").value("ACCEPTED"))
                 .andExpect(jsonPath("$.submittedAt").value(ControllerTestSupport.isoTimestamp(SUBMITTED_AT)));
 
-        verify(orderService).createOrder(accountId, instrumentId, "BUY", "2.5000000000", "idem-123");
+        verify(orderService).createOrder(accountId, instrumentId, "BUY", "2.5000000000", "idem-123", "MARKET", null);
+        // Accepted orders are executed afterwards on the server, never by the client (BR-06/BR-08)
+        verify(orderExecutionService).executeAsync(order.getOrderId());
     }
 
     @Test
@@ -133,7 +139,7 @@ class OrderControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.orderId").value(existing.getOrderId().toString()))
                 .andExpect(jsonPath("$.idempotencyKey").value("dup-key"))
-                .andExpect(jsonPath("$.status").value("SUBMITTED"));
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
     }
 
     @Test
@@ -174,11 +180,10 @@ class OrderControllerTest {
         when(accountService.getAccountById(accountId))
                 .thenReturn(new Account(accountId, ownerClientId, AccountStatus.ACTIVE, SUBMITTED_AT));
 
-        mockMvc.perform(post("/api/orders/{orderId}/fill", orderId)
-                        .param("price", "100.00"))
+        mockMvc.perform(post("/api/orders/{orderId}/fill", orderId))
                 .andExpect(status().isForbidden());
 
-        verify(orderService, never()).fillOrder(orderId, new BigDecimal("100.00"));
+        verify(orderExecutionService, never()).executeNow(orderId);
     }
 
     @Test

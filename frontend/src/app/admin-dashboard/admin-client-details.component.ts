@@ -9,7 +9,6 @@ import { ApiService } from '../core/api/api.service';
 import {
   AdminClientAccount,
   AdminClientDetail,
-  CandleResponse,
   CashEventResponse,
   FillResponse,
   HoldingsResponse,
@@ -20,6 +19,7 @@ import {
   TradeEventRow
 } from '../core/api/api.models';
 import { SidebarComponent } from '../homepage/components/sidebar/sidebar.component';
+import { computePortfolioChange, PortfolioChange, PortfolioHistoryService, PortfolioPoint } from '../shared/services/portfolio-history.service';
 import {
   formatDate,
   formatDateTime,
@@ -63,10 +63,7 @@ interface ActivityRow {
   tone: 'ok' | 'warn' | 'neutral';
 }
 
-interface ChartPoint {
-  date: Date;
-  value: number;
-}
+type ChartPoint = PortfolioPoint;
 
 const BATCH_QUOTE_LIMIT = 25;
 const JOURNAL_PAGE_SIZE = 10;
@@ -130,6 +127,7 @@ export class AdminClientDetailsComponent implements OnInit {
     private apiService: ApiService,
     private router: Router,
     private route: ActivatedRoute,
+    private portfolioHistory: PortfolioHistoryService,
     private cdr: ChangeDetectorRef
   ) {
     this.adminName = this.authService.getClientName();
@@ -228,13 +226,9 @@ export class AdminClientDetailsComponent implements OnInit {
     return `Showing ${start}–${end} of ${total} orders`;
   }
 
-  get chartChange(): { amount: number; percent: number | null } | null {
-    if (this.chartPoints.length < 2) {
-      return null;
-    }
-    const first = this.chartPoints[0].value;
-    const last = this.chartPoints[this.chartPoints.length - 1].value;
-    return { amount: last - first, percent: first !== 0 ? ((last - first) / first) * 100 : null };
+  /** Investment gain over the chart window, excluding deposits/withdrawals (see computePortfolioChange). */
+  get chartChange(): PortfolioChange | null {
+    return computePortfolioChange(this.chartPoints, this.cashEvents);
   }
 
   get chartMax(): number {
@@ -361,97 +355,26 @@ export class AdminClientDetailsComponent implements OnInit {
       .pipe(map((results) => Object.assign({}, ...results)));
   }
 
-  /**
-   * Portfolio value per day = cash + Σ quantity × close, where cash and quantities are rolled
-   * back from today's values using the cash events and fills that happened after each day.
-   */
+  /** Portfolio value per day, reconstructed from fills, cash events and daily closes (see PortfolioHistoryService). */
   private loadChart(): void {
     const accountId = this.selectedAccountId;
     const days = this.chartDays;
-    const orderById = new Map(this.orders.map((order) => [order.orderId, order]));
-    const windowStart = Date.now() - days * 86_400_000;
-
-    const instrumentIds = new Set(this.holdings.map((row) => row.instrumentId));
-    this.fills.forEach((fill) => {
-      const order = orderById.get(fill.orderId);
-      const executed = toDate(fill.executedAt);
-      if (order && executed && executed.getTime() >= windowStart) {
-        instrumentIds.add(order.instrumentId);
-      }
-    });
-
-    if (instrumentIds.size === 0 && this.cashEvents.length === 0) {
-      this.setChart([]);
-      return;
-    }
-
     this.chartLoading = true;
     this.cdr.detectChanges();
-    const ids = Array.from(instrumentIds);
-    const candleRequests = ids.map((id) => this.apiService.getCandles(id, days).pipe(catchError(() => of([] as CandleResponse[]))));
-    (candleRequests.length ? forkJoin(candleRequests) : of([] as CandleResponse[][])).subscribe((candleSets) => {
+    this.portfolioHistory.buildHistory({
+      days,
+      cashBalance: this.cashBalance,
+      holdings: this.holdings.map((row) => ({ instrumentId: row.instrumentId, quantity: row.quantity })),
+      orders: this.orders,
+      fills: this.fills,
+      cashEvents: this.cashEvents,
+      currentValue: this.pricedHoldings ? this.portfolioValue : null
+    }).subscribe((points) => {
       if (accountId !== this.selectedAccountId || days !== this.chartDays) {
         return;
       }
-      this.setChart(this.buildChartPoints(ids, candleSets, orderById, windowStart));
+      this.setChart(points);
     });
-  }
-
-  private buildChartPoints(ids: string[], candleSets: CandleResponse[][], orderById: Map<string, OrderResponse>,
-                           windowStart: number): ChartPoint[] {
-    const closes = new Map<string, Map<string, number>>();
-    const dayKeys = new Set<string>();
-    ids.forEach((id, index) => {
-      const byDay = new Map<string, number>();
-      (candleSets[index] ?? []).forEach((candle) => {
-        const date = toDate(candle.date);
-        if (date && Number.isFinite(candle.close)) {
-          const key = date.toISOString().slice(0, 10);
-          byDay.set(key, candle.close);
-          dayKeys.add(key);
-        }
-      });
-      closes.set(id, byDay);
-    });
-
-    const currentQuantity = new Map(this.holdings.map((row) => [row.instrumentId, row.quantity]));
-    const signedFills = this.fills
-      .filter((fill) => fill.status === 'Filled')
-      .map((fill) => {
-        const order = orderById.get(fill.orderId);
-        const quantity = Number(fill.quantity) * (order?.side === 'SELL' ? -1 : 1);
-        return { instrumentId: order?.instrumentId ?? '', quantity, at: toDate(fill.executedAt)?.getTime() ?? 0 };
-      });
-    const cashMoves = this.cashEvents.map((event) => ({ amount: Number(event.amount), at: toDate(event.occurredAt)?.getTime() ?? 0 }));
-    const lastClose = new Map<string, number>();
-    const points: ChartPoint[] = [];
-
-    Array.from(dayKeys).sort().forEach((key) => {
-      const endOfDay = new Date(`${key}T23:59:59.999Z`).getTime();
-      ids.forEach((id) => {
-        const close = closes.get(id)?.get(key);
-        if (close !== undefined) {
-          lastClose.set(id, close);
-        }
-      });
-      if (endOfDay < windowStart) {
-        return;
-      }
-      const cash = this.cashBalance - cashMoves.filter((move) => move.at > endOfDay).reduce((sum, move) => sum + move.amount, 0);
-      let value = cash;
-      ids.forEach((id) => {
-        const later = signedFills.filter((fill) => fill.instrumentId === id && fill.at > endOfDay)
-          .reduce((sum, fill) => sum + fill.quantity, 0);
-        const quantity = Math.max(0, (currentQuantity.get(id) ?? 0) - later);
-        value += quantity * (lastClose.get(id) ?? 0);
-      });
-      points.push({ date: new Date(endOfDay), value });
-    });
-
-    if (this.pricedHoldings) {
-      points.push({ date: new Date(), value: this.portfolioValue });
-    }
-    return points;
   }
 
   private setChart(points: ChartPoint[]): void {
@@ -495,7 +418,7 @@ export class AdminClientDetailsComponent implements OnInit {
         gross,
         fee,
         net,
-        status: order.status || 'SUBMITTED'
+        status: order.status || 'ACCEPTED'
       };
     }).sort((a, b) => (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0));
 
@@ -503,7 +426,7 @@ export class AdminClientDetailsComponent implements OnInit {
     this.filledTrades = filled.length;
     this.grossVolume = filled.reduce((sum, fill) => sum + Number(fill.price) * Number(fill.quantity), 0);
     this.feesPaid = filled.reduce((sum, fill) => sum + Number(fill.fee ?? 0), 0);
-    this.openOrders = this.journal.filter((row) => row.status === 'SUBMITTED' || row.status === 'PENDING').length;
+    this.openOrders = this.journal.filter((row) => row.status === 'ACCEPTED' || row.status === 'PENDING').length;
   }
 
   private buildActivities(): void {

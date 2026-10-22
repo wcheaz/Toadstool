@@ -15,7 +15,14 @@ public class OrderResponse {
     private String side;
     private String quantity;
     private String idempotencyKey;
+    /** ACCEPTED (passed the trading rules, awaiting execution), FILLED or REJECTED. */
     private String status;
+    private String orderType;
+    private String limitPrice;
+    /** Execution price once FILLED. */
+    private String fillPrice;
+    /** Why execution was REJECTED. */
+    private String rejectionReason;
     @JsonSerialize(using = OffsetDateTimeSerializer.class)
     private OffsetDateTime submittedAt;
 
@@ -97,5 +104,37 @@ public class OrderResponse {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public String getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    public String getLimitPrice() {
+        return limitPrice;
+    }
+
+    public void setLimitPrice(String limitPrice) {
+        this.limitPrice = limitPrice;
+    }
+
+    public String getFillPrice() {
+        return fillPrice;
+    }
+
+    public void setFillPrice(String fillPrice) {
+        this.fillPrice = fillPrice;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

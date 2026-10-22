@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin, of } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
@@ -13,7 +13,12 @@ interface Transaction {
   orderType: string;
   quantity: string;
   status: string;
+  /** Why the order was rejected, shown on hover. */
+  reason: string | null;
 }
+
+/** While an order is still being executed, the blotter re-checks it at this interval (BR-07). */
+const PENDING_REFRESH_MS = 3000;
 
 interface CashActivity {
   id: string;
@@ -32,7 +37,7 @@ type ActivityTab = 'orders' | 'cash';
   templateUrl: './activity.component.html',
   styleUrl: './activity.component.css'
 })
-export class ActivityComponent implements OnInit {
+export class ActivityComponent implements OnInit, OnDestroy {
   readonly tabs: ReadonlyArray<{ key: ActivityTab; label: string }> = [
     { key: 'orders', label: 'Order activity' },
     { key: 'cash', label: 'Deposits & withdrawals' }
@@ -57,9 +62,30 @@ export class ActivityComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
+  private pendingRefresh: ReturnType<typeof setTimeout> | null = null;
+
   ngOnInit() {
     console.log('[Activity] Initializing activity page');
     this.loadOrders();
+  }
+
+  ngOnDestroy() {
+    this.clearPendingRefresh();
+  }
+
+  /** Re-load the page of orders while any of them is still awaiting execution. */
+  private scheduleRefreshIfPending(): void {
+    this.clearPendingRefresh();
+    if (this.transactions.some(tx => tx.status === 'ACCEPTED' || tx.status === 'PENDING')) {
+      this.pendingRefresh = setTimeout(() => this.loadOrders(this.currentPage), PENDING_REFRESH_MS);
+    }
+  }
+
+  private clearPendingRefresh(): void {
+    if (this.pendingRefresh !== null) {
+      clearTimeout(this.pendingRefresh);
+      this.pendingRefresh = null;
+    }
   }
 
   private loadOrders(page: number = this.currentPage): void {
@@ -91,6 +117,7 @@ export class ActivityComponent implements OnInit {
         const instrumentNames = this.createInstrumentNameMap(instruments?.items ?? []);
         this.transactions = orders.items.map((order) => this.mapOrderToTransaction(order, instrumentNames));
         this.cdr.detectChanges();
+        this.scheduleRefreshIfPending();
         console.log('[Activity] Transaction count:', this.stats.allTimeExecutions);
       },
       error: (error) => {
@@ -114,7 +141,8 @@ export class ActivityComponent implements OnInit {
       asset: instrumentNames.get(order.instrumentId) ?? order.instrumentId,
       orderType: order.side,
       quantity: this.formatQuantity(order.quantity),
-      status: order.status
+      status: order.status,
+      reason: order.rejectionReason ?? null
     };
   }
 

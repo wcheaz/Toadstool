@@ -16,5 +16,12 @@
   </main>
   <ng-template #noAccounts><section class="panel empty-state"><h2>No trading accounts yet</h2><p>Create an account from the account menu in the sidebar to start managing it.</p></section></ng-template>
 
+  <app-withdrawal-modal
+    [isOpen]="isWithdrawalOpen"
+    [availableBalance]="selectedAccount?.balance || 0"
+    (close)="closeWithdrawal()"
+    (submit)="submitWithdrawal($event)">
+  </app-withdrawal-modal>
+
   <div class="dialog-backdrop" *ngIf="isLiquidationOpen" (click)="closeLiquidation()"><section class="support-dialog" role="dialog" aria-modal="true" aria-labelledby="liquidation-title" (click)="$event.stopPropagation()"><button class="dialog-close" type="button" (click)="closeLiquidation()" aria-label="Close">×</button><span class="support-icon">!</span><h2 id="liquidation-title">Liquidation requires assistance</h2><p>To liquidate positions and close this account safely, please call our account team at:</p><strong class="phone-number">1-800-TOAD-TRD</strong><small>Monday to Friday, 8:00 AM to 6:00 PM ET</small><button class="primary-button" type="button" (click)="closeLiquidation()">Got it</button></section></div>
 </div>

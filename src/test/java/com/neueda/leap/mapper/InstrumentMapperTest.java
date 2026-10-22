@@ -30,7 +30,8 @@ public class InstrumentMapperTest {
     public void testCountTradableInstruments() {
         int count = instrumentMapper.countTradableInstruments();
         assertTrue(count > 0);
-        assertEquals(16, count); // Test data inserts 16 instruments
+        // Seed data inserts 16 instruments; later migrations (e.g. V23) add more
+        assertTrue(count >= 16, "Expected at least the 16 seeded tradable instruments, got " + count);
     }
 
     @Test
@@ -64,14 +65,14 @@ public class InstrumentMapperTest {
 
     @Test
     public void testCryptoAssetClass() {
-        Instrument btc = instrumentMapper.selectInstrumentBySymbol("BTC/USD");
+        Instrument btc = instrumentMapper.selectInstrumentBySymbol("BTC-USD");
         assertNotNull(btc);
         assertEquals(AssetClass.CRYPTO, btc.getAssetClass());
     }
 
     @Test
     public void testForexAssetClass() {
-        Instrument eurusd = instrumentMapper.selectInstrumentBySymbol("EUR/USD");
+        Instrument eurusd = instrumentMapper.selectInstrumentBySymbol("FX:EURUSD");
         assertNotNull(eurusd);
         assertEquals(AssetClass.FX, eurusd.getAssetClass());
     }

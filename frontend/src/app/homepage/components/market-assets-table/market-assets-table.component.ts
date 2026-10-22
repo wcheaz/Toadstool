@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Instrument, QuoteResponse } from '../../../core/api/api.models';
+import { SymbolLinkService } from '../../symbol-link.service';
 
 export interface TradeRequest {
   instrument: Instrument;
@@ -22,6 +23,17 @@ export class MarketAssetsTableComponent {
   @Input() holdings: Map<string, number> = new Map();
   @Output() tradeRequested = new EventEmitter<TradeRequest>();
 
+  /** Shared dashboard selection; rows pick the symbol shown in linked cards. */
+  private readonly link = inject(SymbolLinkService, { optional: true });
+
+  selectInstrument(instrument: Instrument) {
+    this.link?.select(instrument);
+  }
+
+  isLinked(instrument: Instrument): boolean {
+    return this.link?.selected()?.instrumentId === instrument.instrumentId;
+  }
+
   getQuote(instrumentId: string): QuoteResponse | undefined {
     return this.quotes.get(instrumentId);
   }
@@ -30,13 +42,17 @@ export class MarketAssetsTableComponent {
     return this.holdings.get(instrumentId) ?? 0;
   }
 
+  get ownedInstruments(): Instrument[] {
+    return this.instruments.filter((instrument) => this.getHolding(instrument.instrumentId) > 0);
+  }
+
   getHoldingValue(instrument: Instrument): number | null {
     const price = this.getQuote(instrument.instrumentId)?.price;
     return price ? price * this.getHolding(instrument.instrumentId) : null;
   }
 
   get heldCount(): number {
-    return this.instruments.filter((instrument) => this.getHolding(instrument.instrumentId) > 0).length;
+    return this.ownedInstruments.length;
   }
 
   getPriceChangeClass(changePercent: number | undefined): string {

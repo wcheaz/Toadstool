@@ -27,14 +27,12 @@ INSERT INTO trading.orders (account_id, instrument_id, side, quantity, idempoten
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'bob.smith@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'MSFT'), 'SELL', 15, 'BOB-SELL-MSFT-15', now() - interval '4 days'),
 
 -- Carol White - Crypto focused
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC/USD'), 'BUY', 2, 'CAROL-BUY-BTC-2', now() - interval '7 days'),
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'ETH/USD'), 'BUY', 10, 'CAROL-BUY-ETH-10', now() - interval '5 days'),
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC/USD'), 'BUY', 1, 'CAROL-BUY-BTC-1', now() - interval '1 day'),
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC-USD'), 'BUY', 2, 'CAROL-BUY-BTC-2', now() - interval '7 days'),
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'ETH-USD'), 'BUY', 10, 'CAROL-BUY-ETH-10', now() - interval '5 days'),
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'carol.white@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'BTC-USD'), 'BUY', 1, 'CAROL-BUY-BTC-1', now() - interval '1 day'),
 
 -- David Brown - FX trader
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'david.brown@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'EUR/USD'), 'BUY', 50000, 'DAVID-BUY-EUR-50K', now() - interval '6 days'),
-((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'david.brown@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'GBP/USD'), 'BUY', 30000, 'DAVID-BUY-GBP-30K', now() - interval '4 days'),
-
+((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'david.brown@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'FX:EURUSD'), 'BUY', 50000, 'DAVID-BUY-EUR-50K', now() - interval '6 days'),
 -- Emma Davis - Dividend seeker
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'emma.davis@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'JPM'), 'BUY', 100, 'EMMA-BUY-JPM-100', now() - interval '8 days'),
 ((SELECT account_id FROM trading.accounts WHERE client_id = (SELECT client_id FROM trading.clients WHERE email = 'emma.davis@example.com')), (SELECT instrument_id FROM trading.instruments WHERE symbol = 'GLD'), 'BUY', 75, 'EMMA-BUY-GLD-75', now() - interval '5 days'),

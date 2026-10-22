@@ -52,6 +52,8 @@ nav { display: grid; gap: 7px; }.nav-item, .subnav { border: 0; color: #858ca0; 
 .details-button:disabled { opacity: .4; cursor: default; border-color: #2b3041; }
 .error-state { color: #e88a8a; }
 .insights-panel { padding: 15px; margin-top: 14px; }
+.insight-timeframe { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.insight-timeframe select { height: 32px; padding: 0 8px; border: 1px solid var(--line); border-radius: 4px; color: var(--text); background: var(--surface-2); }
 .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 .insight { background: var(--surface-2); }
 @media (max-width: 700px) {

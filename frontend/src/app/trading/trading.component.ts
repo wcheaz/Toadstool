@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject, interval } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { EMPTY, Subject, interval } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { ApiService } from '../core/api/api.service';
 import { CandleResponse, Instrument, QuoteResponse } from '../core/api/api.models';
 import { AuthService } from '../core/auth.service';
@@ -11,6 +11,7 @@ import { Asset } from '../shared/models/asset.model';
 import { NewsArticle, toNewsArticle } from '../shared/models/news-article.model';
 import { NewsCardComponent } from '../shared/components/news-card/news-card.component';
 import { NewsDetailModalComponent } from '../shared/components/news-detail-modal/news-detail-modal.component';
+import { NewsNoticeComponent } from '../shared/components/news-notice/news-notice.component';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
 
 interface RecommendedAsset {
@@ -28,7 +29,7 @@ const NEWS_REFRESH_MS = 300000;
 @Component({
   selector: 'app-trading',
   standalone: true,
-  imports: [CommonModule, FormsModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent],
+  imports: [CommonModule, FormsModule, TradingModalComponent, NewsCardComponent, NewsDetailModalComponent, NewsNoticeComponent],
   templateUrl: './trading.component.html',
   styleUrl: './trading.component.css'
 })
@@ -55,6 +56,7 @@ export class TradingComponent implements OnInit, OnDestroy {
 
   private instruments: Instrument[] = [];
   private readonly destroy$ = new Subject<void>();
+  private readonly assetSearch$ = new Subject<string>();
 
   constructor(
     private apiService: ApiService,
@@ -66,7 +68,22 @@ export class TradingComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadInstruments();
+    this.assetSearch$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        switchMap(search => this.apiService.getInstruments(MAX_ASSETS, 0, search).pipe(
+          catchError((error) => {
+            this.handleInstrumentLoadError(error);
+            return EMPTY;
+          })
+        )),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (response) => this.applyInstruments(response.items),
+      });
+    this.assetSearch$.next('');
     this.loadNews();
     this.refreshAccount();
     interval(QUOTE_REFRESH_MS).pipe(takeUntil(this.destroy$)).subscribe(() => this.refreshQuotes());
@@ -81,7 +98,20 @@ export class TradingComponent implements OnInit, OnDestroy {
   get filteredAssets(): RecommendedAsset[] {
     const query = this.searchTerm.trim().toLowerCase();
     if (!query) return this.assets;
-    return this.assets.filter(({ instrument }) => `${instrument.symbol} ${instrument.name}`.toLowerCase().includes(query));
+    return this.assets.filter(({ instrument }) =>
+      `${instrument.symbol} ${instrument.name}`.toLowerCase().includes(query)
+    );
+  }
+
+  searchAssets(search: string): void {
+    this.searchTerm = search;
+    this.isLoading = true;
+    this.instruments = [];
+    this.assets = [];
+    this.selectedAsset = null;
+    this.quotes.clear();
+    this.cdr.detectChanges();
+    this.assetSearch$.next(search.trim());
   }
 
   /** Latest articles for the selected asset, or general market news when it has none. */
@@ -169,23 +199,20 @@ export class TradingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadInstruments(): void {
-    this.apiService.getInstruments(MAX_ASSETS, 0).subscribe({
-      next: (response) => {
-        this.instruments = response.items;
-        this.apiError = '';
-        this.isLoading = false;
-        this.rankAssets();
-        this.refreshQuotes();
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Failed to load instruments:', error);
-        this.apiError = 'Market data is unavailable right now. Please try again later.';
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      }
-    });
+  private applyInstruments(instruments: Instrument[]): void {
+    this.instruments = instruments;
+    this.apiError = '';
+    this.isLoading = false;
+    this.rankAssets();
+    this.refreshQuotes();
+    this.cdr.detectChanges();
+  }
+
+  private handleInstrumentLoadError(error: unknown): void {
+    console.error('Failed to load instruments:', error);
+    this.apiError = 'Market data is unavailable right now. Please try again later.';
+    this.isLoading = false;
+    this.cdr.detectChanges();
   }
 
   private loadNews(): void {
@@ -206,7 +233,12 @@ export class TradingComponent implements OnInit, OnDestroy {
 
   /** Most-covered assets first; ties keep the instrument list order. */
   private rankAssets(): void {
-    if (this.instruments.length === 0) return;
+    if (this.instruments.length === 0) {
+      this.assets = [];
+      this.selectedAsset = null;
+      this.quotes.clear();
+      return;
+    }
 
     const articleCounts = new Map<string, number>();
     this.news.forEach(item => articleCounts.set(item.symbol, (articleCounts.get(item.symbol) ?? 0) + 1));

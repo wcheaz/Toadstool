@@ -6,7 +6,7 @@
 .chart-container {
   min-width: 0;
   padding: 16px;
-  background: rgba(15, 20, 25, 0.6);
+  background: #1e1e1e;
   border-radius: 8px;
   border: 1px solid rgba(71, 85, 105, 0.3);
 }

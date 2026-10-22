@@ -1,6 +1,7 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.Account;
+import com.neueda.leap.Holdings;
 import com.neueda.leap.Instrument;
 import com.neueda.leap.Order;
 import com.neueda.leap.enums.AccountStatus;
@@ -22,6 +23,7 @@ import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -115,7 +117,7 @@ class OrderServiceTest {
         tradableInstrument.setAssetClass(AssetClass.EQUITY);
 
         // Setup default mocks to allow success case
-        when(marketStatusService.isMarketOpen()).thenReturn(true);
+        when(marketStatusService.isMarketOpen(any(Instrument.class))).thenReturn(true);
         when(accountService.getAccountById(accountId)).thenReturn(activeAccount);
         when(instrumentService.getInstrumentById(instrumentId)).thenReturn(tradableInstrument);
         when(pricingService.getPrice(AssetClass.EQUITY, instrumentId)).thenReturn(new BigDecimal("100.00000"));
@@ -289,12 +291,51 @@ class OrderServiceTest {
                                         new BigDecimal("5.00"), idempotencyKey, OffsetDateTime.now());
         
         when(feeStrategy.calculateFee(any())).thenReturn(new BigDecimal("1.00000"));
-        doNothing().when(orderRepository).save(any(), any(), anyString(), anyString(), anyString());
+        when(holdingsService.getHolding(accountId, instrumentId))
+                .thenReturn(Optional.of(new Holdings(accountId, instrumentId, new BigDecimal("10"))));
+        when(orderRepository.pendingSellQuantity(accountId, instrumentId)).thenReturn(BigDecimal.ZERO);
         when(orderRepository.findByIdempotencyKey(accountId, idempotencyKey)).thenReturn(expectedOrder);
 
         Order result = orderService.createOrder(accountId, instrumentId, "SELL", "5.00", idempotencyKey);
 
         assertNotNull(result);
+    }
+
+    @Test
+    @DisplayName("createOrder rejects a SELL when sells awaiting execution already use up the holding")
+    void testCreateOrderSellCountsPendingSells() {
+        when(feeStrategy.calculateFee(any())).thenReturn(new BigDecimal("1.00000"));
+        when(holdingsService.getHolding(accountId, instrumentId))
+                .thenReturn(Optional.of(new Holdings(accountId, instrumentId, new BigDecimal("10"))));
+        when(orderRepository.pendingSellQuantity(accountId, instrumentId)).thenReturn(new BigDecimal("8"));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> orderService.createOrder(accountId, instrumentId, "SELL", "5.00", "sell-pending"));
+
+        assertTrue(error.getMessage().startsWith("Insufficient holdings. Available: 2"));
+        verify(orderRepository, never()).save(any(), any(), anyString(), anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("createOrder rejects a LIMIT order without a positive limit price")
+    void testCreateLimitOrderRequiresLimitPrice() {
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.createOrder(accountId, instrumentId, "BUY", "1", "limit-missing", "LIMIT", null));
+        verify(orderRepository, never()).save(any(), any(), anyString(), anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("createOrder stores a LIMIT order with its limit price")
+    void testCreateLimitOrderStoresLimit() {
+        String idempotencyKey = "limit-buy";
+        Order expectedOrder = new Order(orderId, accountId, instrumentId, OrderSide.BUY,
+                new BigDecimal("1"), idempotencyKey, OffsetDateTime.now());
+        when(feeStrategy.calculateFee(any())).thenReturn(new BigDecimal("1.00000"));
+        when(orderRepository.findByIdempotencyKey(accountId, idempotencyKey)).thenReturn(expectedOrder);
+
+        orderService.createOrder(accountId, instrumentId, "BUY", "1", idempotencyKey, "limit", new BigDecimal("95.50"));
+
+        verify(orderRepository).save(accountId, instrumentId, "BUY", "1", idempotencyKey, "LIMIT", new BigDecimal("95.50"));
     }
 
     @Test
@@ -388,7 +429,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("createOrder rejects order when market is closed")
     void testCreateOrderMarketClosed() {
-        when(marketStatusService.isMarketOpen()).thenReturn(false);
+        when(marketStatusService.isMarketOpen(any(Instrument.class))).thenReturn(false);
 
         assertThrows(IllegalArgumentException.class,
             () -> orderService.createOrder(accountId, instrumentId, "BUY", "10.00", "key"),

@@ -74,9 +74,16 @@ export class ApiService {
   /**
    * Get all instruments (without live prices)
    */
-  getInstruments(limit: number = 50, offset: number = 0): Observable<PaginatedResponse<Instrument>> {
+  getInstruments(limit: number = 50, offset: number = 0, search?: string): Observable<PaginatedResponse<Instrument>> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset)
+    });
+    if (search?.trim()) {
+      params.set('search', search.trim());
+    }
     return this.http.get<PaginatedResponse<Instrument>>(
-      `${this.apiUrl}/instruments?limit=${limit}&offset=${offset}`
+      `${this.apiUrl}/instruments?${params.toString()}`
     );
   }
 
@@ -167,7 +174,9 @@ export class ApiService {
     instrumentId: string,
     side: string,
     quantity: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    orderType: 'MARKET' | 'LIMIT' = 'MARKET',
+    limitPrice?: number
   ): Observable<OrderResponse> {
     const headers: any = {};
     if (idempotencyKey) {
@@ -177,7 +186,9 @@ export class ApiService {
     const body = {
       instrumentId: instrumentId,
       side: side,
-      quantity: quantity
+      quantity: quantity,
+      orderType: orderType,
+      ...(orderType === 'LIMIT' ? { limitPrice: limitPrice } : {})
     };
 
     return this.http.post<OrderResponse>(
@@ -201,13 +212,11 @@ export class ApiService {
   }
 
   /**
-   * Fill/execute an order at a specified price
+   * Get one order, including its status (ACCEPTED, FILLED or REJECTED). Orders are priced and
+   * executed by the server after they are accepted, so clients follow the status instead of filling.
    */
-  fillOrder(orderId: string, price: number): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(
-      `${this.apiUrl}/orders/${orderId}/fill?price=${price}`,
-      {}
-    );
+  getOrder(orderId: string): Observable<OrderResponse> {
+    return this.http.get<OrderResponse>(`${this.apiUrl}/orders/${orderId}`);
   }
 
   getFills(accountId: string, limit: number = 1000, offset: number = 0): Observable<PaginatedResponse<FillResponse>> {
@@ -275,8 +284,8 @@ export class ApiService {
     );
   }
 
-  getInsights(): Observable<InsightsResponse> {
-    return this.http.get<InsightsResponse>(`${this.apiUrl}/admin/analytics/insights`);
+  getInsights(timeframe: 'day' | 'week' | 'month' = 'month'): Observable<InsightsResponse> {
+    return this.http.get<InsightsResponse>(`${this.apiUrl}/admin/analytics/insights?timeframe=${timeframe}`);
   }
 
   /** Build query params, skipping empty values. */

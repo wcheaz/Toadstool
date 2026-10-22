@@ -242,6 +242,17 @@
   color: #ef4444;
 }
 
+/* Order statuses from the API: ACCEPTED (awaiting execution), FILLED, REJECTED */
+.status-filled {
+  background-color: rgba(0, 116, 74, 0.2);
+  color: var(--color-success);
+}
+
+.status-accepted {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
 @media (max-width: 768px) {
   .activity-container {
     padding: 16px;

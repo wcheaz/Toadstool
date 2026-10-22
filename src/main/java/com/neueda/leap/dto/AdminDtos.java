@@ -149,6 +149,12 @@ public final class AdminDtos {
         public int ordersLast30Days;
         public BigDecimal grossVolumeLast30Days;
         public BigDecimal feesLast30Days;
+        public int buyFillsLast30Days;
+        public int sellFillsLast30Days;
+        public BigDecimal buyQuantityLast30Days;
+        public BigDecimal sellQuantityLast30Days;
+        public BigDecimal buyValueLast30Days;
+        public BigDecimal sellValueLast30Days;
         public int failedLoginsLast24Hours;
     }
 
@@ -157,6 +163,17 @@ public final class AdminDtos {
         public String symbol;
         public String name;
         public int fillCount;
+        public BigDecimal filledQuantity;
         public BigDecimal grossAmount;
+        public String side;
+    }
+
+    public static class InstrumentSideRatio {
+        public UUID instrumentId;
+        public String symbol;
+        public String name;
+        public BigDecimal buyValue;
+        public BigDecimal sellValue;
+        public BigDecimal ratio;
     }
 }

@@ -6,6 +6,7 @@ import com.neueda.leap.repository.FillRepository;
 import com.neueda.leap.validator.FillValidator;
 import com.neueda.leap.validator.FillValidationRequest;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,6 +71,15 @@ public class FillService {
      */
     public Fill createFill(UUID orderId, String price, String quantity, String status) {
         return createFill(orderId, price, quantity, status, "0");
+    }
+
+    /**
+     * Record that an order's execution was rejected. It is the order's single outcome (ux_fills_order),
+     * so the order can never be executed afterwards.
+     */
+    public void createRejectedFill(UUID orderId, BigDecimal quotedPrice, BigDecimal quantity, String reason) {
+        BigDecimal price = quotedPrice != null && quotedPrice.signum() >= 0 ? quotedPrice : BigDecimal.ZERO;
+        fillRepository.saveFailed(orderId, price.toPlainString(), quantity.toPlainString(), reason);
     }
 
     public Fill createFill(UUID orderId, String price, String quantity, String status, String fee) {

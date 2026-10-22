@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
 import com.neueda.leap.dto.AdminDtos.PlatformOverview;
 import com.neueda.leap.dto.AdminDtos.TopInstrument;
+import com.neueda.leap.dto.AdminDtos.InstrumentSideRatio;
 import com.neueda.leap.dto.PaginatedResponse;
 import com.neueda.leap.security.SecurityAccess;
 import com.neueda.leap.service.AdminOversightService;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * REST Controller for Analytics endpoints (admin-only, reporting).
- * Daily figures come from the analytics fact tables, which a trigger on trading.fills keeps current.
+ * Daily figures come from the analytics fact tables, which AnalyticsProjectionJob keeps current off the trading path.
  */
 @RestController
 @RequestMapping("/api/admin/analytics")
@@ -107,39 +108,89 @@ public class AdminAnalyticsController {
 
     /**
      * GET /api/admin/analytics/insights
-     * Headline platform numbers plus named insights derived from live trading data.
+     * Headline platform numbers plus named insights. Trading activity comes from the analytics fact
+     * tables (BR-16); only point-in-time counts (clients, accounts, cash, open orders) read live tables.
      * Pass insight=<name> to return a single named insight.
      */
     @GetMapping("/insights")
     public ResponseEntity<InsightsResponse> getBusinessInsights(
             @RequestParam(required = false) String insight,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @RequestParam(defaultValue = "month") String timeframe) {
         if (!SecurityAccess.hasRole(SecurityAccess.ADMIN_ROLE)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         try {
-            PlatformOverview overview = adminOversightService.getPlatformOverview();
-            List<TopInstrument> topInstruments = adminOversightService.listTopInstruments(TOP_INSTRUMENT_LIMIT);
-            List<Object> insights = buildInsights(overview, topInstruments).stream()
+            Timeframe selectedTimeframe = Timeframe.from(timeframe);
+            PlatformOverview overview = adminOversightService.getPlatformOverview(selectedTimeframe.days);
+            List<TopInstrument> topInstruments = adminOversightService.listTopInstruments(TOP_INSTRUMENT_LIMIT, selectedTimeframe.days);
+            TopInstrument mostFilled = adminOversightService.getMostFilledInstrument(selectedTimeframe.days);
+            TopInstrument mostBought = adminOversightService.getTopInstrumentBySide("BUY", selectedTimeframe.days);
+            TopInstrument mostSold = adminOversightService.getTopInstrumentBySide("SELL", selectedTimeframe.days);
+            InstrumentSideRatio highestBuySell = adminOversightService.getHighestBuySellRatio(selectedTimeframe.days);
+            InstrumentSideRatio highestSellBuy = adminOversightService.getHighestSellBuyRatio(selectedTimeframe.days);
+            List<Object> insights = buildInsights(overview, topInstruments, mostFilled, mostBought, mostSold,
+                    highestBuySell, highestSellBuy, selectedTimeframe.label).stream()
                     .filter(item -> insight == null || insight.isBlank() || item.getName().equals(insight))
                     .collect(Collectors.<Object>toList());
             return ResponseEntity.ok(new InsightsResponse(insights, OffsetDateTime.now(), overview, topInstruments));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    private List<Insight> buildInsights(PlatformOverview overview, List<TopInstrument> topInstruments) {
+    private List<Insight> buildInsights(PlatformOverview overview, List<TopInstrument> topInstruments,
+                                        TopInstrument mostFilled, TopInstrument mostBought, TopInstrument mostSold,
+                                        InstrumentSideRatio highestBuySell, InstrumentSideRatio highestSellBuy,
+                                        String period) {
         List<Insight> insights = new ArrayList<>();
         if (overview == null) {
             return insights;
         }
+        if (mostFilled != null) {
+            insights.add(new Insight("most-filled-instrument", "Most fills (" + period + ")",
+                    mostFilled.symbol, tradeDetail(mostFilled)));
+        }
         if (!topInstruments.isEmpty()) {
             TopInstrument top = topInstruments.get(0);
-            insights.add(new Insight("most-traded-instrument", "Most traded instrument (30 days)",
-                    top.symbol, top.fillCount + " fills · $" + money(top.grossAmount) + " gross"));
+            insights.add(new Insight("most-volume-instrument", "Most traded by volume (" + period + ")",
+                    top.symbol, tradeDetail(top)));
+        }
+        if (mostBought != null) {
+            insights.add(new Insight("most-bought-instrument", "Most bought (" + period + ")",
+                    mostBought.symbol, tradeDetail(mostBought)));
+        }
+        if (mostSold != null) {
+            insights.add(new Insight("most-sold-instrument", "Most sold (" + period + ")",
+                    mostSold.symbol, tradeDetail(mostSold)));
+        }
+        insights.add(new Insight("buy-activity-30d", "BUY activity (" + period + ")",
+                "$" + money(amountOrZero(overview.buyValueLast30Days)),
+                quantity(overview.buyQuantityLast30Days) + " quantity · " + overview.buyFillsLast30Days + " fills"));
+        insights.add(new Insight("sell-activity-30d", "SELL activity (" + period + ")",
+                "$" + money(amountOrZero(overview.sellValueLast30Days)),
+                quantity(overview.sellQuantityLast30Days) + " quantity · " + overview.sellFillsLast30Days + " fills"));
+        BigDecimal totalValue = amountOrZero(overview.buyValueLast30Days)
+                .add(amountOrZero(overview.sellValueLast30Days));
+        insights.add(new Insight("buy-sell-value-ratio-30d", "BUY / SELL value split (" + period + ")",
+                percentage(amountOrZero(overview.buyValueLast30Days), totalValue) + " BUY · "
+                        + percentage(amountOrZero(overview.sellValueLast30Days), totalValue) + " SELL",
+                "$" + money(totalValue) + " combined gross value"));
+        if (highestBuySell != null) {
+            insights.add(new Insight("highest-instrument-buy-sell-ratio",
+                    "Highest instrument BUY / SELL ratio (" + period + ")",
+                    highestBuySell.symbol + " · " + ratio(highestBuySell.ratio),
+                    "$" + money(highestBuySell.buyValue) + " BUY · $" + money(highestBuySell.sellValue) + " SELL"));
+        }
+        if (highestSellBuy != null) {
+            insights.add(new Insight("highest-instrument-sell-buy-ratio",
+                    "Highest instrument SELL / BUY ratio (" + period + ")",
+                    highestSellBuy.symbol + " · " + ratio(highestSellBuy.ratio),
+                    "$" + money(highestSellBuy.sellValue) + " SELL · $" + money(highestSellBuy.buyValue) + " BUY"));
         }
         insights.add(new Insight("gross-volume-30d", "Gross traded volume (30 days)",
                 "$" + money(overview.grossVolumeLast30Days), overview.ordersLast30Days + " orders submitted"));
@@ -162,6 +213,53 @@ public class AdminAnalyticsController {
 
     private static String money(BigDecimal value) {
         return value == null ? "0.00" : String.format("%,.2f", value.setScale(2, RoundingMode.HALF_UP));
+    }
+
+    private static BigDecimal amountOrZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private static String quantity(BigDecimal value) {
+        return value == null ? "0" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private static String percentage(BigDecimal value, BigDecimal total) {
+        if (value == null || total == null || total.signum() == 0) {
+            return "0.0%";
+        }
+        return value.multiply(BigDecimal.valueOf(100))
+                .divide(total, 1, RoundingMode.HALF_UP)
+                .toPlainString() + "%";
+    }
+
+    private static String ratio(BigDecimal value) {
+        return value == null ? "0.00:1" : value.setScale(2, RoundingMode.HALF_UP).toPlainString() + ":1";
+    }
+
+    private enum Timeframe {
+        DAY(1, "1 day"), WEEK(7, "7 days"), MONTH(30, "30 days");
+
+        private final int days;
+        private final String label;
+
+        Timeframe(int days, String label) {
+            this.days = days;
+            this.label = label;
+        }
+
+        private static Timeframe from(String value) {
+            return switch (value == null ? "" : value.trim().toLowerCase()) {
+                case "day" -> DAY;
+                case "week" -> WEEK;
+                case "month", "" -> MONTH;
+                default -> throw new IllegalArgumentException("Unsupported timeframe");
+            };
+        }
+    }
+
+    private static String tradeDetail(TopInstrument instrument) {
+        return instrument.fillCount + " fills · " + quantity(instrument.filledQuantity)
+                + " quantity · $" + money(instrument.grossAmount) + " gross";
     }
 
     /**

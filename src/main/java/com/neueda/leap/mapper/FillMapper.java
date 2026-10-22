@@ -38,6 +38,11 @@ public interface FillMapper {
     @Select("SELECT COUNT(*) FROM trading.fills f JOIN trading.orders o ON f.order_id = o.order_id WHERE o.account_id = #{accountId}")
     int countFillsByAccountId(@Param("accountId") UUID accountId);
 
+    /** A rejected execution: no money or holdings moved, so no fee; failure_reason says why. */
+    @Insert("INSERT INTO trading.fills (order_id, price, quantity, status, fee, failure_reason) VALUES (#{orderId}, CAST(#{price} AS numeric), CAST(#{quantity} AS numeric), 'Failed', 0, #{reason})")
+    void insertFailedFill(@Param("orderId") UUID orderId, @Param("price") String price, @Param("quantity") String quantity,
+                          @Param("reason") String reason);
+
     @Insert("INSERT INTO trading.fills (order_id, price, quantity, status, fee) VALUES (#{orderId}, CAST(#{price} AS numeric), CAST(#{quantity} AS numeric), #{status}, CAST(#{fee} AS numeric))")
     void insertFill(@Param("orderId") UUID orderId, @Param("price") String price, @Param("quantity") String quantity,
                     @Param("status") String status, @Param("fee") String fee);

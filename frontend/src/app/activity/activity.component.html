@@ -51,7 +51,7 @@
             <td>{{ tx.orderType }}</td>
             <td class="quantity">{{ tx.quantity }}</td>
             <td>
-              <span class="status-badge" [ngClass]="getStatusClass(tx.status)">
+              <span class="status-badge" [ngClass]="getStatusClass(tx.status)" [attr.title]="tx.reason">
                 {{ tx.status }}
               </span>
             </td>

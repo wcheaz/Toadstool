@@ -29,10 +29,10 @@ This command drops all schemas, recreates the database structure, and inserts co
 Each database reset provides:
 - **25 Clients**: From "alice.johnson@example.com" to "yara.king@example.com"
 - **25 Accounts**: One active account per client
-- **16 Instruments**: 
+- **14 Instruments**:
   - 10 Equities: AAPL, GOOGL, MSFT, AMZN, TSLA, META, NVDA, JPM, GLD, SPY
-  - 3 Cryptocurrencies: BTC/USD, ETH/USD, XRP/USD
-  - 3 FX Pairs: EUR/USD, GBP/USD, JPY/USD
+  - 3 Cryptocurrencies: BTC-USD, ETH-USD, XRP-USD
+  - 1 FX ticker: FX:EURUSD
 - **120 Orders**: Randomly distributed across clients, with varying quantities and sides
 - **~96 Fills**: 80% of orders have fills, with realistic partial fills and some failed/pending states
 - **~120 Trade Events**: Complete audit trail for all orders
