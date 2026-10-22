@@ -1,7 +1,6 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.Fill;
-import com.neueda.leap.enums.FillStatus;
 import com.neueda.leap.repository.FillRepository;
 import com.neueda.leap.validator.FillValidator;
 import com.neueda.leap.validator.FillValidationRequest;

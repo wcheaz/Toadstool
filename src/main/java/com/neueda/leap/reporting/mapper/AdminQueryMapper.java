@@ -10,6 +10,7 @@ import com.neueda.leap.dto.AdminDtos.LoginEventRow;
 import com.neueda.leap.dto.AdminDtos.PlatformActivityRow;
 import com.neueda.leap.dto.AdminDtos.PlatformOverview;
 import com.neueda.leap.dto.AdminDtos.TopInstrument;
+import com.neueda.leap.dto.AdminDtos.InstrumentSideRatio;
 import com.neueda.leap.dto.AdminDtos.TradeEventRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -300,32 +301,76 @@ public interface AdminQueryMapper {
                                 @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
     @Select("SELECT "
-            + "(SELECT COUNT(DISTINCT client_id) FROM analytics.accounts) AS total_clients, "
-            + "(SELECT COUNT(DISTINCT client_id) FROM analytics.accounts WHERE status = 'ACTIVE') AS active_clients, "
-            + "(SELECT COUNT(*) FROM analytics.accounts) AS total_accounts, "
-            + "(SELECT COALESCE(SUM(balance), 0) FROM analytics.accounts) AS total_cash, "
-            + "(SELECT COUNT(*) FROM analytics.orders) AS total_orders, "
-            + "(SELECT COUNT(DISTINCT order_id) FROM analytics.cash_movements "
-            + "  WHERE order_id IS NOT NULL AND event_type IN ('BUY', 'SELL')) AS filled_orders, "
-            + "(SELECT COUNT(*) FROM analytics.orders o WHERE NOT EXISTS "
-            + "  (SELECT 1 FROM analytics.cash_movements cm WHERE cm.order_id = o.order_id AND cm.event_type IN ('BUY', 'SELL'))) AS open_orders, "
-            + "(SELECT COUNT(*) FROM analytics.orders WHERE submitted_at >= now() - interval '30 days') AS orders_last30_days, "
-            + "(SELECT COALESCE(SUM(ABS(signed_amount)), 0) FROM analytics.cash_movements "
-            + "  WHERE event_type IN ('BUY', 'SELL') AND occurred_at >= now() - interval '30 days') AS gross_volume_last30_days, "
-            + "CAST(0 AS numeric) AS fees_last30_days, "
-            + "(SELECT COUNT(*) FROM analytics.login_events "
-            + "  WHERE outcome = 'FAILURE' AND occurred_at >= now() - interval '24 hours') AS failed_logins_last24_hours")
-    PlatformOverview selectPlatformOverview();
+            + "(SELECT COUNT(*) FROM trading.clients) AS total_clients, "
+            + "(SELECT COUNT(*) FROM trading.clients WHERE status = 'ACTIVE') AS active_clients, "
+            + "(SELECT COUNT(*) FROM trading.accounts) AS total_accounts, "
+            + "(SELECT COALESCE(SUM(balance), 0) FROM trading.accounts) AS total_cash, "
+            + "(SELECT COUNT(*) FROM trading.orders) AS total_orders, "
+            + "(SELECT COALESCE(SUM(order_count), 0) FROM analytics.fact_daily_platform_activity) AS filled_orders, "
+            + "(SELECT COUNT(*) FROM trading.orders o WHERE NOT EXISTS "
+            + "  (SELECT 1 FROM trading.fills f WHERE f.order_id = o.order_id)) AS open_orders, "
+            + "(SELECT COUNT(*) FROM trading.orders WHERE submitted_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS orders_last30_days, "
+            + "p.gross_volume AS gross_volume_last30_days, p.fees AS fees_last30_days, "
+            + "p.buy_fills AS buy_fills_last30_days, p.sell_fills AS sell_fills_last30_days, "
+            + "p.buy_quantity AS buy_quantity_last30_days, p.sell_quantity AS sell_quantity_last30_days, "
+            + "p.buy_value AS buy_value_last30_days, p.sell_value AS sell_value_last30_days, "
+            + "(SELECT COUNT(*) FROM trading.login_events "
+            + "  WHERE outcome = 'FAILURE' AND occurred_at >= now() - (CAST(#{days} AS text) || ' days')::interval) AS failed_logins_last24_hours "
+            + "FROM (SELECT COALESCE(SUM(gross_amount), 0) AS gross_volume, COALESCE(SUM(fee_amount), 0) AS fees, "
+            + "  COALESCE(SUM(buy_count), 0) AS buy_fills, COALESCE(SUM(sell_count), 0) AS sell_fills, "
+            + "  COALESCE(SUM(buy_quantity), 0) AS buy_quantity, COALESCE(SUM(sell_quantity), 0) AS sell_quantity, "
+            + "  COALESCE(SUM(buy_amount), 0) AS buy_value, COALESCE(SUM(sell_amount), 0) AS sell_value "
+            + "  FROM analytics.fact_daily_platform_activity WHERE activity_date > (now() AT TIME ZONE 'UTC')::date - #{days}) p")
+    PlatformOverview selectPlatformOverview(@Param("days") int days);
 
-    @Select("SELECT cm.instrument_id, "
-            + "COALESCE(MAX(cm.instrument_symbol), MAX(i.symbol), 'N/A') AS symbol, "
-            + "COALESCE(MAX(cm.instrument_name), MAX(i.name), 'Unknown') AS name, "
-            + "COUNT(*) AS fill_count, COALESCE(SUM(ABS(cm.signed_amount)), 0) AS gross_amount "
-            + "FROM analytics.cash_movements cm "
-            + "LEFT JOIN analytics.instruments i ON i.instrument_id = cm.instrument_id "
-            + "WHERE cm.instrument_id IS NOT NULL AND cm.event_type IN ('BUY', 'SELL') "
-            + "AND cm.occurred_at >= now() - interval '30 days' "
-            + "GROUP BY cm.instrument_id "
+    @Select("SELECT i.instrument_id, i.symbol, i.name, SUM(f.order_count) AS fill_count, SUM(f.filled_quantity) AS filled_quantity, "
+            + "SUM(f.gross_amount) AS gross_amount "
+            + "FROM analytics.fact_daily_instrument_activity f "
+            + "JOIN trading.instruments i ON i.instrument_id = f.instrument_id "
+            + "WHERE f.activity_date > (now() AT TIME ZONE 'UTC')::date - #{days} "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
             + "ORDER BY gross_amount DESC LIMIT #{limit}")
-    List<TopInstrument> selectTopInstruments(@Param("limit") int limit);
+    List<TopInstrument> selectTopInstruments(@Param("limit") int limit, @Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, SUM(f.order_count) AS fill_count, SUM(f.filled_quantity) AS filled_quantity, "
+            + "SUM(f.gross_amount) AS gross_amount "
+            + "FROM analytics.fact_daily_instrument_activity f "
+            + "JOIN trading.instruments i ON i.instrument_id = f.instrument_id "
+            + "WHERE f.activity_date > (now() AT TIME ZONE 'UTC')::date - #{days} "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "ORDER BY fill_count DESC, gross_amount DESC LIMIT 1")
+    TopInstrument selectMostFilledInstrument(@Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, "
+            + "SUM(CASE WHEN #{side} = 'BUY' THEN f.buy_count ELSE f.sell_count END) AS fill_count, "
+            + "SUM(CASE WHEN #{side} = 'BUY' THEN f.buy_amount ELSE f.sell_amount END) AS gross_amount "
+            + "FROM analytics.fact_daily_instrument_activity f "
+            + "JOIN trading.instruments i ON i.instrument_id = f.instrument_id "
+            + "WHERE f.activity_date > (now() AT TIME ZONE 'UTC')::date - #{days} "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "HAVING SUM(CASE WHEN #{side} = 'BUY' THEN f.buy_count ELSE f.sell_count END) > 0 "
+            + "ORDER BY gross_amount DESC, fill_count DESC LIMIT 1")
+    TopInstrument selectTopInstrumentBySide(@Param("side") String side, @Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, "
+            + "SUM(f.buy_amount) AS buy_value, SUM(f.sell_amount) AS sell_value, "
+            + "SUM(f.buy_amount) / NULLIF(SUM(f.sell_amount), 0) AS ratio "
+            + "FROM analytics.fact_daily_instrument_activity f "
+            + "JOIN trading.instruments i ON i.instrument_id = f.instrument_id "
+            + "WHERE f.activity_date > (now() AT TIME ZONE 'UTC')::date - #{days} "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "HAVING SUM(f.sell_amount) > 0 "
+            + "ORDER BY ratio DESC LIMIT 1")
+    InstrumentSideRatio selectHighestBuySellRatio(@Param("days") int days);
+
+    @Select("SELECT i.instrument_id, i.symbol, i.name, "
+            + "SUM(f.buy_amount) AS buy_value, SUM(f.sell_amount) AS sell_value, "
+            + "SUM(f.sell_amount) / NULLIF(SUM(f.buy_amount), 0) AS ratio "
+            + "FROM analytics.fact_daily_instrument_activity f "
+            + "JOIN trading.instruments i ON i.instrument_id = f.instrument_id "
+            + "WHERE f.activity_date > (now() AT TIME ZONE 'UTC')::date - #{days} "
+            + "GROUP BY i.instrument_id, i.symbol, i.name "
+            + "HAVING SUM(f.buy_amount) > 0 "
+            + "ORDER BY ratio DESC LIMIT 1")
+    InstrumentSideRatio selectHighestSellBuyRatio(@Param("days") int days);
 }

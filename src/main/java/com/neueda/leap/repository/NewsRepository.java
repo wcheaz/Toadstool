@@ -2,7 +2,6 @@ package com.neueda.leap.repository;
 
 import com.neueda.leap.News;
 import java.util.List;
-import java.util.UUID;
 
 public interface NewsRepository {
     void insertNews(List<News> newsList);
