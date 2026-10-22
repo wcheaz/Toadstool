@@ -2,9 +2,9 @@
   <app-sidebar [adminMode]="true" activeSection="admin-dashboard"></app-sidebar>
 
   <main class="admin-main">
-    <header class="topbar"><button class="profile-button" type="button" (click)="logout()" title="Sign out"><svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>{{ adminName }}</span><span class="chevron">⌄</span></button></header>
+    <header class="topbar"><button class="profile-button" type="button" (click)="logout()" title="Sign out"><svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Sign out</span></button></header>
     <div class="content">
-      <button class="breadcrumb" type="button" (click)="backToClients()"><span>←</span> Client oversight <b>/</b> {{ client ? (client.username ? '@' + client.username : client.displayName) : 'Client' }}</button>
+      <button class="breadcrumb" type="button" (click)="backToClients()"><span>←</span> Client oversight <b>/</b> {{ client ? (client.email || client.displayName) : 'Client' }}</button>
       <div class="page-heading"><h1>Client details</h1><p>Account, portfolio and trading history · As of {{ asOfLabel }}</p></div>
 
       <section class="panel state-panel" *ngIf="loading">Loading client…</section>
@@ -15,8 +15,8 @@
           <div class="identity">
             <span class="client-avatar">{{ clientInitials }}</span>
             <div>
-              <h2>{{ client.displayName }} <span class="status" [class.suspended]="client.status !== 'ACTIVE'">{{ client.status }}</span></h2>
-              <p>{{ client.username ? '@' + client.username + ' · ' : '' }}{{ client.email }}</p>
+              <h2>{{ client.email || client.displayName }} <span class="status" [class.suspended]="client.status !== 'ACTIVE'">{{ client.status }}</span></h2>
+              <p>{{ client.clientId }}</p>
             </div>
             <label class="account-picker" *ngIf="detail && detail.accounts.length > 1">
               <small>Account</small>

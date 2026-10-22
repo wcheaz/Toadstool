@@ -5,8 +5,7 @@
     <header class="topbar">
       <button class="profile-button" type="button" (click)="logout()" title="Sign out">
         <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        <span>{{ adminName }}</span>
-        <span class="chevron">⌄</span>
+        <span>Sign out</span>
       </button>
     </header>
 
@@ -26,11 +25,11 @@
       <section class="panel search-panel" aria-labelledby="find-client-heading">
         <div class="panel-heading"><h2 id="find-client-heading">Find a client</h2><span>{{ overview ? (overview.totalClients | number) : '--' }} clients · Read-only access</span></div>
         <div class="search-grid">
-          <label class="field search-field"><span>Name, email, username or client ID</span><div class="input-wrap"><span class="search-icon"></span><input type="search" [(ngModel)]="searchTerm" (keyup.enter)="applySearch()" aria-label="Search clients"><button type="button" class="clear-button" (click)="clearSearch()" aria-label="Clear search">×</button></div></label>
+          <label class="field search-field"><span>Email, account name or client ID</span><div class="input-wrap"><span class="search-icon"></span><input type="search" [(ngModel)]="searchTerm" (keyup.enter)="applySearch()" aria-label="Search clients"><button type="button" class="clear-button" (click)="clearSearch()" aria-label="Clear search">×</button></div></label>
           <label class="field"><span>Client status</span><select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange()" aria-label="Filter by client status"><option value="">All statuses</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
           <button class="find-button" type="button" (click)="applySearch()"><span class="search-icon light"></span>Find client</button>
         </div>
-        <p class="helper">Search by full or partial name, email or username. Results are read-only.</p>
+        <p class="helper">Search by full or partial email, client ID, or account name. Results are read-only.</p>
       </section>
 
       <section class="panel results-panel" aria-labelledby="results-heading">
@@ -43,7 +42,7 @@
             <thead><tr><th>Client</th><th>Accounts</th><th>Cash balance</th><th>Latest activity</th><th>Last sign-in</th><th>View</th></tr></thead>
             <tbody>
               <tr *ngFor="let client of clients">
-                <td><strong>{{ client.displayName }}</strong><span>{{ client.username ? '@' + client.username : client.email }}</span></td>
+                <td><strong>{{ client.email || client.displayName }}</strong><span>{{ client.clientId }}</span></td>
                 <td><span>{{ client.primaryAccountName || 'Account' }}{{ client.accountCount > 1 ? ' +' + (client.accountCount - 1) + ' more' : '' }}</span><b [class.review]="client.status !== 'ACTIVE'">{{ client.status }}</b></td>
                 <td class="amount">{{ formatMoney(client.totalCash) }}</td>
                 <td><span>{{ client.latestActivity ? humanize(client.latestActivity) : 'No activity yet' }}</span><span>{{ formatDateTime(client.latestActivityAt) }}</span></td>

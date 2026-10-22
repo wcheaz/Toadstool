@@ -187,7 +187,7 @@ export class AdminClientDetailsComponent implements OnInit {
   }
 
   get clientInitials(): string {
-    return initials(this.client?.displayName);
+    return initials(this.client?.email || this.client?.displayName);
   }
 
   get cashBalance(): number {

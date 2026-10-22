@@ -29,8 +29,8 @@ public interface AdminQueryMapper {
     String CLIENT_BASE =
             "SELECT "
             + "a.client_id, "
-            + "'Client ' || SUBSTRING(a.client_id::text, 1, 8) AS display_name, "
-            + "COALESCE(ll.email_attempted, '') AS email, "
+            + "COALESCE(MAX(NULLIF(a.client_email, '')), ll.email_attempted, '') AS display_name, "
+            + "COALESCE(MAX(NULLIF(a.client_email, '')), ll.email_attempted, '') AS email, "
             + "NULL::varchar AS username, "
             + "CASE WHEN BOOL_OR(a.status = 'ACTIVE') THEN 'ACTIVE' ELSE 'INACTIVE' END AS status, "
             + "MIN(a.opened_at) AS created_at, "
@@ -130,9 +130,23 @@ public interface AdminQueryMapper {
 
     @Select({"<script>",
             "SELECT e.access_event_id, e.admin_user_id, e.admin_email, e.client_id,",
-            "CASE WHEN e.client_id IS NULL THEN NULL::varchar ELSE 'Client ' || SUBSTRING(e.client_id::text, 1, 8) END AS client_name,",
+            "COALESCE(NULLIF(c.client_email, ''), ll.email_attempted) AS client_name,",
             "e.action, e.occurred_at, e.details::text AS details",
             "FROM analytics.admin_access_events e",
+            "LEFT JOIN LATERAL (",
+            "  SELECT a.client_email",
+            "  FROM analytics.accounts a",
+            "  WHERE a.client_id = e.client_id",
+            "  ORDER BY a.opened_at, a.account_id",
+            "  LIMIT 1",
+            ") c ON true",
+            "LEFT JOIN LATERAL (",
+            "  SELECT le.email_attempted",
+            "  FROM analytics.login_events le",
+            "  WHERE le.client_id = e.client_id AND le.outcome = 'SUCCESS'",
+            "  ORDER BY le.occurred_at DESC",
+            "  LIMIT 1",
+            ") ll ON true",
             ACCESS_FILTER, "ORDER BY e.occurred_at DESC, e.access_event_id DESC LIMIT #{limit} OFFSET #{offset}",
             "</script>"})
     List<AccessEvent> selectAccessEvents(@Param("clientId") UUID clientId,
@@ -150,12 +164,19 @@ public interface AdminQueryMapper {
 
     @Select({"<script>",
             "SELECT o.order_id AS trade_event_id, o.client_id,",
-            "'Client ' || SUBSTRING(o.client_id::text, 1, 8) AS client_name,",
+            "COALESCE(NULLIF(a.client_email, ''), ll.email_attempted) AS client_name,",
             "o.account_id, a.account_name, 'ORDER' AS entity_type, o.order_id AS entity_id,",
             "'ORDER_SUBMITTED' AS action, o.submitted_at AS occurred_at,",
             "json_build_object('side', o.side, 'quantity', o.quantity, 'instrumentId', o.instrument_id)::text AS details",
             "FROM analytics.orders o",
             "LEFT JOIN analytics.accounts a ON a.account_id = o.account_id",
+            "LEFT JOIN LATERAL (",
+            "  SELECT le.email_attempted",
+            "  FROM analytics.login_events le",
+            "  WHERE le.client_id = o.client_id AND le.outcome = 'SUCCESS'",
+            "  ORDER BY le.occurred_at DESC",
+            "  LIMIT 1",
+            ") ll ON true",
             TRADE_FILTER, "ORDER BY o.submitted_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<TradeEventRow> selectTradeEvents(@Param("clientId") UUID clientId, @Param("action") String action,
                                           @Param("limit") int limit, @Param("offset") int offset);
@@ -172,9 +193,16 @@ public interface AdminQueryMapper {
             + "</where>";
 
     @Select({"<script>",
-            "SELECT e.login_event_id, e.client_id, 'Client ' || SUBSTRING(e.client_id::text, 1, 8) AS client_name, e.email_attempted, e.outcome,",
+            "SELECT e.login_event_id, e.client_id, COALESCE(NULLIF(c.client_email, ''), e.email_attempted) AS client_name, e.email_attempted, e.outcome,",
             "e.occurred_at, e.details::text AS details",
             "FROM analytics.login_events e",
+            "LEFT JOIN LATERAL (",
+            "  SELECT a.client_email",
+            "  FROM analytics.accounts a",
+            "  WHERE a.client_id = e.client_id",
+            "  ORDER BY a.opened_at, a.account_id",
+            "  LIMIT 1",
+            ") c ON true",
             LOGIN_FILTER, "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<LoginEventRow> selectLoginEvents(@Param("clientId") UUID clientId, @Param("outcome") String outcome,
                                           @Param("emailAttempted") String emailAttempted,
@@ -192,10 +220,17 @@ public interface AdminQueryMapper {
             + "</where>";
 
     @Select({"<script>",
-            "SELECT e.cash_event_id, e.account_id, a.client_id, 'Client ' || SUBSTRING(a.client_id::text, 1, 8) AS client_name,",
+            "SELECT e.cash_event_id, e.account_id, a.client_id, COALESCE(NULLIF(a.client_email, ''), ll.email_attempted) AS client_name,",
             "a.account_name, e.event_type, e.amount, e.occurred_at, e.details::text AS details",
             "FROM analytics.cash_movements e",
             "JOIN analytics.accounts a ON a.account_id = e.account_id",
+            "LEFT JOIN LATERAL (",
+            "  SELECT le.email_attempted",
+            "  FROM analytics.login_events le",
+            "  WHERE le.client_id = a.client_id AND le.outcome = 'SUCCESS'",
+            "  ORDER BY le.occurred_at DESC",
+            "  LIMIT 1",
+            ") ll ON true",
             CASH_EVENT_FILTER,
             "ORDER BY e.occurred_at DESC LIMIT #{limit} OFFSET #{offset}", "</script>"})
     List<CashEventRow> selectCashEvents(@Param("clientId") UUID clientId,

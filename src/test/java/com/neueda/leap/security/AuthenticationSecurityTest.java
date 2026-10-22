@@ -513,7 +513,7 @@ class AuthenticationSecurityTest {
         JsonNode search = getJson("/api/admin/clients?q=" + SEEDED_CLIENT_EMAIL, token);
         assertEquals(1, search.path("pagination").path("totalCount").asInt());
         JsonNode client = search.path("items").get(0);
-        assertEquals("Alice Johnson", client.path("displayName").asText());
+        assertEquals(SEEDED_CLIENT_EMAIL, client.path("displayName").asText());
         assertTrue(client.path("accountCount").asInt() >= 1);
         String clientId = client.path("clientId").asText();
 

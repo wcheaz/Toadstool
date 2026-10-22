@@ -47,9 +47,17 @@ ORDER BY symbol
 """
 
 ACCOUNTS_SQL = """
-SELECT account_id, client_id, status, opened_at, balance, account_name
-FROM trading.accounts
-ORDER BY opened_at, account_id
+SELECT
+    a.account_id,
+    a.client_id,
+    a.status,
+    a.opened_at,
+    a.balance,
+    a.account_name,
+    c.email AS client_email
+FROM trading.accounts a
+JOIN trading.clients c ON c.client_id = a.client_id
+ORDER BY a.opened_at, a.account_id
 """
 
 ORDERS_SQL = """
@@ -301,7 +309,15 @@ def refresh_reporting(source_cfg: DbConfig, target_cfg: DbConfig) -> None:
             upsert_rows(
                 target_cur,
                 "accounts",
-                ("account_id", "client_id", "status", "opened_at", "balance", "account_name"),
+                (
+                    "account_id",
+                    "client_id",
+                    "status",
+                    "opened_at",
+                    "balance",
+                    "account_name",
+                    "client_email",
+                ),
                 accounts,
             )
             upsert_rows(
