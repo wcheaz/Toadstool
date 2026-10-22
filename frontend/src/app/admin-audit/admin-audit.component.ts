@@ -217,7 +217,7 @@ export class AdminAuditComponent implements OnInit {
             items: page.items.map((event) => ({
               at: event.occurredAt,
               who: event.adminEmail,
-              whoDetail: 'Admin',
+              whoDetail: '',
               accountName: '--',
               clientId: event.clientId,
               event: humanize(event.action),

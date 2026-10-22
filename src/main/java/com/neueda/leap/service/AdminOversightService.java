@@ -1,6 +1,7 @@
 package com.neueda.leap.service;
 
 import com.neueda.leap.dto.AdminDtos.AccessEvent;
+import com.neueda.leap.dto.AdminDtos.AdminOrderRow;
 import com.neueda.leap.dto.AdminDtos.ClientDetail;
 import com.neueda.leap.dto.AdminDtos.ClientSummary;
 import com.neueda.leap.dto.AdminDtos.CashEventRow;
@@ -10,13 +11,15 @@ import com.neueda.leap.dto.AdminDtos.PlatformActivityRow;
 import com.neueda.leap.dto.AdminDtos.PlatformOverview;
 import com.neueda.leap.dto.AdminDtos.TopInstrument;
 import com.neueda.leap.dto.AdminDtos.TradeEventRow;
-import com.neueda.leap.mapper.AdminQueryMapper;
+import com.neueda.leap.mapper.AdminAuditWriteMapper;
+import com.neueda.leap.reporting.mapper.AdminQueryMapper;
 import com.neueda.leap.security.AuthenticatedUser;
 import com.neueda.leap.security.SecurityAccess;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,9 +32,11 @@ public class AdminOversightService {
     public static final String VIEW_CLIENT = "VIEW_CLIENT";
 
     private final AdminQueryMapper adminQueryMapper;
+    private final AdminAuditWriteMapper adminAuditWriteMapper;
 
-    public AdminOversightService(AdminQueryMapper adminQueryMapper) {
+    public AdminOversightService(AdminQueryMapper adminQueryMapper, AdminAuditWriteMapper adminAuditWriteMapper) {
         this.adminQueryMapper = adminQueryMapper;
+        this.adminAuditWriteMapper = adminAuditWriteMapper;
     }
 
     public List<ClientSummary> searchClients(String q, String status, int limit, int offset) {
@@ -70,7 +75,7 @@ public class AdminOversightService {
         if (adminUserId == null) {
             return;
         }
-        adminQueryMapper.insertAccessEvent(adminUserId,
+        adminAuditWriteMapper.insertAccessEvent(adminUserId,
                 admin.getEmail() != null ? admin.getEmail() : admin.getUsername(),
                 clientId, action, "{}");
     }
@@ -122,6 +127,15 @@ public class AdminOversightService {
 
     public int countInstrumentActivity(UUID instrumentId, LocalDate fromDate, LocalDate toDate) {
         return adminQueryMapper.countInstrumentActivity(instrumentId, fromDate, toDate);
+    }
+
+    public List<AdminOrderRow> listAllOrders(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt,
+                                             int limit, int offset) {
+        return adminQueryMapper.selectAllOrders(fromSubmittedAt, toSubmittedAt, limit, offset);
+    }
+
+    public int countAllOrders(OffsetDateTime fromSubmittedAt, OffsetDateTime toSubmittedAt) {
+        return adminQueryMapper.countAllOrders(fromSubmittedAt, toSubmittedAt);
     }
 
     public PlatformOverview getPlatformOverview() {

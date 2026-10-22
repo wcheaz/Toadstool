@@ -103,6 +103,18 @@ public final class AdminDtos {
         public String details;
     }
 
+    public static class AdminOrderRow {
+        public UUID orderId;
+        public UUID accountId;
+        public UUID instrumentId;
+        public String side;
+        public BigDecimal quantity;
+        public String idempotencyKey;
+        public String status;
+        @JsonSerialize(using = OffsetDateTimeSerializer.class)
+        public OffsetDateTime submittedAt;
+    }
+
     public static class PlatformActivityRow {
         @JsonSerialize(using = LocalDateSerializer.class)
         public LocalDate activityDate;

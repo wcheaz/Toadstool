@@ -141,3 +141,104 @@ Consider adding:
 - **Admin user test data** (trading.admin_users)
 - **Performance test data** (10,000+ orders for load testing)
 - **Edge case data** (max/min values, special characters, etc.)
+
+---
+
+## Daily OLTP -> OLAP Refresh Script
+
+Use [sync_reporting_olap.py](./scripts/sync_reporting_olap.py) to copy OLTP data from `toadstool_db` into the existing analytics tables in `toadstool_reporting` after market hours.
+
+### What It Does
+
+- Reads source data from:
+  - `trading.accounts`
+  - `trading.admin_access_events`
+  - `trading.cash_events`
+  - `trading.instruments`
+  - `trading.login_events`
+  - `trading.orders`
+- Upserts (insert/update) rows in existing reporting tables in the target OLAP database:
+  - `analytics.accounts`
+  - `analytics.admin_access_events`
+  - `analytics.cash_movements`
+  - `analytics.instruments`
+  - `analytics.login_events`
+  - `analytics.orders`
+- Drops legacy fact tables if present:
+  - `analytics.fact_daily_instrument_activity`
+  - `analytics.fact_daily_platform_activity`
+- Runs once (`--run-once`) or stays running with a weekday schedule (default 5:00 PM ET).
+
+### Prerequisites
+
+- Python 3.10+ (for `zoneinfo`)
+- `psycopg2-binary` package
+
+```bash
+pip install psycopg2-binary
+```
+
+### Environment Variables
+
+Set the source/target variables from [.env.example](../.env.example):
+
+- `SOURCE_DB_*` for `toadstool_db` (OLTP)
+- `TARGET_DB_*` for `toadstool_reporting` (OLAP)
+- `MARKET_TIMEZONE` (default `America/New_York`)
+
+### Usage
+
+Run once immediately:
+
+```bash
+python db/scripts/sync_reporting_olap.py --run-once
+```
+
+Run once now, then keep running once per weekday after market hours:
+
+```bash
+python db/scripts/sync_reporting_olap.py --run-now-and-schedule
+```
+
+Run continuously on weekdays after market close (default 17:00 ET):
+
+```bash
+python db/scripts/sync_reporting_olap.py
+```
+
+Custom schedule time:
+
+```bash
+python db/scripts/sync_reporting_olap.py --run-hour 17 --run-minute 30
+```
+
+## Admin Access Outbox Processor
+
+Use [process_admin_access_outbox.py](./scripts/process_admin_access_outbox.py) to process `AdminAccessEventCreated` rows from `toadstool_db.trading.outbox` into `toadstool_reporting.analytics.admin_access_events`.
+
+### What It Does
+
+- Reads unpublished outbox events where `event_type = 'AdminAccessEventCreated'`
+- Upserts those events into `analytics.admin_access_events`
+- Marks processed outbox rows by setting `published_at = now()`
+- Uses `FOR UPDATE SKIP LOCKED` for safe parallel workers
+
+### Usage
+
+Run once (drains pending events and exits):
+
+```bash
+python db/scripts/process_admin_access_outbox.py --run-once
+```
+
+Run continuously (poll every 10 seconds by default):
+
+```bash
+python db/scripts/process_admin_access_outbox.py
+```
+
+Custom batch/poll tuning:
+
+```bash
+python db/scripts/process_admin_access_outbox.py --batch-size 500 --poll-interval-seconds 5
+```
