@@ -1,5 +1,3 @@
-﻿version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -50,6 +48,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - toadstool-network
+
+  frontend:
+    build: ./frontend
+    container_name: toadstool-frontend
+    ports:
+      - "${FRONTEND_PORT:-8082}:8080"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - toadstool-network
 

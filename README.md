@@ -111,7 +111,7 @@ The following Spring Boot configuration files define the application structure u
 
 The tracked [Compose example](./docker-compose.yml.example) builds the backend
 using the multi-stage [Dockerfile](./Dockerfile); no local Maven installation or
-prebuilt JAR is required. Jenkins and frontend containers are not part of this step.
+prebuilt JAR is required. Jenkins is outside the scope of this setup.
 
 Compose injects the database credentials, reporting credentials, external API
 settings, and optional JWT keys from the VM's existing `.env`. It overrides both
@@ -138,10 +138,10 @@ On the VM, after transferring the updated files:
    Compose project name (`toadstool`) and any existing project-name settings:
 
    ```bash
-   docker compose config --quiet
-   docker compose ps postgres
-   docker compose up -d --build --no-deps api
-   docker compose logs --tail=100 api
+   docker-compose -p toadstool config --quiet
+   docker-compose -p toadstool ps postgres
+   docker-compose -p toadstool up -d --build --no-deps api
+   docker-compose -p toadstool logs --tail=100 api
    curl --fail http://localhost:8081/api/health
    ```
 
@@ -157,6 +157,47 @@ The health endpoint confirms HTTP availability only. Also verify login, a
 database-backed application request, and an admin reporting request before
 considering the deployment validated. Do not share `.env`, rendered Compose
 configuration, or logs containing credentials.
+
+## Frontend container on the existing VM
+
+The frontend serves production Angular assets using Nginx and forwards `/api/*`
+to the backend on the internal Compose network. Browsers use the frontend origin,
+not `localhost:8081` or a Docker service hostname, so no new CORS origins are needed.
+The default host port is `8082` to avoid assuming Superset's ports are available.
+Check occupied ports with `docker ps` and `ss -ltn` first; set `FRONTEND_PORT` in
+the VM's `.env` to a free port if needed.
+
+After transferring the changes, compare and copy `docker-compose.yml.example`
+to the ignored `docker-compose.yml`, keeping the existing VM `.env` and project
+name. With the backend and PostgreSQL already running:
+
+```bash
+docker-compose -p toadstool config --quiet
+docker-compose -p toadstool up -d --build --no-deps frontend
+docker-compose -p toadstool ps
+docker-compose -p toadstool logs --tail=60 frontend
+curl --fail --show-error http://localhost:8082/healthz
+curl --fail --show-error http://localhost:8082/login
+curl --fail --show-error http://localhost:8082/api/health
+```
+
+Substitute the selected port if different. The first endpoint checks Nginx only;
+the last checks the reverse proxy and backend. Test browser login, news, admin
+reporting, and refreshing a deep link such as `/login`. API failures must remain
+API errors rather than returning the Angular HTML shell.
+
+Access `http://10.18.73.92:8082` if the network/firewall permits it, or keep the
+deployment private and forward the frontend port from your workstation:
+
+```bash
+ssh -N -L 4201:localhost:8082 ec2-user@10.18.73.92
+```
+
+Then browse `http://localhost:4201`. No separate browser-facing backend tunnel is
+needed. HTTPS and production hardening are separate follow-up work.
+
+The VM uses the standalone `docker-compose` command. On installations with the
+Compose plugin, use `docker compose` with the same arguments instead.
 
 # Testing
 
