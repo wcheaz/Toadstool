@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { forkJoin, of } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+import { EMPTY, forkJoin, of, Subscription } from 'rxjs';
+import { catchError, expand, reduce, timeout } from 'rxjs/operators';
 import { ApiService } from '../core/api/api.service';
 import { AuthService } from '../core/auth.service';
 import { CashEventResponse, Instrument, OrderResponse } from '../core/api/api.models';
@@ -53,8 +53,12 @@ export class ActivityComponent implements OnInit, OnDestroy {
   totalOrderCount = 0;
 
   stats = {
-    allTimeExecutions: 'Loading...'
+    allTimeExecutions: 'Loading...',
+    monthlyExecutions: 'Loading...',
+    weeklyExecutions: 'Loading...',
+    dailyExecutions: 'Loading...'
   };
+  private statsSubscription?: Subscription;
 
   constructor(
     private apiService: ApiService,
@@ -67,10 +71,78 @@ export class ActivityComponent implements OnInit, OnDestroy {
   ngOnInit() {
     console.log('[Activity] Initializing activity page');
     this.loadOrders();
+    this.loadPeriodStats();
   }
 
   ngOnDestroy() {
     this.clearPendingRefresh();
+    this.statsSubscription?.unsubscribe();
+  }
+
+  private loadPeriodStats(): void {
+    const accountId = this.authService.getAccountId();
+    if (!accountId) {
+      console.warn('[Activity] No account ID found; cannot load transaction statistics');
+      this.setPeriodStatsUnavailable();
+      return;
+    }
+
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const monthStart = now - 30 * dayMs;
+    const weekStart = now - 7 * dayMs;
+    const dayStart = now - dayMs;
+    const limit = 1000;
+
+    this.statsSubscription = this.apiService.getOrders(accountId, limit, 0).pipe(
+      timeout(5000),
+      // Orders are newest first; history older than 30 days cannot contribute.
+      expand(response => {
+        if (!response.pagination.hasMore ||
+            response.items.some(order => this.parseTimestamp(order.submittedAt).getTime() < monthStart)) {
+          return EMPTY;
+        }
+        if (response.items.length === 0) {
+          throw new Error('Order pagination returned an empty page with more results');
+        }
+        return this.apiService.getOrders(
+          accountId, limit, response.pagination.offset + response.items.length
+        ).pipe(timeout(5000));
+      }),
+      reduce((counts, response) => {
+        for (const order of response.items) {
+          const timestamp = this.parseTimestamp(order.submittedAt).getTime();
+          if (!Number.isFinite(timestamp)) {
+            throw new Error(`Invalid submitted timestamp for order ${order.orderId}`);
+          }
+          if (timestamp > now) {
+            continue;
+          }
+          if (timestamp >= monthStart) counts.monthly++;
+          if (timestamp >= weekStart) counts.weekly++;
+          if (timestamp >= dayStart) counts.daily++;
+        }
+        return counts;
+      }, { monthly: 0, weekly: 0, daily: 0 })
+    ).subscribe({
+      next: counts => {
+        this.stats.monthlyExecutions = counts.monthly.toLocaleString();
+        this.stats.weeklyExecutions = counts.weekly.toLocaleString();
+        this.stats.dailyExecutions = counts.daily.toLocaleString();
+        this.cdr.detectChanges();
+      },
+      error: error => {
+        console.error('[Activity] Failed to load transaction statistics:', error);
+        this.setPeriodStatsUnavailable();
+      }
+    });
+  }
+
+  private setPeriodStatsUnavailable(): void {
+    this.stats.monthlyExecutions = 'Unavailable';
+    this.stats.weeklyExecutions = 'Unavailable';
+    this.stats.dailyExecutions = 'Unavailable';
+    this.cdr.detectChanges();
   }
 
   /** Re-load the page of orders while any of them is still awaiting execution. */
@@ -146,7 +218,7 @@ export class ActivityComponent implements OnInit, OnDestroy {
     };
   }
 
-  private formatSubmittedAt(submittedAt: string | number): string {
+  private parseTimestamp(submittedAt: string | number): Date {
     const numericTimestamp = typeof submittedAt === 'number'
       ? submittedAt
       : Number(submittedAt);
@@ -155,10 +227,13 @@ export class ActivityComponent implements OnInit, OnDestroy {
         ? numericTimestamp * 1_000
         : numericTimestamp
       : NaN;
-    const parsedDate = Number.isFinite(timestampInMilliseconds)
+    return Number.isFinite(timestampInMilliseconds)
       ? new Date(timestampInMilliseconds)
       : new Date(submittedAt);
+  }
 
+  private formatSubmittedAt(submittedAt: string | number): string {
+    const parsedDate = this.parseTimestamp(submittedAt);
     return Number.isNaN(parsedDate.getTime())
       ? String(submittedAt)
       : parsedDate.toLocaleString();

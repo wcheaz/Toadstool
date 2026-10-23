@@ -53,9 +53,11 @@
 }
 
 .close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  align-self: flex-end;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: 0;
   background: transparent;
   border: none;
   color: #f3f4f6;
@@ -67,6 +69,13 @@
 
 .close-btn:hover {
   color: #00744A;
+}
+
+.order-ticket-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
 /* Error State */
@@ -151,7 +160,8 @@
   grid-template-columns: 1.5fr 1fr;
   gap: 24px;
   padding: 24px;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   min-width: 0;
 }
