@@ -107,6 +107,57 @@ The following Spring Boot configuration files define the application structure u
 | `FAUXNANCE_API_KEY` | Fauxnance API key | `fnx_dev_...` |
 | `FAUXNANCE_TIMEOUT_SECONDS` | API timeout | `10` |
 
+## Backend container on the existing VM
+
+The tracked [Compose example](./docker-compose.yml.example) builds the backend
+using the multi-stage [Dockerfile](./Dockerfile); no local Maven installation or
+prebuilt JAR is required. Jenkins and frontend containers are not part of this step.
+
+Compose injects the database credentials, reporting credentials, external API
+settings, and optional JWT keys from the VM's existing `.env`. It overrides both
+database hosts to `postgres` and ports to `5432`, so the backend connects directly
+over the Docker network without an SSH tunnel. Host-side scripts can keep using
+`localhost` in `.env`. Environment variables are injected explicitly; the
+credentials file is not copied into the image.
+
+Spring Boot listens on container port `8080` through `SERVER_PORT`; the VM exposes
+it on port `8081`. Running Spring Boot outside Docker still defaults to `8081`.
+The existing Spring profile behavior is unchanged.
+
+On the VM, after transferring the updated files:
+
+1. Keep the existing `.env` and PostgreSQL data. Fill in the required database,
+   Fauxnance, and Finnhub settings using real values, not example placeholders.
+   Configure both JWT keys for tokens to survive backend restarts; omitting both
+   retains the existing temporary-key development behavior.
+2. Compare the updated example with the VM's `docker-compose.yml`. Copy the example
+   to `docker-compose.yml` only after confirming the PostgreSQL service, volume,
+   and networks match the existing deployment. The actual Compose file is ignored
+   by Git and will not be updated by a pull.
+3. Run the following from the existing VM Compose directory, retaining the same
+   Compose project name (`toadstool`) and any existing project-name settings:
+
+   ```bash
+   docker compose config --quiet
+   docker compose ps postgres
+   docker compose up -d --build --no-deps api
+   docker compose logs --tail=100 api
+   curl --fail http://localhost:8081/api/health
+   ```
+
+`--no-deps` updates only the backend; PostgreSQL must already be running and ready.
+Do not run `docker compose down -v`. Back up the database before starting a new
+backend version: Flyway automatically applies pending application migrations on
+startup, even though the PostgreSQL container itself is unchanged.
+
+The existing PostgreSQL initialization mount is unchanged in this step. Flyway's
+authoritative migrations are packaged from `src/main/resources/db/migrations`.
+
+The health endpoint confirms HTTP availability only. Also verify login, a
+database-backed application request, and an admin reporting request before
+considering the deployment validated. Do not share `.env`, rendered Compose
+configuration, or logs containing credentials.
+
 # Testing
 
 ## Running Tests with SSH Tunnel
