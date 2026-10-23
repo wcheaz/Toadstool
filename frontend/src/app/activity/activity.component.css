@@ -22,13 +22,14 @@
 /* Statistics Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+  min-width: 0;
+  background: var(--color-surface);
   border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 8px;
   padding: 20px;
@@ -62,8 +63,13 @@
 }
 
 /* Transactions Section */
+:host .activity-container .stat-card,
+:host .activity-container .transactions-section {
+  background: var(--color-surface) !important;
+}
+
 .transactions-section {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+  background: var(--color-surface);
   border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 8px;
   padding: 20px;
@@ -251,6 +257,12 @@
 .status-accepted {
   background-color: rgba(251, 191, 36, 0.2);
   color: #fbbf24;
+}
+
+@media (max-width: 1100px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
