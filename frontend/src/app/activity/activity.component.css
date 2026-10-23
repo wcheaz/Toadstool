@@ -144,6 +144,11 @@
   letter-spacing: 0.5px;
 }
 
+.transactions-table th:not(:first-child),
+.transactions-table td:not(:first-child) {
+  text-align: right;
+}
+
 .transactions-table td {
   padding: 14px 16px;
   border-bottom: 1px solid rgba(71, 85, 105, 0.1);
@@ -157,10 +162,10 @@
 }
 
 .amount {
-  text-align: left;
+  text-align: right;
 }
 
-.empty-state {
+.transactions-table .empty-state {
   padding: 32px 16px;
   text-align: center;
   color: #94a3b8;
