@@ -17,7 +17,7 @@
 .trading-page {
   min-height: 100%;
   padding: 0 40px 40px;
-  background: radial-gradient(circle at 78% 5%, var(--color-primary-soft), transparent 28%), var(--desk-bg);
+  background: var(--desk-bg);
 }
 
 /* Heading */
@@ -64,7 +64,6 @@
   grid-template-columns: minmax(450px, 1.05fr) minmax(360px, 0.95fr);
   grid-template-areas: 'news recommendations';
   gap: 20px;
-  max-width: 1240px;
 }
 
 .recommendations-panel {
