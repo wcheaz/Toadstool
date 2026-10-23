@@ -57,7 +57,6 @@ export class NewsComponent implements OnInit, OnDestroy {
   accountBalance: number | null = null;
   /** Quantity held per instrumentId for the active account. */
   private holdings: Map<string, number> = new Map();
-  activeTab: string = 'all-feed';
 
   // Trading modal state
   isTradeModalOpen: boolean = false;
@@ -71,9 +70,6 @@ export class NewsComponent implements OnInit, OnDestroy {
 
   // News detail modal state
   selectedNewsArticle: NewsArticle | null = null;
-
-  // News categories
-  categories = ['News'];
 
   // Live news articles
   newsArticles: NewsArticle[] = [];
@@ -257,11 +253,6 @@ export class NewsComponent implements OnInit, OnDestroy {
 
   private convertNewsToArticles(newsResponses: NewsResponse[]): void {
     this.newsArticles = newsResponses.map(toNewsArticle);
-  }
-
-  selectTab(category: string) {
-    this.activeTab = category.toLowerCase().replace(/\s+/g, '-');
-    console.log('Selected tab:', this.activeTab);
   }
 
   get filteredNewsArticles(): NewsArticle[] {

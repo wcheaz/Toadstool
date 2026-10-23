@@ -1,19 +1,12 @@
 <div class="news-wrapper">
+  <header class="news-header">
+    <h1>News</h1>
+  </header>
+
   <!-- News Content -->
   <div class="news-content-wrapper">
     <!-- Left Section - News Feed -->
     <section class="news-section">
-      <!-- Tabs -->
-      <div class="tabs-container">
-        <button 
-          *ngFor="let category of categories"
-          [class.active]="activeTab === category.toLowerCase().replace(/\\s+/g, '-')"
-          (click)="selectTab(category)"
-          class="tab-button">
-          {{ category }}
-        </button>
-      </div>
-
       <!-- News Feed -->
       <div class="news-feed">
         <app-news-notice [articles]="filteredNewsArticles" [loading]="isLoadingNews" [error]="newsLoadError"></app-news-notice>
