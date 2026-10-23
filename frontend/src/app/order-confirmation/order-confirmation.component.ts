@@ -16,16 +16,20 @@ export class OrderConfirmationComponent {
   @Input() quantity: number = 50;
   @Input() limitPrice: number = 0;
   @Input() orderSide: 'market' | 'limit' = 'market';
+  /** The order ticket's "Available to trade after"; null while the balance is unknown. */
+  @Input() buyingPowerRemaining: number | null = null;
   @Output() confirm = new EventEmitter<void>();
   @Output() editOrder = new EventEmitter<void>();
   @Output() close = new EventEmitter<void>();
 
-  // TODO: Remove - mock balance data
-  currentBalance: number = 142384.50;
-  
+  /** Price the estimate uses: the limit for limit orders, otherwise the live quote. */
+  get estimatePrice(): number {
+    if (this.orderSide === 'limit' && this.limitPrice > 0) return this.limitPrice;
+    return this.selectedAsset?.price ?? 0;
+  }
+
   get estimatedValue(): number {
-    if (!this.selectedAsset) return 0;
-    return this.quantity * this.selectedAsset.price;
+    return this.quantity * this.estimatePrice;
   }
 
   get estimatedFees(): number {
@@ -36,13 +40,13 @@ export class OrderConfirmationComponent {
     return this.estimatedValue + this.estimatedFees;
   }
 
-  get buyingPowerRemaining(): number {
-    return this.currentBalance - this.orderTotal;
-  }
-
   get estExecutionPrice(): string {
     if (!this.selectedAsset) return '$0.00';
-    return `$${this.selectedAsset.price.toFixed(2)}`;
+    return `$${this.estimatePrice.toFixed(2)}`;
+  }
+
+  get priceSource(): string {
+    return this.orderSide === 'limit' ? 'Your limit price' : 'Live quote';
   }
 
   confirmOrder() {

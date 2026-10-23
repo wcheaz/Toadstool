@@ -4,7 +4,6 @@
       <h1>Trading Desk</h1>
       <p>Execute instant market orders with live pipeline feeds</p>
     </div>
-    <span class="market-status"><i></i> Quotes refresh every 5s</span>
   </section>
 
   <div class="desk-grid">
@@ -12,7 +11,6 @@
       <div class="panel-title">
         <div>
           <h2 id="recommendations-heading">Search assets</h2>
-          <p>Find an asset by ticker or name, then select it to see its quote and news.</p>
         </div>
         <span>{{ filteredAssets.length }} results</span>
       </div>
@@ -23,7 +21,6 @@
         <kbd>⌕</kbd>
       </label>
 
-      <p class="disclaimer"><span>ⓘ</span> Quotes come from the Fauxnance educational market feed.</p>
       <p class="error-state" *ngIf="apiError">{{ apiError }}</p>
 
       <div class="stock-list" *ngIf="!isLoading; else loadingState">

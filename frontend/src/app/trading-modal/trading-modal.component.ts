@@ -4,6 +4,7 @@ import { catchError, filter, switchMap, take, timeout } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../core/api/api.service';
 import { CandleResponse, DepthLevel, OrderResponse } from '../core/api/api.models';
+import { toDate } from '../admin-dashboard/admin-format';
 import { Asset } from '../shared/models/asset.model';
 import { ChartComponent } from '../shared/components/chart/chart.component';
 import { ErrorModalComponent } from '../shared/components/error-modal/error-modal.component';
@@ -66,6 +67,12 @@ export class TradingModalComponent implements OnChanges, OnDestroy {
   isSubmitting: boolean = false;
   /** Price the server actually executed the last order at. */
   filledPrice: number = 0;
+  /** The filled order and its fill, shown in the success popup; fee and time arrive with the fill. */
+  filledOrder: OrderResponse | null = null;
+  filledFee: number | null = null;
+  filledAt: Date | null = null;
+  /** Cash before the last submitted order, so the success popup can show cash after it. */
+  balanceBeforeOrder: number | null = null;
   private orderStatusSubscription: Subscription | null = null;
   pendingTicket: OrderTicketValue | null = null;
 
@@ -166,6 +173,7 @@ export class TradingModalComponent implements OnChanges, OnDestroy {
 
     this.isPreviewOpen = false;
     this.isSubmitting = true;
+    this.balanceBeforeOrder = this.accountBalance;
 
     // The server accepts the order, then prices and executes it against the live quote (BR-06/BR-08)
     const isLimit = ticket.orderType === 'limit';
@@ -252,6 +260,10 @@ export class TradingModalComponent implements OnChanges, OnDestroy {
     this.isSubmitting = false;
     if (order.status === 'FILLED') {
       this.filledPrice = Number(order.fillPrice) || 0;
+      this.filledOrder = order;
+      this.filledFee = null;
+      this.filledAt = null;
+      this.loadFillDetails(order);
       this.isSuccessOpen = true;
     } else {
       this.errorMessage = 'Your order was not executed.';
@@ -274,6 +286,21 @@ export class TradingModalComponent implements OnChanges, OnDestroy {
   onSuccessClose() {
     this.isSuccessOpen = false;
     this.closeModal();
+  }
+
+  /** The fill carries the actual fee and execution time; fills are listed newest first. */
+  private loadFillDetails(order: OrderResponse) {
+    this.apiService.getFills(order.accountId, 20, 0).subscribe({
+      next: (page) => {
+        const fill = page.items.find(item => item.orderId === order.orderId);
+        if (!fill || this.filledOrder?.orderId !== order.orderId) return;
+        const fee = Number(fill.fee);
+        this.filledFee = Number.isFinite(fee) ? fee : null;
+        this.filledAt = toDate(fill.executedAt);
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Failed to load fill details:', error)
+    });
   }
 
   onReturnToDashboard() {

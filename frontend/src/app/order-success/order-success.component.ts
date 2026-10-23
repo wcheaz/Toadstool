@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Asset } from '../shared/models/asset.model';
+import { OrderResponse } from '../core/api/api.models';
 
 @Component({
   selector: 'app-order-success',
@@ -14,33 +15,47 @@ export class OrderSuccessComponent {
   @Input() orderType: 'buy' | 'sell' = 'buy';
   @Input() selectedAsset: Asset | null = null;
   @Input() quantity: number = 50;
-  @Input() filledPrice: number = 142.12;
+  @Input() filledPrice: number = 0;
+  /** The filled order; its id is the confirmation number. */
+  @Input() order: OrderResponse | null = null;
+  /** Fee charged on the fill; null until the fill has loaded. */
+  @Input() fee: number | null = null;
+  /** When the fill executed; null until the fill has loaded. */
+  @Input() executedAt: Date | null = null;
+  /** Cash before this order; null when unknown. */
+  @Input() balanceBefore: number | null = null;
   @Output() returnToDashboard = new EventEmitter<void>();
   @Output() viewActivity = new EventEmitter<void>();
 
-  // TODO: Remove - mock order summary data, replace with the actual order response
-  currentBalance: number = 142384.50;
-  estimatedValue: number = 7106.00;
-  estimatedFees: number = 0.00;
-  orderTotal: number = 7106.00;
-  updatedBuyingPower: number = 135278.50;
+  get filledValue(): number {
+    return this.quantity * this.filledPrice;
+  }
 
-  // Generate order confirmation number
+  /** Cash paid for a buy (value plus fee) or received for a sell (value minus fee). */
+  get orderTotal(): number {
+    const fee = this.fee ?? 0;
+    return this.orderType === 'buy' ? this.filledValue + fee : this.filledValue - fee;
+  }
+
+  /** Cash after the fill; null until the fee is known, so it never shows a guess. */
+  get updatedBuyingPower(): number | null {
+    if (this.balanceBefore === null || this.fee === null) return null;
+    return this.orderType === 'buy' ? this.balanceBefore - this.orderTotal : this.balanceBefore + this.orderTotal;
+  }
+
   get confirmationNumber(): string {
-    return 'TT-1024-NE-' + Math.floor(Math.random() * 900000 + 100000);
+    return this.order ? this.order.orderId.slice(0, 8).toUpperCase() : '—';
   }
 
-  get currentTime(): string {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    return `${hours}:${minutes}:${seconds}`;
+  get executedDateTime(): string {
+    if (!this.executedAt) return '—';
+    return this.executedAt.toLocaleString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
   }
 
-  get currentDate(): string {
-    const now = new Date();
-    return now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  get isLimitOrder(): boolean {
+    return this.order?.orderType === 'LIMIT';
   }
 
   onReturnToDashboard() {

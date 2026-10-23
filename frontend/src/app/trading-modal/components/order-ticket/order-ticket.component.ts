@@ -13,6 +13,8 @@ export interface OrderTicketValue {
   quantity: number;
   limitPrice: number;
   agreedToTerms: boolean;
+  /** The ticket's "Available to trade after", shown unchanged in the order preview. */
+  availableAfterTrade: number | null;
 }
 
 @Component({
@@ -112,7 +114,8 @@ export class OrderTicketComponent {
       orderSide: this.orderSide,
       quantity: this.quantity,
       limitPrice: this.limitPrice,
-      agreedToTerms: this.agreedToTerms
+      agreedToTerms: this.agreedToTerms,
+      availableAfterTrade: this.availableAfterTrade
     });
   }
 }

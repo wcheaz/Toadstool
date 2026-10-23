@@ -21,7 +21,7 @@
         </div>
       </div>
       <div class="order-side-badge" [ngClass]="orderType">
-        ↓ {{ orderType.toUpperCase() }}
+        {{ orderType === 'buy' ? '↑' : '↓' }} {{ orderType.toUpperCase() }}
       </div>
     </div>
 
@@ -41,7 +41,7 @@
           <span class="detail-label">Estimated execution price</span>
           <div class="price-info">
             <span class="detail-value">{{ estExecutionPrice }}</span>
-            <span class="price-timestamp">Current ask • 10:42:18 ET</span>
+            <span class="price-timestamp">{{ priceSource }}</span>
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@
       </div>
       <div class="summary-row buying-power">
         <span class="summary-label">Buying power remaining</span>
-        <span class="summary-value">${{ buyingPowerRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+        <span class="summary-value">{{ buyingPowerRemaining !== null ? ((buyingPowerRemaining < 0 ? '-$' : '$') + (buyingPowerRemaining < 0 ? -buyingPowerRemaining : buyingPowerRemaining).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '—' }}</span>
       </div>
     </div>
 
@@ -95,14 +95,5 @@
         Confirm {{ orderType === 'buy' ? 'Buy' : 'Sell' }}
       </button>
     </div>
-
-    <!-- Confirmation Note -->
-    <p class="confirmation-note">
-      <svg class="note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"></path>
-        <path d="M12 6v6l4 2"></path>
-      </svg>
-      Your order will be submitted immediately after confirmation
-    </p>
   </div>
 </div>

@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +37,10 @@ public class FauxnanceService {
 
     private final ConcurrentHashMap<String, CacheEntry<?>> cache = new ConcurrentHashMap<>();
     private static final long CACHE_TTL_MS = 60000; // 1 minute
+
+    /** After a failed batch call, display quotes come from the last known values for this long (saves quota). */
+    private static final long BATCH_BACKOFF_MS = 30000;
+    private volatile long batchPausedUntil = 0;
 
     public FauxnanceService(RestTemplate restTemplate, FauxnanceProperties properties, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
@@ -67,6 +72,10 @@ public class FauxnanceService {
         return quote;
     }
 
+    /**
+     * Display quotes for several symbols in one provider call. If the call fails, the last known quotes are
+     * returned and further batch calls pause for BATCH_BACKOFF_MS. Order execution uses getQuote, never these.
+     */
     public List<QuoteResponse> getQuotes(List<String> symbols) {
         if (symbols == null || symbols.isEmpty()) {
             return Collections.emptyList();
@@ -91,10 +100,19 @@ public class FauxnanceService {
         }
 
         if (!missingSymbols.isEmpty()) {
-            List<QuoteResponse> fetchedQuotes = fetchQuotes(missingSymbols);
-            for (QuoteResponse quote : fetchedQuotes) {
-                cacheQuote(quote.getSymbol(), quote);
-                quotesBySymbol.put(extractBaseSymbol(quote.getSymbol()), quote);
+            List<QuoteResponse> fetchedQuotes = System.currentTimeMillis() < batchPausedUntil ? null : fetchQuotes(missingSymbols);
+            if (fetchedQuotes == null) {
+                missingSymbols.forEach(symbol -> {
+                    CacheEntry<?> lastKnown = cache.get(quoteCacheKey(symbol));
+                    if (lastKnown != null) {
+                        quotesBySymbol.put(symbol, (QuoteResponse) lastKnown.value);
+                    }
+                });
+            } else {
+                for (QuoteResponse quote : fetchedQuotes) {
+                    cacheQuote(quote.getSymbol(), quote);
+                    quotesBySymbol.put(extractBaseSymbol(quote.getSymbol()), quote);
+                }
             }
         }
 
@@ -291,13 +309,30 @@ public class FauxnanceService {
             }
             logger.warn("Fauxnance API response missing 'data' field for symbol {}", symbol);
             return null;
+        } catch (RestClientException e) {
+            logger.warn("Fauxnance quote for {} failed: {}", symbol, e.getMessage());
+            return null;
         } catch (Exception e) {
             logger.error("Error fetching quote for symbol {}: {}", symbol, e.getMessage(), e);
             return null;
         }
     }
 
+    /**
+     * One batch call; null when the call itself fails (Fauxnance returns 500 when several symbols are not in
+     * its cache, or when it is having problems), which pauses batch calls for BATCH_BACKOFF_MS.
+     */
     private List<QuoteResponse> fetchQuotes(List<String> symbols) {
+        List<QuoteResponse> quotes = fetchQuoteBatch(symbols);
+        if (quotes == null) {
+            batchPausedUntil = System.currentTimeMillis() + BATCH_BACKOFF_MS;
+            logger.warn("Batch quotes for {} symbols failed; showing last known prices for {}s",
+                    symbols.size(), BATCH_BACKOFF_MS / 1000);
+        }
+        return quotes;
+    }
+
+    private List<QuoteResponse> fetchQuoteBatch(List<String> symbols) {
         try {
             List<String> baseSymbols = symbols.stream()
                     .map(this::extractBaseSymbol)
@@ -307,12 +342,12 @@ public class FauxnanceService {
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 logger.warn("Fauxnance API returned non-success status {} for batch quotes", response.getStatusCode());
-                return Collections.emptyList();
+                return null;
             }
 
             if (response.getBody() == null) {
                 logger.warn("Fauxnance API returned empty body for batch quotes");
-                return Collections.emptyList();
+                return null;
             }
 
             JsonNode root = objectMapper.readTree(response.getBody());
@@ -343,8 +378,8 @@ public class FauxnanceService {
             }
             return quotes;
         } catch (Exception e) {
-            logger.error("Error fetching batch quotes: {}", e.getMessage(), e);
-            return Collections.emptyList();
+            logger.warn("Error fetching batch quotes: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -380,6 +415,9 @@ public class FauxnanceService {
             }
             String currency = data != null ? data.path("currency").asText("USD") : "USD";
             return new CandleSeries(currency, candles);
+        } catch (RestClientException e) {
+            logger.warn("Fauxnance candles for {} failed: {}", symbol, e.getMessage());
+            return new CandleSeries("USD", Collections.emptyList());
         } catch (Exception e) {
             logger.error("Error fetching candles for symbol {}: {}", symbol, e.getMessage(), e);
             return new CandleSeries("USD", Collections.emptyList());
@@ -412,6 +450,9 @@ public class FauxnanceService {
                 );
             }
             logger.warn("Fauxnance API response missing 'data' field for symbol {}", symbol);
+            return null;
+        } catch (RestClientException e) {
+            logger.warn("Fauxnance symbol {} failed: {}", symbol, e.getMessage());
             return null;
         } catch (Exception e) {
             logger.error("Error fetching symbol {}: {}", symbol, e.getMessage(), e);
