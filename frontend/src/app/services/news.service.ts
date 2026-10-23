@@ -32,7 +32,7 @@ export interface EarningsEvent {
   providedIn: 'root'
 })
 export class NewsService {
-  private apiUrl = 'http://localhost:8081/api/news';
+  private apiUrl = '/api/news';
 
   constructor(private http: HttpClient) {}
 

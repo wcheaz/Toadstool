@@ -38,7 +38,7 @@ import { HttpParams } from '@angular/common/http';
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly apiUrl = 'http://localhost:8081/api';
+  private readonly apiUrl = '/api';
 
   constructor(private http: HttpClient) {}
 
