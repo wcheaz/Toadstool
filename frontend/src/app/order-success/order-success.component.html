@@ -21,7 +21,7 @@
     <!-- Order Summary -->
     <div class="order-summary" *ngIf="selectedAsset">
       <p class="summary-text">{{ quantity }} shares of {{ selectedAsset.symbol }} were filled</p>
-      <p class="summary-subtext">Your market {{ orderType }} executed immediately and has been added to your portfolio.</p>
+      <p class="summary-subtext">Your {{ isLimitOrder ? 'limit' : 'market' }} {{ orderType }} has been filled and your portfolio is updated.</p>
 
       <!-- Asset Card -->
       <div class="asset-card">
@@ -42,7 +42,7 @@
       </div>
       <div class="detail-row">
         <span>Date & Time</span>
-        <span>{{ currentDate }} • {{ currentTime }} ET</span>
+        <span>{{ executedDateTime }}</span>
       </div>
     </div>
 
@@ -81,19 +81,19 @@
     <div class="summary-values">
       <div class="value-row">
         <span>Filled value</span>
-        <span class="mono">${{ estimatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+        <span class="mono">${{ filledValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
       </div>
       <div class="value-row">
         <span>Fees</span>
-        <span class="mono">${{ estimatedFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+        <span class="mono">{{ fee !== null ? '$' + fee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—' }}</span>
       </div>
       <div class="value-row divider">
-        <span>Total</span>
+        <span>{{ orderType === 'buy' ? 'Total paid' : 'Total received' }}</span>
         <span class="mono total">${{ orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
       </div>
       <div class="value-row buying-power">
         <span>Updated buying power</span>
-        <span class="mono">${{ updatedBuyingPower.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+        <span class="mono">{{ updatedBuyingPower !== null ? '$' + updatedBuyingPower.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—' }}</span>
       </div>
     </div>
 

@@ -87,6 +87,7 @@
     [quantity]="pendingTicket?.quantity ?? 50"
     [limitPrice]="pendingTicket?.limitPrice ?? 0"
     [orderSide]="pendingTicket?.orderType ?? 'market'"
+    [buyingPowerRemaining]="pendingTicket?.availableAfterTrade ?? null"
     (confirm)="confirmOrder()"
     (editOrder)="editOrder()"
     (close)="closePreview()">
@@ -99,6 +100,10 @@
     [orderType]="pendingTicket?.orderSide ?? 'buy'"
     [quantity]="pendingTicket?.quantity ?? 50"
     [filledPrice]="filledPrice"
+    [order]="filledOrder"
+    [fee]="filledFee"
+    [executedAt]="filledAt"
+    [balanceBefore]="balanceBeforeOrder"
     (returnToDashboard)="onReturnToDashboard()"
     (viewActivity)="onViewActivity()">
   </app-order-success>
