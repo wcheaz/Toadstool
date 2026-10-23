@@ -43,6 +43,7 @@
                   [quotes]="instrumentQuotes"
                   [loading]="loadingInstruments"
                   [holdings]="holdings"
+                  [positionCosts]="positionCosts"
                   (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
                   <app-card-controls cardControls (move)="moveCard(i, $event)"></app-card-controls>
                 </app-market-assets-table>

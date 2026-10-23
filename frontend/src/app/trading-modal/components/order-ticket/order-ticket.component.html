@@ -43,6 +43,10 @@
 
     <!-- Summary -->
     <div class="summary-section">
+      <div class="summary-row account-row">
+        <span>Available to trade now</span>
+        <span>{{ accountBalance !== null ? ('$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '—' }}</span>
+      </div>
       <div class="summary-row">
         <span>Estimated value</span>
         <span>${{ estimatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
@@ -54,6 +58,10 @@
       <div class="summary-row total">
         <span>Order total</span>
         <span>${{ orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+      </div>
+      <div class="summary-row after-trade" [class.negative]="availableAfterTrade !== null && availableAfterTrade < 0">
+        <span>Available to trade after</span>
+        <span>{{ availableAfterTrade !== null ? ((availableAfterTrade < 0 ? '-$' : '$') + (availableAfterTrade < 0 ? -availableAfterTrade : availableAfterTrade).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '—' }}</span>
       </div>
     </div>
 

@@ -191,6 +191,19 @@
   color: #a1a5b4;
 }
 
+.summary-row.account-row {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 116, 74, 0.2);
+}
+
+.summary-row.after-trade span:last-child {
+  font-weight: 600;
+}
+
+.summary-row.after-trade.negative span:last-child {
+  color: #fca5a5;
+}
+
 .summary-row.total {
   padding-top: 8px;
   border-top: 1px solid rgba(0, 116, 74, 0.2);

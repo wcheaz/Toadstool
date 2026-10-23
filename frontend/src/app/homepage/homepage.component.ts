@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../core/api/api.service';
-import { AccountResponse, Instrument, QuoteResponse, CandleResponse } from '../core/api/api.models';
+import { AccountResponse, Instrument, QuoteResponse, CandleResponse, CashEventResponse, OrderResponse } from '../core/api/api.models';
 import { Asset } from '../shared/models/asset.model';
 import { AuthService } from '../core/auth.service';
 import { TradingModalComponent } from '../trading-modal/trading-modal.component';
@@ -12,15 +12,18 @@ import { WithdrawalModalComponent, WithdrawalSummary } from '../withdrawal-modal
 import { TransferModalComponent, TransferSummary } from '../transfer-modal/transfer-modal.component';
 import { BalanceWidgetComponent } from './components/balance-widget/balance-widget.component';
 import { NewsFeedComponent } from './components/news-feed/news-feed.component';
-import { MarketAssetsTableComponent } from './components/market-assets-table/market-assets-table.component';
+import { MarketAssetsTableComponent, PositionCost } from './components/market-assets-table/market-assets-table.component';
 import { AccountStateService } from '../core/account-state.service';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CardControlsComponent } from './components/card-controls/card-controls.component';
 import { CardSize, DashboardCard, DashboardCardId, DashboardLayoutService } from './dashboard-layout.service';
 import { CardResizeHandleDirective } from './components/card-resize-handle/card-resize-handle.directive';
 import { SymbolLinkService } from './symbol-link.service';
-import { Subject, interval } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, forkJoin, interval, of } from 'rxjs';
+import { catchError, map, takeUntil } from 'rxjs/operators';
+
+/** Enough history to cover every trade on a learner account. */
+const COST_HISTORY_PAGE_SIZE = 1000;
 
 @Component({
   selector: 'app-homepage',
@@ -78,6 +81,8 @@ export class HomepageComponent implements OnInit, OnDestroy {
   instrumentQuotes: Map<string, QuoteResponse> = new Map();
   /** Quantity held per instrumentId for the active account. */
   holdings: Map<string, number> = new Map();
+  /** Cash paid and received per instrumentId, from the account's trade cash events. */
+  positionCosts: Map<string, PositionCost> = new Map();
   private heldInstruments: Instrument[] = [];
   private tradableInstruments: Instrument[] = [];
   loadingInstruments: boolean = false;
@@ -171,6 +176,7 @@ export class HomepageComponent implements OnInit, OnDestroy {
     if (switched) {
       // Don't show the previous account's positions while the new ones load.
       this.holdings = new Map();
+      this.positionCosts = new Map();
       this.heldInstruments = [];
       this.mergeInstruments();
       this.loadHoldings();
@@ -198,6 +204,44 @@ export class HomepageComponent implements OnInit, OnDestroy {
         this.refreshQuotes();
       },
       error: (error) => console.error('Failed to load holdings:', error)
+    });
+    this.loadPositionCosts(accountId);
+  }
+
+  /** Join BUY/SELL cash events to their orders to get what was paid and received per instrument. */
+  private loadPositionCosts(accountId: string) {
+    forkJoin({
+      orders: this.apiService.getOrders(accountId, COST_HISTORY_PAGE_SIZE, 0).pipe(
+        map(page => page.items),
+        catchError(() => of([] as OrderResponse[]))
+      ),
+      cashEvents: this.apiService.getCashEvents(accountId, COST_HISTORY_PAGE_SIZE, 0).pipe(
+        map(page => page.items),
+        catchError(() => of([] as CashEventResponse[]))
+      )
+    }).subscribe(({ orders, cashEvents }) => {
+      if (accountId !== this.accountId) return;
+      const orderById = new Map(orders.map(order => [order.orderId, order]));
+      const costs = new Map<string, PositionCost>();
+      cashEvents
+        .filter(event => (event.eventType === 'BUY' || event.eventType === 'SELL') && event.orderId)
+        .forEach(event => {
+          const order = orderById.get(event.orderId as string);
+          const amount = Number(event.amount);
+          const quantity = Number(order?.quantity);
+          if (!order || !Number.isFinite(amount) || !Number.isFinite(quantity)) return;
+          const cost = costs.get(order.instrumentId) ?? { boughtCost: 0, netCash: 0, netQuantity: 0 };
+          cost.netCash += amount; // BUY is negative, SELL positive
+          if (event.eventType === 'BUY') {
+            cost.boughtCost += -amount;
+            cost.netQuantity += quantity;
+          } else {
+            cost.netQuantity -= quantity;
+          }
+          costs.set(order.instrumentId, cost);
+        });
+      this.positionCosts = costs;
+      this.cdr.detectChanges();
     });
   }
 

@@ -47,6 +47,15 @@ export class OrderTicketComponent {
     return this.estimatedValue + this.estimatedFees;
   }
 
+  /** Cash left to trade once this order fills: buys spend the total, sells add the proceeds net of fees. */
+  get availableAfterTrade(): number | null {
+    if (this.accountBalance === null || !Number.isFinite(this.accountBalance)) return null;
+    const value = Number.isFinite(this.estimatedValue) ? this.estimatedValue : 0;
+    return this.orderSide === 'buy'
+      ? this.accountBalance - (value + this.estimatedFees)
+      : this.accountBalance + value - this.estimatedFees;
+  }
+
   get validationError(): string {
     if (!this.selectedAsset) return 'Select an asset before placing an order.';
     if (!Number.isFinite(this.quantity) || this.quantity <= 0) {

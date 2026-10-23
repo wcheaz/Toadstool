@@ -13,7 +13,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 0.8fr;
+  grid-template-columns: 1.8fr 1.1fr 1.1fr 1.1fr 1.1fr 0.8fr;
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
@@ -28,7 +28,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 0.8fr;
+  grid-template-columns: 1.8fr 1.1fr 1.1fr 1.1fr 1.1fr 0.8fr;
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
@@ -102,7 +102,7 @@
 @media (max-width: 768px) {
   .table-header,
   .table-row {
-    min-width: 620px;
+    min-width: 720px;
   }
 
   .table-row {
@@ -145,10 +145,20 @@
   background-color: rgba(0, 116, 74, 0.06);
 }
 
-.holding-cell {
+.holding-cell,
+.pl-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.pl-amount {
+  font-weight: 600;
+}
+
+.pl-percent {
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 .holding-units {
