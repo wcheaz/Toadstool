@@ -32,17 +32,16 @@
       <div class="table-cell">
         {{ (getHoldingValue(instrument) || 0) | currency }}
       </div>
-      <div class="table-cell pl-cell" [ngClass]="getPriceChangeClass(getQuote(instrument.instrumentId)?.changePercent)">
+      <div class="table-cell pl-cell">
         <ng-container *ngIf="getQuote(instrument.instrumentId) as quote; else plLoading">
-          <span class="pl-amount">{{ getDailyPnl(instrument) >= 0 ? '+' : '-' }}{{ (getDailyPnl(instrument) < 0 ? -getDailyPnl(instrument) : getDailyPnl(instrument)) | currency }}</span>
-          <span class="pl-percent">{{ quote.changePercent >= 0 ? '+' : '' }}{{ quote.changePercent | number:'1.2-2' }}%</span>
+          <span class="pl-amount" [ngClass]="getPriceChangeClass(getDailyPnl(instrument))">{{ getDailyPnl(instrument) >= 0 ? '+' : '-' }}{{ (getDailyPnl(instrument) < 0 ? -getDailyPnl(instrument) : getDailyPnl(instrument)) | currency }}</span>
+          <span class="pl-percent" [ngClass]="getPriceChangeClass(quote.changePercent)">{{ quote.changePercent >= 0 ? '+' : '' }}{{ quote.changePercent | number:'1.2-2' }}%</span>
         </ng-container>
         <ng-template #plLoading><span class="no-holding">Loading...</span></ng-template>
       </div>
-      <div class="table-cell pl-cell" *ngIf="getAllTimePnl(instrument) as pnl; else noAllTime"
-           [ngClass]="pnl.amount >= 0 ? 'price-up' : 'price-down'">
-        <span class="pl-amount">{{ pnl.amount >= 0 ? '+' : '-' }}{{ (pnl.amount < 0 ? -pnl.amount : pnl.amount) | currency }}</span>
-        <span class="pl-percent">{{ pnl.percent >= 0 ? '+' : '' }}{{ pnl.percent | number:'1.2-2' }}%</span>
+      <div class="table-cell pl-cell" *ngIf="getAllTimePnl(instrument) as pnl; else noAllTime">
+        <span class="pl-amount" [ngClass]="getPriceChangeClass(pnl.amount)">{{ pnl.amount >= 0 ? '+' : '-' }}{{ (pnl.amount < 0 ? -pnl.amount : pnl.amount) | currency }}</span>
+        <span class="pl-percent" [ngClass]="getPriceChangeClass(pnl.percent)">{{ pnl.percent >= 0 ? '+' : '' }}{{ pnl.percent | number:'1.2-2' }}%</span>
       </div>
       <ng-template #noAllTime>
         <div class="table-cell pl-cell" title="Purchase history for this position isn't complete">
