@@ -163,7 +163,7 @@ configuration, or logs containing credentials.
 The frontend serves production Angular assets using Nginx and forwards `/api/*`
 to the backend on the internal Compose network. Browsers use the frontend origin,
 not `localhost:8081` or a Docker service hostname, so no new CORS origins are needed.
-The default host port is `8082` to avoid assuming Superset's ports are available.
+The default host port is `8083` to avoid assuming Superset's ports are available.
 Check occupied ports with `docker ps` and `ss -ltn` first; set `FRONTEND_PORT` in
 the VM's `.env` to a free port if needed.
 
@@ -176,9 +176,9 @@ docker-compose -p toadstool config --quiet
 docker-compose -p toadstool up -d --build --no-deps frontend
 docker-compose -p toadstool ps
 docker-compose -p toadstool logs --tail=60 frontend
-curl --fail --show-error http://localhost:8082/healthz
-curl --fail --show-error http://localhost:8082/login
-curl --fail --show-error http://localhost:8082/api/health
+curl --fail --show-error http://localhost:8083/healthz
+curl --fail --show-error http://localhost:8083/login
+curl --fail --show-error http://localhost:8083/api/health
 ```
 
 Substitute the selected port if different. The first endpoint checks Nginx only;
@@ -186,11 +186,11 @@ the last checks the reverse proxy and backend. Test browser login, news, admin
 reporting, and refreshing a deep link such as `/login`. API failures must remain
 API errors rather than returning the Angular HTML shell.
 
-Access `http://10.18.73.92:8082` if the network/firewall permits it, or keep the
+Access `http://10.18.73.92:8083` if the network/firewall permits it, or keep the
 deployment private and forward the frontend port from your workstation:
 
 ```bash
-ssh -N -L 4201:localhost:8082 ec2-user@10.18.73.92
+ssh -N -L 4201:localhost:8083 ec2-user@10.18.73.92
 ```
 
 Then browse `http://localhost:4201`. No separate browser-facing backend tunnel is
