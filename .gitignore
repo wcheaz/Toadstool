@@ -1,8 +1,25 @@
 target/
 
+# Python generated files and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local logs
+*.log
+
 # Environment variables with credentials
 .env
-.env.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Spring Boot application properties with credentials
 src/test/resources/application.yml
@@ -17,4 +34,6 @@ docker-compose.yml
 *.swo
 *~
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.class
