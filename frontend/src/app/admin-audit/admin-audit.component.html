@@ -1,0 +1,66 @@
+<section class="admin-shell">
+  <app-sidebar [adminMode]="true" activeSection="admin-audit"></app-sidebar>
+
+  <main class="admin-main">
+    <header class="topbar">
+      <button class="profile-button" type="button" (click)="logout()" title="Sign out">
+        <svg class="profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Sign out</span>
+      </button>
+    </header>
+
+    <div class="content">
+      <div class="page-heading">
+        <div><h1>Audit log</h1><p>Sign-ins, trading events and admin access across the platform.</p></div>
+      </div>
+
+      <section class="panel search-panel" aria-label="Audit filters">
+        <div class="tab-row" role="tablist">
+          <button type="button" role="tab" *ngFor="let item of tabs" class="tab" [class.active]="tab === item.key" [attr.aria-selected]="tab === item.key" (click)="selectTab(item.key)">{{ item.label }}</button>
+        </div>
+
+        <div class="audit-filters" *ngIf="tab === 'logins'">
+          <label class="field"><span>Outcome</span><select [(ngModel)]="outcomeFilter" (ngModelChange)="applyFilters()"><option value="">All outcomes</option><option value="SUCCESS">Success</option><option value="FAILURE">Failure</option></select></label>
+          <label class="field search-field"><span>Email contains</span><div class="input-wrap"><span class="search-icon"></span><input type="search" [(ngModel)]="emailFilter" (keyup.enter)="applyFilters()" aria-label="Filter by email"></div></label>
+          <button class="find-button" type="button" (click)="applyFilters()">Apply</button>
+        </div>
+        <div class="audit-filters" *ngIf="tab === 'trades'">
+          <label class="field"><span>Action</span><select [(ngModel)]="actionFilter" (ngModelChange)="applyFilters()"><option value="">All actions</option><option value="SUBMITTED">Order submitted</option><option value="ACCEPTED">Order accepted</option><option value="FILL_EXECUTED">Fill executed</option></select></label>
+        </div>
+
+        <p class="helper client-filter" *ngIf="clientFilter">Showing events for {{ clientFilterName || clientFilter.slice(0, 8) }} <button type="button" class="details-button" (click)="clearClientFilter()">Show all clients</button></p>
+      </section>
+
+      <section class="panel results-panel" aria-labelledby="audit-heading">
+        <div class="panel-heading results-heading"><div><h2 id="audit-heading">{{ tab === 'logins' ? 'Sign-in events' : tab === 'trades' ? 'Trade events' : tab === 'access' ? 'Admin access events' : 'Cash flow' }} <small>{{ totalCount | number }} EVENTS</small></h2></div><span>Newest first · Read-only</span></div>
+        <div class="table-wrap">
+          <table class="audit-table">
+            <thead><tr><th>Time (UTC)</th><th>{{ tab === 'access' ? 'Admin' : 'Client' }}</th><th>Account</th><th>{{ tab === 'cash' ? 'Type' : 'Event' }}</th><th>{{ tab === 'cash' ? 'Amount' : 'Details' }}</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let row of rows" [class.clickable]="!!row.clientId" (click)="openClient(row)">
+                <td><span>{{ formatDateTime(row.at) }}</span></td>
+                <td><strong>{{ row.who }}</strong><span *ngIf="row.whoDetail">{{ row.whoDetail }}</span></td>
+                <td><span>{{ row.accountName }}</span></td>
+                <td><span>{{ row.event }}</span></td>
+                <td><span>{{ row.details }}</span></td>
+                <td><b [class.review]="row.tone === 'warn'" [class.neutral]="row.tone === 'neutral'">{{ row.status }}</b></td>
+              </tr>
+              <tr *ngIf="loading && rows.length === 0"><td colspan="6" class="empty-state">Loading events…</td></tr>
+              <tr *ngIf="!loading && error"><td colspan="6" class="empty-state error-state">{{ error }}</td></tr>
+              <tr *ngIf="!loading && !error && rows.length === 0"><td colspan="6" class="empty-state">No events match these filters.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <p class="table-note">Showing {{ pageStart }}–{{ pageEnd }} of {{ totalCount | number }}{{ tab !== 'access' ? ' · Select a row to open the client' : '' }}</p>
+          <div class="pager">
+            <button type="button" class="details-button" (click)="previousPage()" [disabled]="!hasPrevious || loading">← Previous</button>
+            <button type="button" class="details-button" (click)="nextPage()" [disabled]="!hasNext || loading">Next →</button>
+          </div>
+        </div>
+      </section>
+
+      <footer class="page-footer"><span>All timestamps in UTC · Read-only view</span><span>Opening a client from here is also recorded as admin access</span></footer>
+    </div>
+  </main>
+</section>

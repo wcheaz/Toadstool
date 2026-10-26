@@ -1,0 +1,44 @@
+﻿<div class="app-wrapper">
+  <app-theme-toggle></app-theme-toggle>
+  <app-sidebar *ngIf="isShowingMainLayout"></app-sidebar>
+  <main class="main-layout" [class.full-width]="!isShowingMainLayout">
+    <app-top-bar *ngIf="isShowingMainLayout" (profileClicked)="openProfileModal()"></app-top-bar>
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <div *ngIf="isSessionRenewalModalOpen" class="session-modal-overlay" role="presentation">
+    <section class="session-modal" role="dialog" aria-modal="true" aria-labelledby="session-modal-title">
+      <header class="session-modal-header">
+        <h2 id="session-modal-title">Still there?</h2>
+      </header>
+      <div class="session-modal-body">
+        <p>{{ sessionRenewalMessage }}</p>
+        <p class="session-modal-note">If you do not respond, this session will end when the timer expires.</p>
+      </div>
+      <footer class="session-modal-actions">
+        <button
+          type="button"
+          class="session-modal-secondary"
+          (click)="signOutNow()"
+          [disabled]="isRefreshingSession">
+          No
+        </button>
+        <button
+          type="button"
+          class="session-modal-primary"
+          (click)="staySignedIn()"
+          [disabled]="isRefreshingSession">
+          {{ isRefreshingSession ? 'Refreshing...' : 'Yes' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+
+  <!-- Profile Modal -->
+  <app-profile-modal
+    [isOpen]="isProfileModalOpen"
+    (close)="closeProfileModal()">
+  </app-profile-modal>
+</div>

@@ -1,0 +1,69 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: trading-platform
+
+  datasource:
+    # Uses environment variables loaded from .env file
+    # Prerequisites: .env file must be present with DB credentials
+    # SSH tunnel (if needed): ssh -L 5432:localhost:5432 ec2-user@10.18.73.92
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:toadstool_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migrations
+    table: flyway_schema_history
+    validateOnMigrate: false
+
+reporting:
+  datasource:
+    url: ${REPORTING_DB_URL:jdbc:postgresql://${REPORTING_DB_HOST:${DB_HOST:localhost}}:${REPORTING_DB_PORT:${DB_PORT:5432}}/${REPORTING_DB_NAME:toadstool_reporting}}
+    username: ${REPORTING_DB_USERNAME:${spring.datasource.username}}
+    password: ${REPORTING_DB_PASSWORD:${spring.datasource.password}}
+    driver-class-name: org.postgresql.Driver
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.neueda.leap
+  type-handlers-package: com.neueda.leap.mapper
+  configuration:
+    map-underscore-to-camel-case: true
+
+fauxnance:
+  baseUrl: ${FAUXNANCE_BASE_URL}
+  apiKey: ${FAUXNANCE_API_KEY}
+  timeoutSeconds: ${FAUXNANCE_TIMEOUT_SECONDS:10}
+
+finnhub:
+  apiKey: ${FINNHUB_API_KEY}
+  baseUrl: https://finnhub.io/api/v1
+  newsRateLimitDelayMs: 100
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+    com.neueda.leap: INFO
+    com.neueda.leap.service.FauxnanceService: ERROR
+    org.springframework.web: INFO
+
+auth:
+  jwt:
+    public-key: ${AUTH_JWT_PUBLIC_KEY:BASE64_X509_PUBLIC_KEY}
+    private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
+    issuer: toadstool
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-minutes: 15
+    enabled: true
+    require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

@@ -1,0 +1,140 @@
+package com.neueda.leap.dto;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.OffsetDateTimeSerializer;
+
+/**
+ * Response DTO for order data
+ */
+public class OrderResponse {
+    private UUID orderId;
+    private UUID accountId;
+    private UUID instrumentId;
+    private String side;
+    private String quantity;
+    private String idempotencyKey;
+    /** ACCEPTED (passed the trading rules, awaiting execution), FILLED or REJECTED. */
+    private String status;
+    private String orderType;
+    private String limitPrice;
+    /** Execution price once FILLED. */
+    private String fillPrice;
+    /** Why execution was REJECTED. */
+    private String rejectionReason;
+    @JsonSerialize(using = OffsetDateTimeSerializer.class)
+    private OffsetDateTime submittedAt;
+
+    public OrderResponse() {
+    }
+
+    public OrderResponse(UUID orderId, UUID accountId, UUID instrumentId, String side, 
+                         String quantity, String idempotencyKey, String status, OffsetDateTime submittedAt) {
+        this.orderId = orderId;
+        this.accountId = accountId;
+        this.instrumentId = instrumentId;
+        this.side = side;
+        this.quantity = quantity;
+        this.idempotencyKey = idempotencyKey;
+        this.status = status;
+        this.submittedAt = submittedAt;
+    }
+
+    // Getters and Setters
+    public UUID getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(UUID orderId) {
+        this.orderId = orderId;
+    }
+
+    public UUID getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(UUID accountId) {
+        this.accountId = accountId;
+    }
+
+    public UUID getInstrumentId() {
+        return instrumentId;
+    }
+
+    public void setInstrumentId(UUID instrumentId) {
+        this.instrumentId = instrumentId;
+    }
+
+    public String getSide() {
+        return side;
+    }
+
+    public void setSide(String side) {
+        this.side = side;
+    }
+
+    public String getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(String quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public OffsetDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(OffsetDateTime submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public String getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    public String getLimitPrice() {
+        return limitPrice;
+    }
+
+    public void setLimitPrice(String limitPrice) {
+        this.limitPrice = limitPrice;
+    }
+
+    public String getFillPrice() {
+        return fillPrice;
+    }
+
+    public void setFillPrice(String fillPrice) {
+        this.fillPrice = fillPrice;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+}

@@ -1,0 +1,55 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: trading-platform
+
+  datasource:
+    # Uses env vars so test DB settings are machine-specific and not hardcoded.
+    url: jdbc:postgresql://${TEST_DB_HOST:127.0.0.1}:${TEST_DB_PORT:5432}/${TEST_DB_NAME:toadstool_db}?connectTimeout=5&socketTimeout=5
+    username: ${TEST_DB_USERNAME:toadstool_user}
+    password: ${TEST_DB_PASSWORD:toadstool_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 5000
+      initialization-fail-timeout: 5000
+      validation-timeout: 3000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migrations
+    table: flyway_schema_history
+    validateOnMigrate: false
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.neueda.leap
+  type-handlers-package: com.neueda.leap.mapper
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+    com.neueda.leap: INFO
+    com.neueda.leap.mapper: INFO
+    com.neueda.leap.service.FauxnanceService: ERROR
+    org.springframework.web: INFO
+
+auth:
+  jwt:
+    public-key: ${AUTH_JWT_PUBLIC_KEY:BASE64_X509_PUBLIC_KEY}
+    private-key: ${AUTH_JWT_PRIVATE_KEY:BASE64_PKCS8_PRIVATE_KEY}
+    issuer: toadstool
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-minutes: 15
+    enabled: true
+    require-https: ${AUTH_JWT_REQUIRE_HTTPS:false}

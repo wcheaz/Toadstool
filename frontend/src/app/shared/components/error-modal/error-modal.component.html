@@ -1,0 +1,19 @@
+<div class="error-modal-overlay" [class.open]="isOpen" (click)="closeModal()">
+  <div class="error-modal" (click)="$event.stopPropagation()">
+    <div class="error-header">
+      <h2>Order Error</h2>
+      <button class="close-button" (click)="closeModal()">×</button>
+    </div>
+    
+    <div class="error-content">
+      <p class="error-message">{{ errorMessage }}</p>
+      <div *ngIf="errorDetails" class="error-details">
+        <p>{{ errorDetails }}</p>
+      </div>
+    </div>
+    
+    <div class="error-actions">
+      <button class="btn-primary" (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,1494 @@
+openapi: 3.0.0
+info:
+  title: Toadstool Trading Platform
+  description: Canonical API specification for the entire trading platform across client trading, admin reporting, and auth services
+  version: 1.0.0
+  contact:
+    name: Neueda Leap
+  x-conventions:
+    naming:
+      apiFields: camelCase
+      databaseColumns: snake_case
+      constants: SCREAMING_SNAKE_CASE
+      classNames: PascalCase
+      methodNames: camelCase
+    identifiers:
+      format: UUID string (RFC 4122)
+      example: 550e8400-e29b-41d4-a716-446655440000
+    timestamps:
+      format: ISO 8601 with timezone (RFC 3339)
+      examples:
+        - 2026-09-24T14:30:00Z
+        - 2026-09-24T14:30:00+00:00
+      timezone: UTC (preferred) or offset-aware
+    money:
+      format: String (never float/double)
+      scale: 10 decimal places
+      examples:
+        - '100.1234567890'
+        - '0.0000000001'
+    idempotency:
+      format: Alphanumeric + hyphens/underscores, 1-80 chars
+      header: Idempotency-Key
+      retention: 24 hours
+
+servers:
+  - url: http://localhost:8080
+    description: Development
+  - url: https://staging.toadstool.internal
+    description: Staging
+  - url: https://api.toadstool.com
+    description: Production
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with clientId and role claims
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      example: 550e8400-e29b-41d4-a716-446655440000
+
+    Money:
+      type: string
+      pattern: '^\d+(\.\d{1,10})?$'
+      example: '1234.5678901234'
+      description: Decimal string, 28 digits max with 10 decimal places
+
+    Timestamp:
+      type: string
+      format: date-time
+      example: 2026-09-24T14:30:00Z
+
+    Date:
+      type: string
+      format: date
+      example: 2026-09-24
+
+    ClientStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED, CLOSED]
+
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED, CLOSED]
+
+    OrderSide:
+      type: string
+      enum: [BUY, SELL]
+
+    OrderStatus:
+      type: string
+      enum: [SUBMITTED, ACCEPTED, REJECTED, FILLED, FAILED]
+
+    FillStatus:
+      type: string
+      enum: [Filled, Failed, Pending]
+
+    AssetClass:
+      type: string
+      enum: [EQUITY, FX, CRYPTO]
+
+    InstrumentStatus:
+      type: string
+      enum: [TRADABLE, HALTED, INACTIVE]
+
+    AdminRole:
+      type: string
+      enum: [ADMIN, ANALYST]
+
+    AdminUserStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED]
+
+    LoginOutcome:
+      type: string
+      enum: [SUCCESS, FAILURE]
+
+    TradeEventEntityType:
+      type: string
+      enum: [ORDER, FILL]
+
+    TradeEventAction:
+      type: string
+      enum: [SUBMITTED, ACCEPTED, REJECTED, FILL_REQUESTED, FILL_EXECUTED, FILL_FAILED]
+
+    ErrorObject:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description
+        field:
+          type: string
+          description: Request field that caused the error (null if not field-specific)
+        retryable:
+          type: boolean
+          description: Whether the client should retry the request
+
+    PaginationMeta:
+      type: object
+      required: [limit, offset, totalCount]
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        offset:
+          type: integer
+          minimum: 0
+        totalCount:
+          type: integer
+        hasMore:
+          type: boolean
+
+    ResponseEnvelope:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+        data:
+          description: Response payload (varies by endpoint)
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorObject'
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+            timestamp:
+              $ref: '#/components/schemas/Timestamp'
+            version:
+              type: string
+
+    Client:
+      type: object
+      required: [clientId, email, displayName, status, createdAt, updatedAt]
+      properties:
+        clientId:
+          $ref: '#/components/schemas/UUID'
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        displayName:
+          type: string
+          maxLength: 120
+        status:
+          $ref: '#/components/schemas/ClientStatus'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    Account:
+      type: object
+      required: [accountId, clientId, status, openedAt]
+      properties:
+        accountId:
+          $ref: '#/components/schemas/UUID'
+        clientId:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        openedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    Instrument:
+      type: object
+      required: [instrumentId, symbol, name, assetClass, status]
+      properties:
+        instrumentId:
+          $ref: '#/components/schemas/UUID'
+        symbol:
+          type: string
+          maxLength: 40
+          pattern: '^[A-Z0-9-]+$'
+        name:
+          type: string
+          maxLength: 160
+        assetClass:
+          $ref: '#/components/schemas/AssetClass'
+        status:
+          $ref: '#/components/schemas/InstrumentStatus'
+
+    Order:
+      type: object
+      required: [orderId, accountId, clientId, instrumentId, side, quantity, status, submittedAt]
+      properties:
+        orderId:
+          $ref: '#/components/schemas/UUID'
+        accountId:
+          $ref: '#/components/schemas/UUID'
+        clientId:
+          $ref: '#/components/schemas/UUID'
+        instrumentId:
+          $ref: '#/components/schemas/UUID'
+        side:
+          $ref: '#/components/schemas/OrderSide'
+        quantity:
+          $ref: '#/components/schemas/Money'
+        idempotencyKey:
+          type: string
+          maxLength: 80
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        submittedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    Fill:
+      type: object
+      required: [fillId, orderId, price, quantity, status, executedAt]
+      properties:
+        fillId:
+          $ref: '#/components/schemas/UUID'
+        orderId:
+          $ref: '#/components/schemas/UUID'
+        price:
+          $ref: '#/components/schemas/Money'
+        quantity:
+          $ref: '#/components/schemas/Money'
+        status:
+          $ref: '#/components/schemas/FillStatus'
+        executedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    TradeEvent:
+      type: object
+      required: [tradeEventId, clientId, entityType, entityId, action, occurredAt]
+      properties:
+        tradeEventId:
+          $ref: '#/components/schemas/UUID'
+        clientId:
+          $ref: '#/components/schemas/UUID'
+        entityType:
+          $ref: '#/components/schemas/TradeEventEntityType'
+        entityId:
+          $ref: '#/components/schemas/UUID'
+        action:
+          $ref: '#/components/schemas/TradeEventAction'
+        occurredAt:
+          $ref: '#/components/schemas/Timestamp'
+        details:
+          type: object
+          description: Event-specific metadata (shape varies by action)
+
+    LoginEvent:
+      type: object
+      required: [loginEventId, emailAttempted, outcome, occurredAt]
+      properties:
+        loginEventId:
+          $ref: '#/components/schemas/UUID'
+        clientId:
+          $ref: '#/components/schemas/UUID'
+          nullable: true
+        emailAttempted:
+          type: string
+          maxLength: 320
+        outcome:
+          $ref: '#/components/schemas/LoginOutcome'
+        occurredAt:
+          $ref: '#/components/schemas/Timestamp'
+        details:
+          type: object
+          nullable: true
+          description: Additional context (e.g., failure reason)
+
+    AdminUser:
+      type: object
+      required: [adminUserId, email, displayName, role, status, createdAt, updatedAt]
+      properties:
+        adminUserId:
+          $ref: '#/components/schemas/UUID'
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        displayName:
+          type: string
+          maxLength: 120
+        role:
+          $ref: '#/components/schemas/AdminRole'
+        status:
+          $ref: '#/components/schemas/AdminUserStatus'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    FactDailyInstrumentActivity:
+      type: object
+      required: [activityDate, instrumentId, symbol, orderCount, filledQuantity, grossAmount, updatedAt]
+      properties:
+        activityDate:
+          $ref: '#/components/schemas/Date'
+        instrumentId:
+          $ref: '#/components/schemas/UUID'
+        symbol:
+          type: string
+        orderCount:
+          type: integer
+        filledQuantity:
+          $ref: '#/components/schemas/Money'
+        grossAmount:
+          $ref: '#/components/schemas/Money'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    FactDailyPlatformActivity:
+      type: object
+      required: [activityDate, orderCount, filledQuantity, grossAmount, updatedAt]
+      properties:
+        activityDate:
+          $ref: '#/components/schemas/Date'
+        orderCount:
+          type: integer
+        filledQuantity:
+          $ref: '#/components/schemas/Money'
+        grossAmount:
+          $ref: '#/components/schemas/Money'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    CreateClientRequest:
+      type: object
+      required: [email, displayName]
+      properties:
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          maxLength: 120
+
+    UpdateClientRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 120
+
+    CreateAccountRequest:
+      type: object
+      required: [clientId]
+      properties:
+        clientId:
+          $ref: '#/components/schemas/UUID'
+
+    CreateInstrumentRequest:
+      type: object
+      required: [symbol, name, assetClass]
+      properties:
+        symbol:
+          type: string
+          pattern: '^[A-Z0-9-]+$'
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 160
+        assetClass:
+          $ref: '#/components/schemas/AssetClass'
+
+    UpdateInstrumentStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/InstrumentStatus'
+
+    PlaceOrderRequest:
+      type: object
+      required: [instrumentId, side, quantity]
+      properties:
+        instrumentId:
+          $ref: '#/components/schemas/UUID'
+        side:
+          $ref: '#/components/schemas/OrderSide'
+        quantity:
+          $ref: '#/components/schemas/Money'
+        idempotencyKey:
+          type: string
+          maxLength: 80
+
+    CreateAdminUserRequest:
+      type: object
+      required: [email, displayName, role]
+      properties:
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          maxLength: 120
+        role:
+          $ref: '#/components/schemas/AdminRole'
+
+    UpdateAdminUserRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 120
+        role:
+          $ref: '#/components/schemas/AdminRole'
+        status:
+          $ref: '#/components/schemas/AdminUserStatus'
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags: [Health]
+      security: []
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+
+  /api/clients/{clientId}:
+    get:
+      summary: Retrieve a client
+      operationId: getClient
+      tags: [Clients]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Client retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client not found
+
+    put:
+      summary: Update a client
+      operationId: updateClient
+      tags: [Clients]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClientRequest'
+      responses:
+        '200':
+          description: Client updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client not found
+
+  /api/clients:
+    get:
+      summary: List all clients (admin-only)
+      operationId: listClients
+      tags: [Clients]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ClientStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 1000
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Clients listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clients:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Client'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+
+  /api/accounts:
+    post:
+      summary: Create an account
+      operationId: createAccount
+      tags: [Accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/accounts/{accountId}:
+    get:
+      summary: Retrieve an account
+      operationId: getAccount
+      tags: [Accounts]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Account retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Account not found
+
+  /api/clients/{clientId}/accounts:
+    get:
+      summary: List accounts for a client
+      operationId: listAccountsByClient
+      tags: [Accounts]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/AccountStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Accounts listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/instruments:
+    get:
+      summary: List instruments
+      operationId: listInstruments
+      tags: [Instruments]
+      security: []
+      parameters:
+        - name: assetClass
+          in: query
+          schema:
+            $ref: '#/components/schemas/AssetClass'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InstrumentStatus'
+        - name: symbol
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Instruments listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instruments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Instrument'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      summary: Create an instrument (admin-only)
+      operationId: createInstrument
+      tags: [Instruments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInstrumentRequest'
+      responses:
+        '201':
+          description: Instrument created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+        '409':
+          description: Conflict (symbol already exists)
+
+  /api/instruments/{instrumentId}:
+    get:
+      summary: Retrieve an instrument
+      operationId: getInstrument
+      tags: [Instruments]
+      security: []
+      parameters:
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Instrument retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+        '404':
+          description: Instrument not found
+
+    patch:
+      summary: Update instrument status (admin-only)
+      operationId: updateInstrumentStatus
+      tags: [Instruments]
+      parameters:
+        - name: instrumentId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInstrumentStatusRequest'
+      responses:
+        '200':
+          description: Instrument status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+        '404':
+          description: Instrument not found
+
+  /api/accounts/{accountId}/orders:
+    post:
+      summary: Place an order
+      operationId: placeOrder
+      tags: [Orders]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '201':
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Account or instrument not found
+        '409':
+          description: Duplicate idempotency key
+        '422':
+          description: Validation failed
+
+    get:
+      summary: List orders for an account
+      operationId: listOrdersByAccount
+      tags: [Orders]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: instrumentId
+          in: query
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Orders listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/admin/orders:
+    get:
+      summary: List all orders across all users (admin-only)
+      operationId: listAllOrders
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          description: Inclusive lower bound for order submission time
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Exclusive upper bound for order submission time
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 1000
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: All matching orders listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '400':
+          description: Invalid date range or pagination
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin role required
+
+  /api/orders/{orderId}:
+    get:
+      summary: Retrieve an order
+      operationId: getOrder
+      tags: [Orders]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Order retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Order not found
+
+  /api/orders/{orderId}/fills:
+    get:
+      summary: List fills for an order
+      operationId: listFillsByOrder
+      tags: [Fills]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/FillStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Fills listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fills:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Fill'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/fills/{fillId}:
+    get:
+      summary: Retrieve a fill
+      operationId: getFill
+      tags: [Fills]
+      parameters:
+        - name: fillId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Fill retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fill'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Fill not found
+
+  /api/accounts/{accountId}/fills:
+    get:
+      summary: List fills for an account
+      operationId: listFillsByAccount
+      tags: [Fills]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: instrumentId
+          in: query
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Fills listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fills:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Fill'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/orders/{orderId}/events:
+    get:
+      summary: List trade events for an order
+      operationId: listTradeEventsByOrder
+      tags: [Trade Events]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Events listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TradeEvent'
+                  totalCount:
+                    type: integer
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Order not found
+
+  /api/clients/{clientId}/events:
+    get:
+      summary: List trade events for a client
+      operationId: listTradeEventsByClient
+      tags: [Trade Events]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: entityType
+          in: query
+          schema:
+            $ref: '#/components/schemas/TradeEventEntityType'
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Events listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TradeEvent'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/clients/{clientId}/login-events:
+    get:
+      summary: List login events for a client
+      operationId: listLoginEventsByClient
+      tags: [Login Events]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: outcome
+          in: query
+          schema:
+            $ref: '#/components/schemas/LoginOutcome'
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Login events listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LoginEvent'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/admin/login-events:
+    get:
+      summary: List all login events (admin-only)
+      operationId: listLoginEventsAdmin
+      tags: [Login Events]
+      parameters:
+        - name: clientId
+          in: query
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: outcome
+          in: query
+          schema:
+            $ref: '#/components/schemas/LoginOutcome'
+        - name: emailAttempted
+          in: query
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Login events listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LoginEvent'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+
+  /api/admin/users:
+    post:
+      summary: Create an admin user
+      operationId: createAdminUser
+      tags: [Admin Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminUserRequest'
+      responses:
+        '201':
+          description: Admin user created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+        '409':
+          description: Email already exists
+
+    get:
+      summary: List admin users
+      operationId: listAdminUsers
+      tags: [Admin Users]
+      parameters:
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/AdminRole'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/AdminUserStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Admin users listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminUser'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+
+  /api/admin/users/{adminUserId}:
+    get:
+      summary: Retrieve an admin user
+      operationId: getAdminUser
+      tags: [Admin Users]
+      parameters:
+        - name: adminUserId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Admin user retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+        '404':
+          description: Admin user not found
+
+    put:
+      summary: Update an admin user
+      operationId: updateAdminUser
+      tags: [Admin Users]
+      parameters:
+        - name: adminUserId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminUserRequest'
+      responses:
+        '200':
+          description: Admin user updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+        '404':
+          description: Admin user not found
+
+  /api/admin/analytics/platform-activity:
+    get:
+      summary: Get platform-wide trading activity
+      operationId: getDailyPlatformActivity
+      tags: [Analytics]
+      parameters:
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Activity data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activity:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FactDailyPlatformActivity'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions
+
+  /api/admin/analytics/instrument-activity:
+    get:
+      summary: Get per-instrument trading activity
+      operationId: getDailyInstrumentActivity
+      tags: [Analytics]
+      parameters:
+        - name: instrumentId
+          in: query
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: fromDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: toDate
+          in: query
+          schema:
+            $ref: '#/components/schemas/Date'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Activity data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activity:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FactDailyInstrumentActivity'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Insufficient permissions

@@ -1,0 +1,27 @@
+<article class="news-article" (click)="open.emit(article)">
+  <div class="article-header">
+    <div class="article-meta">
+      <span class="category-tag">{{ article.category }}</span>
+      <span class="timestamp">{{ article.timestamp }}</span>
+    </div>
+  </div>
+
+  <h3 class="article-title">{{ article.title }}</h3>
+  <p class="article-description">{{ article.description }}</p>
+
+  <div class="article-footer">
+    <div class="article-assets">
+      <ng-container *ngFor="let asset of article.assets">
+        <button
+          *ngIf="isSelectable(asset); else plainTag"
+          type="button"
+          class="asset-tag selectable"
+          [title]="'Show ' + asset + ' in linked cards'"
+          (click)="selectAsset($event, asset)"
+          (keydown.enter)="$event.stopPropagation()">{{ asset }}</button>
+        <ng-template #plainTag><span class="asset-tag">{{ asset }}</span></ng-template>
+      </ng-container>
+    </div>
+    <small class="market-info">{{ article.market }}</small>
+  </div>
+</article>

@@ -1,0 +1,117 @@
+<div class="trading-modal-overlay" [class.open]="isOpen" (click)="closeModal()">
+  <div class="trading-modal" (click)="$event.stopPropagation()">
+    <!-- Server-side execution in progress -->
+    <div class="executing-overlay" *ngIf="isSubmitting" role="status" aria-live="polite">
+      <div class="executing-card">
+        <span class="executing-spinner" aria-hidden="true"></span>
+        <strong>Executing your order at the live market price…</strong>
+        <small>This usually takes a second or two.</small>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="apiError" class="error-state">
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <h2 class="error-title">API Error</h2>
+        <p class="error-message">{{ apiError }}</p>
+        <p class="error-details">Please try again later or contact support if the problem persists.</p>
+        <button class="error-close-btn" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+
+    <div class="trading-content" *ngIf="!apiError">
+      <!-- Left Panel: Asset Details and Chart -->
+      <div class="trading-left">
+        <!-- Asset Header -->
+        <div class="asset-header" *ngIf="selectedAsset">
+          <div class="asset-ticker">
+            <div class="ticker-badge">{{ selectedAsset.symbol }}</div>
+            <div class="asset-info">
+              <h2>{{ selectedAsset.name }}</h2>
+              <span class="market-status">● MARKET OPEN</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price Section -->
+        <div class="price-section" *ngIf="selectedAsset">
+          <div class="current-price">
+            <span class="price-label">LAST PRICE</span>
+            <div class="price-display">
+              <span class="price-value">${{ selectedAsset.price.toFixed(2) }}</span>
+              <span class="price-change" [ngClass]="{ 'positive': selectedAsset.change > 0, 'negative': selectedAsset.change < 0 }">
+                {{ selectedAsset.change > 0 ? '+' : '' }}{{ selectedAsset.change.toFixed(2) }} ({{ (selectedAsset.change / (selectedAsset.price - selectedAsset.change) * 100).toFixed(2) }}%)
+              </span>
+            </div>
+          </div>
+          <div class="price-range">
+            <span>${{ (selectedAsset.price * 0.95).toFixed(2) }}</span>
+            <span>${{ (selectedAsset.price * 1.05).toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Chart Section -->
+        <app-chart
+          [candleData]="candleData"
+          [timeframes]="timeframes"
+          [selectedTimeframe]="selectedTimeframe"
+          [loading]="loadingCandles"
+          (timeframeSelected)="selectTimeframe($event)">
+        </app-chart>
+
+        <!-- Market Depth Section -->
+        <app-market-depth [depthLevels]="depthLevels"></app-market-depth>
+      </div>
+
+      <!-- Right Panel: Order Ticket -->
+      <div class="order-ticket-panel">
+        <button type="button" class="close-btn" (click)="closeModal()" title="Close trading panel" aria-label="Close trading panel">
+          ✕
+        </button>
+        <app-order-ticket
+          [selectedAsset]="selectedAsset"
+          [accountBalance]="accountBalance"
+          (orderPreviewed)="onOrderPreviewed($event)">
+        </app-order-ticket>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Confirmation Modal -->
+  <app-order-confirmation
+    [isOpen]="isPreviewOpen"
+    [selectedAsset]="selectedAsset"
+    [orderType]="pendingTicket?.orderSide ?? 'buy'"
+    [quantity]="pendingTicket?.quantity ?? 50"
+    [limitPrice]="pendingTicket?.limitPrice ?? 0"
+    [orderSide]="pendingTicket?.orderType ?? 'market'"
+    [buyingPowerRemaining]="pendingTicket?.availableAfterTrade ?? null"
+    (confirm)="confirmOrder()"
+    (editOrder)="editOrder()"
+    (close)="closePreview()">
+  </app-order-confirmation>
+
+  <!-- Order Success Modal -->
+  <app-order-success
+    [isOpen]="isSuccessOpen"
+    [selectedAsset]="selectedAsset"
+    [orderType]="pendingTicket?.orderSide ?? 'buy'"
+    [quantity]="pendingTicket?.quantity ?? 50"
+    [filledPrice]="filledPrice"
+    [order]="filledOrder"
+    [fee]="filledFee"
+    [executedAt]="filledAt"
+    [balanceBefore]="balanceBeforeOrder"
+    (returnToDashboard)="onReturnToDashboard()"
+    (viewActivity)="onViewActivity()">
+  </app-order-success>
+
+  <!-- Error Modal -->
+  <app-error-modal
+    [isOpen]="isErrorOpen"
+    [errorMessage]="errorMessage"
+    [errorDetails]="errorDetails"
+    (close)="closeErrorModal()">
+  </app-error-modal>
+</div>

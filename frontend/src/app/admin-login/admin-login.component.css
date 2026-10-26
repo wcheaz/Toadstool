@@ -1,0 +1,76 @@
+.admin-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+  background: var(--color-bg);
+}
+
+.admin-login-card {
+  background: var(--color-surface-admin-raised);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  padding: clamp(28px, 6vw, 50px) clamp(20px, 6vw, 40px);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid var(--color-border-strong);
+}
+
+.client-link {
+  color: #00744A;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.client-link:hover {
+  color: #005c3a;
+}
+
+/* Override block (was at the end of the original stylesheet) */
+.form-footer {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin-top: 20px;
+}
+
+.form-footer p {
+  margin: 10px 0;
+}
+
+.user-link {
+  color: #00744A;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border: 2px solid #00744A;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.user-link:hover {
+  background-color: #00744A;
+  color: white;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .admin-login-card {
+    padding: 30px 20px;
+  }
+
+  .admin-login-title {
+    font-size: 24px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

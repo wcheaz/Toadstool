@@ -1,0 +1,38 @@
+<div class="dashboard-module portfolio-module">
+  <div class="module-header">
+    <h3>Portfolio value</h3>
+    <div class="header-actions">
+      <div class="range-tabs" role="group" aria-label="Chart range">
+        <button
+          type="button"
+          *ngFor="let range of ranges"
+          [class.selected]="days === range"
+          [attr.aria-pressed]="days === range"
+          (click)="setRange(range)">{{ range }}D</button>
+      </div>
+      <ng-content select="[cardControls]"></ng-content>
+    </div>
+  </div>
+
+  <div class="portfolio-body">
+    <div class="portfolio-summary">
+      <strong class="portfolio-total">{{ currentValue !== null ? formatMoney(currentValue) : '--' }}</strong>
+      <p class="portfolio-change" *ngIf="change as c" [class.negative]="c.amount < 0">
+        {{ formatMoney(c.amount, true) }}<ng-container *ngIf="c.percent !== null"> ({{ formatPercent(c.percent) }})</ng-container>
+        investment gain over {{ days }} days
+        <span class="portfolio-note" *ngIf="c.netDeposits !== 0">· excludes {{ formatMoney(c.netDeposits, true) }} net deposits</span>
+      </p>
+    </div>
+
+    <div class="chart-wrap">
+      <div #chartContainer class="chart-container"></div>
+      <p class="chart-status" *ngIf="error">{{ error }}</p>
+      <p class="chart-status" *ngIf="!error && loading && points.length === 0">Loading portfolio history...</p>
+      <p class="chart-status" *ngIf="!error && !loading && points.length < 2">No portfolio history yet. Make a deposit or a trade to start tracking.</p>
+    </div>
+
+    <small class="portfolio-updated" *ngIf="lastUpdated">
+      Updated {{ lastUpdated | date:'shortTime' }} · refreshes every 5 minutes
+    </small>
+  </div>
+</div>

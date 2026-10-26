@@ -1,0 +1,93 @@
+package com.neueda.leap.service;
+
+import com.neueda.leap.Fill;
+import com.neueda.leap.repository.FillRepository;
+import com.neueda.leap.validator.FillValidator;
+import com.neueda.leap.validator.FillValidationRequest;
+import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Service layer for Fill operations
+ */
+@Service
+public class FillService {
+
+    private final FillRepository fillRepository;
+    private final FillValidator fillValidator;
+
+    public FillService(FillRepository fillRepository, FillValidator fillValidator) {
+        this.fillRepository = fillRepository;
+        this.fillValidator = fillValidator;
+    }
+
+    /**
+     * Get fill by ID
+     */
+    public Fill getFillById(UUID fillId) {
+        return fillRepository.findById(fillId);
+    }
+
+    /**
+     * List fills for an order
+     */
+    public List<Fill> listFillsByOrder(UUID orderId) {
+        return fillRepository.findByOrderId(orderId);
+    }
+
+    /**
+     * List fills for an order with pagination
+     */
+    public List<Fill> listFillsByOrderPaginated(UUID orderId, int limit, int offset) {
+        return fillRepository.findByOrderIdPaginated(orderId, limit, offset);
+    }
+
+    /**
+     * Count fills for an order
+     */
+    public int countFillsByOrder(UUID orderId) {
+        return fillRepository.countByOrderId(orderId);
+    }
+
+    /**
+     * List fills for an account with pagination
+     */
+    public List<Fill> listFillsByAccount(UUID accountId, int limit, int offset) {
+        return fillRepository.findByAccountId(accountId, limit, offset);
+    }
+
+    /**
+     * Count fills for an account
+     */
+    public int countFillsByAccount(UUID accountId) {
+        return fillRepository.countByAccountId(accountId);
+    }
+
+    /**
+     * Create a new fill (used by order execution engine)
+     */
+    public Fill createFill(UUID orderId, String price, String quantity, String status) {
+        return createFill(orderId, price, quantity, status, "0");
+    }
+
+    /**
+     * Record that an order's execution was rejected. It is the order's single outcome (ux_fills_order),
+     * so the order can never be executed afterwards.
+     */
+    public void createRejectedFill(UUID orderId, BigDecimal quotedPrice, BigDecimal quantity, String reason) {
+        BigDecimal price = quotedPrice != null && quotedPrice.signum() >= 0 ? quotedPrice : BigDecimal.ZERO;
+        fillRepository.saveFailed(orderId, price.toPlainString(), quantity.toPlainString(), reason);
+    }
+
+    public Fill createFill(UUID orderId, String price, String quantity, String status, String fee) {
+        fillValidator.validate(new FillValidationRequest(price, quantity, status));
+        fillRepository.save(orderId, price, quantity, status, fee);
+        List<Fill> fills = fillRepository.findByOrderId(orderId);
+        if (fills.isEmpty()) {
+            throw new IllegalStateException("Fill was not found after insertion for order: " + orderId);
+        }
+        return fills.get(fills.size() - 1);
+    }
+}

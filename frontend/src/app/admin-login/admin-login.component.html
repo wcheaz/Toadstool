@@ -1,0 +1,63 @@
+<div class="admin-login-container">
+  <div class="admin-login-card">
+    <div class="logo-section">
+      <img class="logo-icon" src="Toadstool.svg?v=2" alt="Toadstool logo">
+      <h1 class="brand-title">Toadstool Trader</h1>
+    </div>
+
+    <h2 class="welcome-title">Welcome back</h2>
+    <p class="welcome-subtitle">Enter your credentials to access your admin portal</p>
+    
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #adminLoginForm="ngForm">
+      <div class="form-group">
+        <label for="email">Admin email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="you@example.com"
+          autocomplete="username"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-options">
+        <a href="#" class="forgot-password">Forgot Password?</a>
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Logging in...' : 'Log In' }}
+      </button>
+
+      <div class="form-footer">
+        <p><a routerLink="/login" class="client-link">Back to Client Login</a></p>
+      </div>
+    </form>
+  </div>
+</div>

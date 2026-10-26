@@ -1,0 +1,412 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.order-ticket {
+  min-width: 0;
+}
+
+.trading-right {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.order-ticket {
+  background: rgba(15, 20, 25, 0.6);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 116, 74, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-ticket h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+/* Side Selector */
+.side-selector {
+  display: flex;
+  gap: 8px;
+  background: rgba(71, 85, 105, 0.2);
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.side-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: #a1a5b4;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.side-btn.active {
+  background: #00744A;
+  color: #24272a;
+}
+
+.side-btn.sell.active {
+  background: #ef4444;
+}
+
+/* Form Section */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-section label {
+  font-size: 12px;
+  color: #a1a5b4;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.order-type-selector {
+  display: flex;
+  gap: 8px;
+  background: rgba(71, 85, 105, 0.2);
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: #a1a5b4;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.type-btn.active {
+  background: rgba(0, 116, 74, 0.2);
+  color: #00744A;
+  border: 1px solid rgba(0, 116, 74, 0.4);
+}
+
+.quantity-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(71, 85, 105, 0.1);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.quantity-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #f3f4f6;
+  font-size: 14px;
+  outline: none;
+}
+
+.quantity-input input::placeholder {
+  color: rgba(241, 245, 249, 0.3);
+}
+
+.unit-label {
+  color: #a1a5b4;
+  font-size: 12px;
+}
+
+.form-section input {
+  background: rgba(71, 85, 105, 0.1);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #f3f4f6;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-section input:focus {
+  outline: none;
+  border-color: #00744A;
+  background: rgba(0, 116, 74, 0.05);
+}
+
+.price-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  min-width: 60px;
+}
+
+.info-label {
+  color: #a1a5b4;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  color: #f3f4f6;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Summary Section */
+.summary-section {
+  background: rgba(0, 116, 74, 0.05);
+  border: 1px solid rgba(0, 116, 74, 0.15);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #f3f4f6;
+  padding: 4px 0;
+}
+
+.summary-row span:first-child {
+  color: #a1a5b4;
+}
+
+.summary-row.account-row {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 116, 74, 0.2);
+}
+
+.summary-row.after-trade span:last-child {
+  font-weight: 600;
+}
+
+.summary-row.after-trade.negative span:last-child {
+  color: #fca5a5;
+}
+
+.summary-row.total {
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 116, 74, 0.2);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.summary-row.total span:first-child {
+  color: #f3f4f6;
+}
+
+.validation-error {
+  margin: -8px 0 0;
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.sell-limit {
+  margin: -8px 0 0;
+  font-size: 12px;
+}
+
+.sell-limit-valid {
+  color: #83d1ad;
+}
+
+.sell-limit-invalid {
+  color: #fca5a5;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-preview,
+.btn-place {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-preview {
+  background: rgba(71, 85, 105, 0.2);
+  color: #f3f4f6;
+  border: 1px solid rgba(71, 85, 105, 0.4);
+}
+
+.btn-preview:hover {
+  background: rgba(71, 85, 105, 0.3);
+}
+
+.btn-preview:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-place {
+  background: #00744A;
+  color: #24272a;
+}
+
+.btn-place.buy {
+  background: #00744A;
+  color: #24272a;
+}
+
+.btn-place.buy:hover:not(:disabled) {
+  background: #005c3a;
+  box-shadow: 0 0 20px rgba(0, 116, 74, 0.3);
+}
+
+.btn-place.sell {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn-place.sell:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.btn-place:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Terms Section */
+.terms-section {
+  padding-top: 12px;
+  border-top: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.terms-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #a1a5b4;
+  line-height: 1.4;
+}
+
+.terms-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #00744A;
+}
+
+.terms-checkbox span {
+  color: #a1a5b4;
+}
+
+.terms-checkbox:hover span {
+  color: #f3f4f6;
+}
+
+/* Scrollbar Styling */
+.trading-right::-webkit-scrollbar {
+  width: 4px;
+}
+
+.trading-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.trading-right::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.5);
+  border-radius: 2px;
+}
+
+.trading-right::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 116, 74, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .trading-right {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .order-ticket {
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .order-ticket h3 {
+    font-size: 20px;
+  }
+
+  .side-btn,
+  .type-btn {
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .form-section label {
+    font-size: 14px;
+  }
+
+  .quantity-input,
+  .form-section input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .unit-label,
+  .price-info,
+  .summary-row,
+  .validation-error,
+  .sell-limit {
+    font-size: 14px;
+  }
+
+  .summary-row.total {
+    font-size: 16px;
+  }
+
+  .btn-preview,
+  .btn-place {
+    min-height: 50px;
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .terms-checkbox {
+    font-size: 14px;
+  }
+
+  .terms-checkbox input {
+    width: 20px;
+    height: 20px;
+  }
+}

@@ -1,0 +1,108 @@
+%%{init: {'flowchart': {'curve': 'linear'}, 'classDiagram': {'direction': 'LR'}}}%%
+classDiagram
+    class Client {
+        - clientId: UUID
+        - email: String
+        - displayName: String
+        - status: ClientStatus
+        - createdAt: OffsetDateTime
+        - updatedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class Account {
+        - accountId: UUID
+        - clientId: UUID
+        - status: AccountStatus
+        - openedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class Instrument {
+        - instrumentId: UUID
+        - symbol: String
+        - name: String
+        - assetClass: AssetClass
+        - status: InstrumentStatus
+        + getters/setters
+    }
+
+    class Order {
+        - orderId: UUID
+        - accountId: UUID
+        - instrumentId: UUID
+        - side: OrderSide
+        - quantity: BigDecimal
+        - idempotencyKey: String
+        - submittedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class Fill {
+        - fillId: UUID
+        - orderId: UUID
+        - price: BigDecimal
+        - quantity: BigDecimal
+        - status: FillStatus
+        - executedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class AdminUser {
+        - adminUserId: UUID
+        - email: String
+        - displayName: String
+        - role: AdminRole
+        - status: AdminUserStatus
+        - createdAt: OffsetDateTime
+        - updatedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class LoginEvent {
+        - loginEventId: UUID
+        - clientId: UUID
+        - emailAttempted: String
+        - outcome: LoginOutcome
+        - occurredAt: OffsetDateTime
+        - details: String
+        + getters/setters
+    }
+
+    class TradeEvent {
+        - tradeEventId: UUID
+        - clientId: UUID
+        - entityType: TradeEventEntityType
+        - entityId: UUID
+        - action: String
+        - occurredAt: OffsetDateTime
+        - details: String
+        + getters/setters
+    }
+
+    class FactDailyInstrumentActivity {
+        - activityDate: LocalDate
+        - instrumentId: UUID
+        - orderCount: Integer
+        - filledQuantity: BigDecimal
+        - grossAmount: BigDecimal
+        - updatedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    class FactDailyPlatformActivity {
+        - activityDate: LocalDate
+        - orderCount: Integer
+        - filledQuantity: BigDecimal
+        - grossAmount: BigDecimal
+        - updatedAt: OffsetDateTime
+        + getters/setters
+    }
+
+    Client "1" --> "0..*" Account : has
+    Account "1" --> "0..*" Order : contains
+    Order "1" --> "0..*" Fill : generates
+    Order "1" --> "1" Instrument : references
+    Instrument "1" --> "0..*" FactDailyInstrumentActivity : tracked by
+    Client "1" --> "0..*" LoginEvent : generates
+    Client "1" --> "0..*" TradeEvent : generates

@@ -1,0 +1,39 @@
+:host {
+  display: flex;
+}
+
+.module-handle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  cursor: grab;
+  font-weight: bold;
+  letter-spacing: -2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  user-select: none;
+  touch-action: none;
+  transition: all 0.2s ease;
+}
+
+.module-handle:hover,
+.module-handle:focus-visible {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.module-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.module-handle:active {
+  cursor: grabbing;
+}
+
+/* Bigger target for fingers */
+@media (pointer: coarse) {
+  .module-handle {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}

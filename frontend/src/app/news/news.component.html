@@ -1,0 +1,80 @@
+<div class="news-wrapper">
+  <header class="news-header">
+    <h1>News</h1>
+  </header>
+
+  <!-- News Content -->
+  <div class="news-content-wrapper">
+    <!-- Left Section - News Feed -->
+    <section class="news-section">
+      <!-- News Feed -->
+      <div class="news-feed">
+        <app-news-notice [articles]="filteredNewsArticles" [loading]="isLoadingNews" [error]="newsLoadError"></app-news-notice>
+        <app-news-card *ngFor="let article of filteredNewsArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
+      </div>
+    </section>
+
+    <!-- Right Section - Market Widgets -->
+    <aside class="right-sidebar">
+      <!-- Trading Assets -->
+      <div class="widget trading-assets-widget">
+        <h3 class="widget-title">Trading Assets</h3>
+        <p class="widget-status" *ngIf="isLoadingAssets">Loading assets...</p>
+        <p class="widget-status" *ngIf="!isLoadingAssets && tradingAssets.length === 0">No assets available.</p>
+        <div class="assets-list">
+          <button
+            *ngFor="let row of tradingAssets"
+            class="asset-item"
+            [disabled]="!getAssetQuote(row)"
+            (click)="openTradeModal(row)">
+            <div class="asset-symbol">{{ row.instrument.symbol }}</div>
+            <div class="asset-articles">{{ row.articleCount }} article{{ row.articleCount === 1 ? '' : 's' }}</div>
+            <ng-container *ngIf="getAssetQuote(row) as quote; else noQuote">
+              <div class="asset-price">{{ quote.price | currency:'USD':'symbol':'1.2-4' }}</div>
+              <div class="asset-change" [class.positive]="quote.changePercent >= 0">
+                {{ quote.changePercent >= 0 ? '+' : '' }}{{ quote.changePercent | number:'1.2-2' }}%
+              </div>
+            </ng-container>
+            <ng-template #noQuote>
+              <div class="asset-price">--</div>
+              <div class="asset-change neutral">--</div>
+            </ng-template>
+          </button>
+        </div>
+      </div>
+
+      <!-- Impact Calendar -->
+      <div class="widget impact-calendar-widget">
+        <h3 class="widget-title">Impact Calendar</h3>
+        <p class="widget-status" *ngIf="isLoadingCalendar">Loading calendar...</p>
+        <p class="widget-status" *ngIf="!isLoadingCalendar && calendarEvents.length === 0">No upcoming earnings in the next 30 days.</p>
+        <div class="calendar-list">
+          <div *ngFor="let event of calendarEvents" class="calendar-item">
+            <div class="event-date">{{ event.dateLabel }}</div>
+            <div class="event-name">{{ event.title }}</div>
+            <div class="event-detail" *ngIf="event.detail">{{ event.detail }}</div>
+            <div class="event-impact" [ngClass]="event.impact.toLowerCase()">
+              {{ event.impact }} IMPACT
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- News Detail Modal -->
+  <app-news-detail-modal [article]="selectedNewsArticle" (close)="closeNewsDetail()"></app-news-detail-modal>
+
+  <!-- Trading Modal -->
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="selectedAsset"
+    [accountId]="accountId"
+    [accountBalance]="accountBalance"
+    [candleData]="tradingChartData"
+    [instrumentId]="selectedInstrumentId"
+    [apiError]="apiError"
+    (orderCompleted)="refreshAccount()"
+    (close)="closeTradeModal()">
+  </app-trading-modal>
+</div>

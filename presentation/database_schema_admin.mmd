@@ -1,0 +1,16 @@
+%%{init: {'flowchart': {'curve': 'linear'}, 'erDiagram': {'direction': 'LR', 'maxWidth': 100}}}%%
+erDiagram
+    ADMIN_USERS ||--o{ ADMIN_ACCESS_EVENTS : records
+    ADMIN_USERS ||--|| ADMIN_CREDENTIALS : has
+    ADMIN_CREDENTIALS ||--o{ ADMIN_AUTH_SESSIONS : creates
+    ADMIN_USERS ||--o{ ADMIN_AUTH_SESSIONS : owns
+
+    ADMIN_USERS { }
+    ADMIN_CREDENTIALS { }
+    ADMIN_AUTH_SESSIONS { }
+    ADMIN_ACCESS_EVENTS { }
+
+    style ADMIN_USERS fill:#e6e6ff,stroke:#6366f1,stroke-width:2px
+    style ADMIN_CREDENTIALS fill:#e6fff7,stroke:#14b8a6,stroke-width:2px
+    style ADMIN_AUTH_SESSIONS fill:#e8fff0,stroke:#22c55e,stroke-width:2px
+    style ADMIN_ACCESS_EVENTS fill:#fff1e6,stroke:#f97316,stroke-width:2px

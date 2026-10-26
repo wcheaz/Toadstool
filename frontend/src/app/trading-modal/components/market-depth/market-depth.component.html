@@ -1,0 +1,24 @@
+<div class="market-depth">
+  <div class="depth-header">Market depth <span class="level-badge">LEVEL 2</span></div>
+  <div class="depth-table">
+    <ng-container *ngFor="let level of depthLevels">
+      <div class="depth-row" *ngIf="level.side === 'BID'">
+        <div class="depth-price">{{ level.volume.toLocaleString() }}</div>
+        <div class="depth-volume depth-bar" [style.width.%]="(level.volume % 4000) / 40">{{ level.price.toFixed(2) }}</div>
+        <div class="depth-type">{{ level.price.toFixed(2) }}</div>
+      </div>
+    </ng-container>
+    <div class="depth-row separator"></div>
+    <ng-container *ngFor="let level of depthLevels">
+      <div class="depth-row" *ngIf="level.side === 'ASK'">
+        <div class="depth-price">{{ level.volume.toLocaleString() }}</div>
+        <div class="depth-volume depth-bar" [style.width.%]="(level.volume % 4000) / 40">{{ level.price.toFixed(2) }}</div>
+        <div class="depth-type">{{ level.price.toFixed(2) }}</div>
+      </div>
+    </ng-container>
+  </div>
+  <div class="depth-footer">
+    <div>BID {{ (depthLevels.filter(l => l.side === 'BID').reduce((sum, l) => sum + l.volume, 0) / 1000).toFixed(1) }}K</div>
+    <div>ASK {{ (depthLevels.filter(l => l.side === 'ASK').reduce((sum, l) => sum + l.volume, 0) / 1000).toFixed(1) }}K</div>
+  </div>
+</div>

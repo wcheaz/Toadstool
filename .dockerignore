@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+**/*.pem
+**/*.key
+.vscode
+.idea
+target
+frontend

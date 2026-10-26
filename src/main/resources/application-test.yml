@@ -1,0 +1,57 @@
+# Test configuration for JWT authentication testing
+spring:
+  application:
+    name: trading-platform-test
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  datasource:
+    url: jdbc:postgresql://${TEST_DB_HOST:127.0.0.1}:${TEST_DB_PORT:5432}/${TEST_DB_NAME:toadstool_db}?connectTimeout=5&socketTimeout=5
+    username: ${TEST_DB_USERNAME:toadstool_user}
+    password: ${TEST_DB_PASSWORD:toadstool_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 5000
+      initialization-fail-timeout: 5000
+      validation-timeout: 3000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migrations
+    table: flyway_schema_history
+
+reporting:
+  datasource:
+    url: ${REPORTING_DB_URL:${spring.datasource.url}}
+    username: ${REPORTING_DB_USERNAME:${spring.datasource.username}}
+    password: ${REPORTING_DB_PASSWORD:${spring.datasource.password}}
+    driver-class-name: org.postgresql.Driver
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.neueda.leap
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    "[com.neueda.leap]": INFO
+    "[com.neueda.leap.service.FauxnanceService]": ERROR
+    "[org.springframework.web]": INFO
+
+# JWT Authentication Configuration for Testing
+auth:
+  jwt:
+    enabled: false
+    require-https: false

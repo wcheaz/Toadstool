@@ -1,0 +1,110 @@
+<div class="homepage-content">
+  <!-- Balance Widget -->
+  <app-balance-widget
+    [accountName]="accountName"
+    [portfolioValue]="portfolioValue"
+    [availableForTrading]="availableForTrading"
+    (depositClicked)="openDepositModal()"
+    (withdrawClicked)="onWithdrawClicked()"
+    (transferClicked)="onTransferClicked()"></app-balance-widget>
+
+  <!-- Content Tabs and Dashboard Area -->
+  <section class="dashboard-content">
+    <!-- NEWS TAB CONTENT -->
+    <div class="tab-content">
+      <div class="layout-toolbar">
+        <span>Pick an asset or news ticker to link the cards · drag <span aria-hidden="true">⋮⋮</span> to move · drag a corner to resize</span>
+        <button type="button" class="reset-layout" *ngIf="!isDefaultLayout" (click)="resetLayout()">Reset layout</button>
+      </div>
+
+      <div
+        #dashboardGrid
+        class="dashboard-grid"
+        cdkDropList
+        cdkDropListOrientation="mixed"
+        [cdkDropListData]="cards"
+        (cdkDropListDropped)="onCardDropped($event)">
+        @for (card of cards; track card.id; let i = $index) {
+          <div
+            class="dashboard-card"
+            cdkDrag
+            [cdkDragData]="card"
+            [style.--card-cols]="card.cols"
+            [style.--card-rows]="card.rows">
+            @switch (card.id) {
+              @case ('news') {
+                <app-news-feed [selectableSymbols]="selectableSymbols" (symbolSelected)="selectSymbol($event)">
+                  <app-card-controls cardControls (move)="moveCard(i, $event)"></app-card-controls>
+                </app-news-feed>
+              }
+              @case ('market') {
+                <app-market-assets-table
+                  [instruments]="instruments"
+                  [quotes]="instrumentQuotes"
+                  [loading]="loadingInstruments"
+                  [holdings]="holdings"
+                  [positionCosts]="positionCosts"
+                  (tradeRequested)="openTradeModal($event.instrument, $event.quote)">
+                  <app-card-controls cardControls (move)="moveCard(i, $event)"></app-card-controls>
+                </app-market-assets-table>
+              }
+              @case ('portfolio') {
+                <app-portfolio-chart [accountId]="accountId" [cashBalance]="currentBalance">
+                  <app-card-controls cardControls (move)="moveCard(i, $event)"></app-card-controls>
+                </app-portfolio-chart>
+              }
+            }
+            <div
+              class="resize-handle"
+              [appCardResizeHandle]="card"
+              [grid]="dashboardGrid"
+              (resized)="resizeCard(card.id, $event)"
+              (resizeEnd)="saveLayout()"></div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Trading Modal -->
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="selectedAsset"
+    [accountId]="accountId"
+    [accountBalance]="currentBalance"
+    [candleData]="tradingChartData"
+    [instrumentId]="selectedInstrumentId"
+    (orderCompleted)="onOrderCompleted()"
+    (close)="closeTradeModal()">
+  </app-trading-modal>
+
+  <!-- Error Modal -->
+  <app-error-modal
+    [isOpen]="isErrorModalOpen"
+    [errorMessage]="errorMessage"
+    [errorDetails]="errorDetails"
+    (close)="closeErrorModal()">
+  </app-error-modal>
+
+  <!-- Deposit Modal -->
+  <app-deposit-modal
+    [isOpen]="isDepositModalOpen"
+    (close)="closeDepositModal()"
+    (submit)="onDepositSubmit($event)">
+  </app-deposit-modal>
+
+  <app-withdrawal-modal
+    [isOpen]="isWithdrawalModalOpen"
+    [availableBalance]="currentBalance"
+    (close)="closeWithdrawalModal()"
+    (submit)="onWithdrawalSubmit($event)">
+  </app-withdrawal-modal>
+
+  <app-transfer-modal
+    [isOpen]="isTransferModalOpen"
+    [accounts]="accounts"
+    [sourceAccountId]="accountId"
+    (close)="closeTransferModal()"
+    (submit)="onTransferSubmit($event)">
+  </app-transfer-modal>
+</div>

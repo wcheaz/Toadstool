@@ -1,0 +1,207 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="logo-section">
+      <img class="logo-icon" src="Toadstool.svg?v=2" alt="Toadstool logo">
+      <h1 class="brand-title">Toadstool Trader</h1>
+    </div>
+
+    <h2 class="welcome-title">Create an account</h2>
+    <p class="welcome-subtitle">Start trading in less than 5 minutes</p>
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+      <div class="form-group">
+        <label for="displayName">Display Name</label>
+        <input
+          type="text"
+          id="displayName"
+          class="form-control"
+          [(ngModel)]="displayName"
+          name="displayName"
+          placeholder="e.g. John Doe"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="you@example.com"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          class="form-control"
+          [(ngModel)]="username"
+          name="username"
+          placeholder="Choose a username"
+          autocomplete="username"
+          [disabled]="isLoading"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-input-wrapper">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            class="form-control"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="Minimum 8 characters"
+            autocomplete="new-password"
+            [disabled]="isLoading"
+            required
+          />
+          <button type="button" class="password-toggle-btn" (click)="togglePasswordVisibility()" [disabled]="isLoading" title="Show/hide password">
+            <svg class="password-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path *ngIf="!showPassword" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <path *ngIf="!showPassword" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+              <path *ngIf="showPassword" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line *ngIf="showPassword" x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="password-input-wrapper">
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            id="confirmPassword"
+            class="form-control"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            placeholder="Repeat your password"
+            autocomplete="new-password"
+            [disabled]="isLoading"
+            required
+          />
+          <button type="button" class="password-toggle-btn" (click)="toggleConfirmPasswordVisibility()" [disabled]="isLoading" title="Show/hide password">
+            <svg class="password-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path *ngIf="!showConfirmPassword" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <path *ngIf="!showConfirmPassword" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+              <path *ngIf="showConfirmPassword" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line *ngIf="showConfirmPassword" x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="terms-group">
+        <input
+          type="checkbox"
+          id="agreeTerms"
+          [(ngModel)]="agreedToTerms"
+          name="agreedToTerms"
+          [disabled]="isLoading"
+        />
+        <label for="agreeTerms" class="terms-label">
+          I agree to the
+          <button type="button" class="terms-link" (click)="openLegalDocument('terms')">Terms & Conditions</button>
+          and the
+          <button type="button" class="terms-link" (click)="openLegalDocument('privacy')">Privacy Policy</button>
+        </label>
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+      </button>
+
+      <div class="form-footer">
+        <p>Already have an account? <a routerLink="/login" class="login-link">Log in</a></p>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div
+  *ngIf="activeLegalDocument"
+  class="legal-modal-backdrop"
+  role="presentation"
+  (click)="closeLegalDocument()"
+>
+  <section
+    class="legal-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="activeLegalDocument + '-title'"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="legal-modal-header">
+      <h2 [id]="activeLegalDocument + '-title'">
+        {{ activeLegalDocument === 'terms' ? 'Terms & Conditions' : 'Privacy Policy' }}
+      </h2>
+      <button
+        type="button"
+        class="legal-modal-close"
+        aria-label="Close"
+        (click)="closeLegalDocument()"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="legal-modal-content" *ngIf="activeLegalDocument === 'terms'">
+      <p>By creating an account, you agree to use Toadstool Trader lawfully and responsibly.</p>
+      <h3>Account responsibilities</h3>
+      <p>
+        Keep your account credentials secure and make sure the information you provide is
+        accurate and up to date. You are responsible for activity performed through your account.
+      </p>
+      <h3>Acceptable use</h3>
+      <p>
+        Do not use the service to violate applicable laws, interfere with the service, or
+        compromise another person’s account or data.
+      </p>
+      <h3>Changes to these terms</h3>
+      <p>
+        We may update these terms as the service changes. We will provide notice of material
+        changes where appropriate.
+      </p>
+    </div>
+
+    <div class="legal-modal-content" *ngIf="activeLegalDocument === 'privacy'">
+      <p>
+        Toadstool Trader uses the information you provide to create and manage your account and
+        provide the service.
+      </p>
+      <h3>Information we collect</h3>
+      <p>
+        This includes your display name, username, email address, and information you submit while
+        using the application.
+      </p>
+      <h3>How we use information</h3>
+      <p>
+        We use this information to authenticate you, operate your account, communicate with you,
+        and improve the application.
+      </p>
+      <h3>Your choices</h3>
+      <p>
+        Contact the Toadstool Trader team if you have questions about your information or want to
+        request an account update.
+      </p>
+    </div>
+  </section>
+</div>

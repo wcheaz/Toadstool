@@ -1,0 +1,20 @@
+package com.neueda.leap.repository;
+
+import com.neueda.leap.Account;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Repository interface for Account persistence operations
+ */
+public interface AccountRepository {
+    Account findById(UUID accountId);
+    List<Account> findByClientId(UUID clientId, int limit, int offset);
+    int countByClientId(UUID clientId);
+    void save(UUID clientId, String status);
+    void save(UUID clientId, String accountName, String status);
+    void updateBalance(UUID accountId, BigDecimal balance);
+    int updateAccountName(UUID accountId, String accountName);
+    int updateStatus(UUID accountId, String status);
+}

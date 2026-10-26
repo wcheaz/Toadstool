@@ -1,0 +1,96 @@
+<div class="sidebar-shell">
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <img class="sidebar-logo" src="Toadstool.svg?v=2" alt="Toadstool logo">
+    <div class="sidebar-title">Toadstool<br>Trader</div>
+  </div>
+  <nav class="sidebar-nav" *ngIf="!adminMode">
+    <ul>
+      <li>
+        <button class="nav-button" (click)="navigateTo('dashboard')" title="Dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('news')" title="News">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"></path>
+            <path d="M4 9h16M4 14h12"></path>
+          </svg>
+          <span>News</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('trading')" title="Trading">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+          <span>Trading</span>
+        </button>
+      </li>
+      <li>
+        <button class="nav-button" (click)="navigateTo('activity')" title="Activity">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"></path>
+            <line x1="3" y1="3" x2="3" y2="21"></line>
+            <line x1="21" y1="3" x2="21" y2="21"></line>
+          </svg>
+          <span>Activity</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+  <nav class="sidebar-nav admin-nav" *ngIf="adminMode">
+    <ul>
+      <li><button class="nav-button" [class.active]="activeSection !== 'admin-audit'" (click)="navigateTo('admin-dashboard')" title="Admin Dashboard"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg><span>Admin Dashboard</span></button></li>
+      <li><button class="nav-button" [class.active]="activeSection === 'admin-audit'" (click)="navigateTo('admin-audit')" title="Audit Log"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"></path></svg><span>Audit Log</span></button></li>
+    </ul>
+  </nav>
+  <div class="admin-workspace" *ngIf="adminMode"><p>ADMIN WORKSPACE</p><span>Client data · Read-only oversight</span></div>
+  <section class="account-panel" *ngIf="!adminMode">
+    <div class="account-panel-heading">
+      <span class="account-panel-kicker">Trading account</span>
+      <span class="account-status-dot" aria-hidden="true"></span>
+    </div>
+    <details class="account-menu" [open]="isAccountMenuOpen" (toggle)="isAccountMenuOpen = $any($event.target).open">
+      <summary class="account-menu-trigger">
+        <span class="account-avatar">{{ (selectedAccount?.accountName || 'A').charAt(0).toUpperCase() }}</span>
+        <span class="account-menu-current">
+          <strong>{{ selectedAccount?.accountName || 'No account selected' }}</strong>
+          <small>{{ selectedAccount ? (selectedAccount.balance | currency:'USD':'symbol':'1.2-2') : 'Account unavailable' }}</small>
+        </span>
+        <span class="account-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="account-menu-list">
+        <div class="account-empty" *ngIf="accounts.length === 0">No accounts available</div>
+        <button class="account-option" type="button" *ngFor="let account of accounts" (click)="selectAccount(account)">
+          <span>
+            <strong>{{ account.accountName }}</strong>
+            <small>{{ account.balance | currency:'USD':'symbol':'1.2-2' }}</small>
+          </span>
+          <span class="account-check" *ngIf="account.accountId === selectedAccount?.accountId">*</span>
+        </button>
+        <div class="account-menu-divider"></div>
+        <button class="account-action" type="button" (click)="manageAccounts()">
+          <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l1.2 1.9 2.2.4 1.6-1.3 1.8 1.8-1.3 1.6.4 2.2L21 11v2l-2.1 1.4-.4 2.2 1.3 1.6-1.8 1.8-1.6-1.3-2.2.4L12 21l-1.2-1.9-2.2-.4L7 20l-1.8-1.8 1.3-1.6-.4-2.2L3 13v-2l2.1-1.4.4-2.2-1.3-1.6L6 4l1.6 1.3 2.2-.4L12 3z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          Manage accounts
+        </button>
+        <button class="account-action account-action-primary" type="button" (click)="createAccount()" [disabled]="isCreatingAccount">
+          <span class="action-icon">+</span>
+          {{ isCreatingAccount ? 'Creating...' : 'Create account' }}
+        </button>
+      </div>
+    </details>
+  </section>
+</aside>
+</div>

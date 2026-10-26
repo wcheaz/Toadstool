@@ -1,0 +1,66 @@
+<div class="withdrawal-modal-overlay" *ngIf="isOpen" (click)="closeModal()">
+  <div class="withdrawal-modal" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <h1 class="modal-title">Withdraw Funds</h1>
+        <p class="modal-subtitle">Send available cash to your linked bank account</p>
+      </div>
+      <button class="close-btn" type="button" (click)="closeModal()" aria-label="Close">✕</button>
+    </header>
+
+    <div class="progress-indicator">
+      <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1"><div class="step-number">1</div><div class="step-label">Amount</div></div>
+      <div class="step-line" [class.active]="currentStep > 1"></div>
+      <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2"><div class="step-number">2</div><div class="step-label">Bank account</div></div>
+      <div class="step-line" [class.active]="currentStep > 2"></div>
+      <div class="step" [class.active]="currentStep >= 3"><div class="step-number">3</div><div class="step-label">Review</div></div>
+    </div>
+
+    <main class="modal-content">
+      <section *ngIf="currentStep === 1" class="step-content">
+        <h2 class="step-title">How much would you like to withdraw?</h2>
+        <div class="form-group">
+          <label class="form-label" for="withdrawal-amount">Withdrawal amount</label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">$</span>
+            <input id="withdrawal-amount" type="number" class="amount-input" [(ngModel)]="withdrawalAmount" min="0.01" [max]="availableBalance" step="0.01" placeholder="0.00">
+          </div>
+          <p class="balance-hint">Available balance: {{ formatCurrency(availableBalance) }}</p>
+          <p class="error-message" *ngIf="hasInsufficientFunds">You do not have enough funds for this withdrawal.</p>
+          <p class="error-message" *ngIf="withdrawalAmount && amount <= 0">Enter an amount greater than $0.00.</p>
+        </div>
+        <div class="info-box"><span>Processing time</span><strong>1-2 business days</strong></div>
+      </section>
+
+      <section *ngIf="currentStep === 2" class="step-content">
+        <h2 class="step-title">Select destination account</h2>
+        <p class="step-description">Choose the linked bank account where the funds should be sent.</p>
+        <div class="account-selection">
+          <button *ngFor="let account of bankAccounts" type="button" class="account-card" [class.selected]="selectedAccountId === account.id" (click)="selectedAccountId = account.id">
+            <span class="bank-icon">🏦</span><span><strong>{{ account.bankName }}</strong><small>{{ account.accountType }} · {{ account.accountNumber }}</small></span><span class="selection-indicator" *ngIf="selectedAccountId === account.id">✓</span>
+          </button>
+        </div>
+      </section>
+
+      <section *ngIf="currentStep === 3" class="step-content">
+        <h2 class="step-title">Review withdrawal details</h2>
+        <div class="review-card">
+          <div><span>Withdrawal amount</span><strong>{{ formatCurrency(amount) }}</strong></div>
+          <div><span>Destination bank</span><strong>{{ selectedAccount?.bankName }}</strong></div>
+          <div><span>Account</span><strong>{{ selectedAccount?.accountType }} · {{ selectedAccount?.accountNumber }}</strong></div>
+          <div class="total-line"><span>Balance after withdrawal</span><strong>{{ formatCurrency(availableBalance - amount) }}</strong></div>
+        </div>
+        <p class="security-note">Withdrawals are sent securely to your selected linked bank account.</p>
+        <label class="terms"><input type="checkbox" [(ngModel)]="agreeToTerms"><span>I agree to the withdrawal terms and conditions</span></label>
+      </section>
+    </main>
+
+    <footer class="modal-footer">
+      <button class="btn-secondary" type="button" (click)="previousStep()" [disabled]="currentStep === 1">← Back</button>
+      <span></span>
+      <button class="btn-cancel" type="button" (click)="closeModal()">Cancel</button>
+      <button *ngIf="currentStep < 3" class="btn-primary" type="button" (click)="nextStep()" [disabled]="(currentStep === 1 && !canProceedToStep2()) || (currentStep === 2 && !canProceedToStep3())">Next →</button>
+      <button *ngIf="currentStep === 3" class="btn-withdraw" type="button" (click)="submitWithdrawal()" [disabled]="!agreeToTerms || isProcessing"><span *ngIf="!isProcessing">Confirm withdrawal</span><span *ngIf="isProcessing">Processing...</span></button>
+    </footer>
+  </div>
+</div>

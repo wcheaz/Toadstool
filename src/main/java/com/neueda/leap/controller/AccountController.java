@@ -1,0 +1,326 @@
+package com.neueda.leap.controller;
+
+import com.neueda.leap.Account;
+import com.neueda.leap.dto.AccountResponse;
+import com.neueda.leap.dto.PaginatedResponse;
+import com.neueda.leap.dto.HoldingsResponse;
+import com.neueda.leap.security.SecurityAccess;
+import com.neueda.leap.service.AccountService;
+import com.neueda.leap.service.ClientService;
+import com.neueda.leap.service.FauxnanceService;
+import com.neueda.leap.service.HoldingsService;
+import com.neueda.leap.service.InstrumentService;
+import com.neueda.leap.Holdings;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import com.neueda.leap.service.CashEventService;
+import com.neueda.leap.Instrument;
+import com.neueda.leap.dto.CashEventResponse;
+
+/**
+ * REST Controller for Account endpoints
+ */
+@RestController
+@RequestMapping("/api")
+public class AccountController {
+
+    private final AccountService accountService;
+    private final ClientService clientService;
+    private final CashEventService cashEventService;
+    private final HoldingsService holdingsService;
+    private final InstrumentService instrumentService;
+    // private final FauxnanceService fauxnanceService;
+
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService) {
+        this(accountService, clientService, fauxnanceService, null, null, null);
+    }
+
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService, CashEventService cashEventService) {
+        this(accountService, clientService, fauxnanceService, cashEventService, null, null);
+    }
+
+    @Autowired
+    public AccountController(AccountService accountService, ClientService clientService, FauxnanceService fauxnanceService,
+                             CashEventService cashEventService, HoldingsService holdingsService,
+                             InstrumentService instrumentService) {
+        this.accountService = accountService;
+        this.clientService = clientService;
+        this.cashEventService = cashEventService;
+        this.holdingsService = holdingsService;
+        this.instrumentService = instrumentService;
+    }
+
+    /**
+     * POST /api/accounts
+     * Create a new trading account for a client
+     */
+    @PostMapping("/accounts")
+    public ResponseEntity<AccountResponse> createAccount(@RequestBody CreateAccountRequest request) {
+        try {
+            if (request == null || request.getClientId() == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            UUID clientId = request.getClientId();
+            if (!SecurityAccess.canAccessClient(clientId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // Verify client exists
+            if (clientService.getClientById(clientId) == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+                Account account = request.getAccountName() == null || request.getAccountName().isBlank()
+                    ? accountService.createAccount(clientId)
+                    : accountService.createAccount(clientId, request.getAccountName());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(mapToAccountResponse(account));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/accounts/{accountId}/cash-events")
+    public ResponseEntity<AccountResponse> postCashEvent(@PathVariable UUID accountId, @RequestBody CashEventRequest request) {
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) return ResponseEntity.notFound().build();
+        if (!SecurityAccess.canAccessAccount(accountId, account.getClientId())) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            if (cashEventService == null) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+            if (request.getAmount() == null || request.getAmount().signum() <= 0) {
+                return ResponseEntity.badRequest().build();
+            }
+            BigDecimal amount = request.getAmount().abs();
+            if ("WITHDRAWAL".equals(request.getEventType())) amount = amount.negate();
+            if (!"DEPOSIT".equals(request.getEventType()) && !"WITHDRAWAL".equals(request.getEventType())) {
+                return ResponseEntity.badRequest().build();
+            }
+            cashEventService.post(accountId, null, request.getEventType(), amount, "{}");
+            return ResponseEntity.ok(mapToAccountResponse(accountService.getAccountById(accountId)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.unprocessableEntity().build();
+        }
+    }
+
+    /**
+     * GET /api/accounts/{accountId}/cash-events
+     * Deposits, withdrawals and trade settlements for an account, newest first
+     */
+    @GetMapping("/accounts/{accountId}/cash-events")
+    public ResponseEntity<PaginatedResponse<CashEventResponse>> listCashEvents(
+            @PathVariable UUID accountId,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        if (limit < 1 || limit > 1000 || offset < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) return ResponseEntity.notFound().build();
+        if (!SecurityAccess.canAccessAccount(accountId, account.getClientId())) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (cashEventService == null) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+
+        List<CashEventResponse> events = cashEventService.listByAccount(accountId, limit, offset);
+        int totalCount = cashEventService.countByAccount(accountId);
+        return ResponseEntity.ok(new PaginatedResponse<>(events, limit, offset, totalCount));
+    }
+
+    /**
+     * GET /api/accounts/{accountId}
+     * Retrieve account details
+     */
+    @GetMapping("/accounts/{accountId}")
+    public ResponseEntity<AccountResponse> getAccount(@PathVariable UUID accountId) {
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(mapToAccountResponse(account));
+    }
+
+    @PatchMapping("/accounts/{accountId}")
+    public ResponseEntity<AccountResponse> updateAccount(@PathVariable UUID accountId,
+                                                         @RequestBody UpdateAccountRequest request) {
+        Account account = accountService.getAccountById(accountId);
+        if (account == null) return ResponseEntity.notFound().build();
+        if (!SecurityAccess.canAccessAccount(accountId, account.getClientId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null) return ResponseEntity.badRequest().build();
+        if (request.getAccountName() != null) {
+            String accountName = request.getAccountName().trim();
+            if (accountName.isBlank() || accountName.length() > 80) return ResponseEntity.badRequest().build();
+            accountService.updateAccountName(accountId, accountName);
+        }
+        if (request.getStatus() != null) {
+            if (!"CLOSED".equals(request.getStatus())) return ResponseEntity.badRequest().build();
+            if (account.getBalance() != null && account.getBalance().signum() != 0) {
+                return ResponseEntity.unprocessableEntity().build();
+            }
+            accountService.updateStatus(accountId, "CLOSED");
+        }
+        return ResponseEntity.ok(mapToAccountResponse(accountService.getAccountById(accountId)));
+    }
+
+    /**
+     * GET /api/clients/{clientId}/accounts
+     * List accounts for a client
+     */
+    @GetMapping("/clients/{clientId}/accounts")
+    public ResponseEntity<PaginatedResponse<AccountResponse>> listAccountsByClient(
+            @PathVariable UUID clientId,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        if (!SecurityAccess.canAccessClient(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        try {
+            // Verify client exists
+            if (clientService.getClientById(clientId) == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Validate pagination
+            if (limit < 1 || limit > 1000 || offset < 0) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            List<Account> accounts = accountService.listAccountsByClient(clientId, limit, offset);
+            int totalCount = accountService.countAccountsByClient(clientId);
+
+            List<AccountResponse> responses = accounts.stream()
+                    .map(this::mapToAccountResponse)
+                    .collect(Collectors.toList());
+
+            PaginatedResponse<AccountResponse> pagedResponse = new PaginatedResponse<>(responses, limit, offset, totalCount);
+            return ResponseEntity.ok(pagedResponse);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /api/accounts/{accountId}/holdings
+     * Get current positions and cash balance with live prices from Fauxnance
+     */
+    @GetMapping("/accounts/{accountId}/holdings")
+    public ResponseEntity<HoldingsResponse> getHoldings(@PathVariable UUID accountId) {
+        try {
+            Account account = accountService.getAccountById(accountId);
+            if (account == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!SecurityAccess.canAccessAccount(account.getAccountId(), account.getClientId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            HoldingsResponse response = new HoldingsResponse(
+                    accountId,
+                    loadHoldingItems(accountId),
+                    new HoldingsResponse.CashBalance(
+                            account.getBalance() == null ? "0.00" : account.getBalance().toPlainString(),
+                            "USD"),
+                    OffsetDateTime.now()
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private List<HoldingsResponse.HoldingItem> loadHoldingItems(UUID accountId) {
+        if (holdingsService == null) {
+            return List.of();
+        }
+        List<Holdings> holdings = holdingsService.getAccountHoldings(accountId, 1000, 0).stream()
+                .filter(holding -> holding.getQuantity() != null && holding.getQuantity().signum() > 0)
+                .collect(Collectors.toList());
+        List<UUID> instrumentIds = holdings.stream()
+                .map(Holdings::getInstrumentId)
+                .collect(Collectors.toList());
+        java.util.Map<UUID, Instrument> instrumentsById = instrumentService == null
+                ? java.util.Map.of()
+                : instrumentService.getInstrumentsByIds(instrumentIds).stream()
+                        .collect(Collectors.toMap(Instrument::getInstrumentId, instrument -> instrument));
+
+        return holdings.stream()
+                .map(holding -> toHoldingItem(holding, instrumentsById.get(holding.getInstrumentId())))
+                .collect(Collectors.toList());
+    }
+
+    private HoldingsResponse.HoldingItem toHoldingItem(Holdings holding, Instrument instrument) {
+        HoldingsResponse.HoldingItem item = new HoldingsResponse.HoldingItem(
+                holding.getInstrumentId(),
+                instrument != null ? instrument.getSymbol() : null,
+                holding.getQuantity().stripTrailingZeros().toPlainString());
+        if (instrument != null) {
+            item.setName(instrument.getName());
+            item.setAssetClass(instrument.getAssetClass() != null ? instrument.getAssetClass().name() : null);
+        }
+        return item;
+    }
+
+    /**
+     * Map Account domain object to AccountResponse DTO
+     */
+    private AccountResponse mapToAccountResponse(Account account) {
+        return new AccountResponse(
+                account.getAccountId(),
+                account.getClientId(),
+                account.getAccountName(),
+                account.getStatus() != null ? account.getStatus().toString() : "ACTIVE",
+                account.getOpenedAt(),
+                account.getBalance()
+        );
+    }
+
+    public static class CreateAccountRequest {
+        private UUID clientId;
+        private String accountName;
+
+        public UUID getClientId() {
+            return clientId;
+        }
+
+        public void setClientId(UUID clientId) {
+            this.clientId = clientId;
+        }
+
+        public String getAccountName() { return accountName; }
+        public void setAccountName(String accountName) { this.accountName = accountName; }
+    }
+
+    public static class CashEventRequest {
+        private String eventType;
+        private BigDecimal amount;
+        public String getEventType() { return eventType; }
+        public void setEventType(String eventType) { this.eventType = eventType; }
+        public BigDecimal getAmount() { return amount; }
+        public void setAmount(BigDecimal amount) { this.amount = amount; }
+    }
+
+    public static class UpdateAccountRequest {
+        private String accountName;
+        private String status;
+
+        public String getAccountName() { return accountName; }
+        public void setAccountName(String accountName) { this.accountName = accountName; }
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+    }
+}

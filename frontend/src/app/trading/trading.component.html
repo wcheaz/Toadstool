@@ -1,0 +1,108 @@
+<div class="trading-page">
+  <section class="desk-heading">
+    <div>
+      <h1>Trading Desk</h1>
+    </div>
+  </section>
+
+  <div class="desk-grid">
+    <section class="panel recommendations-panel" aria-labelledby="recommendations-heading">
+      <div class="panel-title">
+        <div>
+          <h2 id="recommendations-heading">Search assets</h2>
+        </div>
+        <span>{{ filteredAssets.length }} results</span>
+      </div>
+
+      <label class="search-box">
+        <span class="search-icon"></span>
+        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="searchAssets($event)" placeholder="Search by ticker or company name" aria-label="Search assets">
+        <kbd>⌕</kbd>
+      </label>
+
+      <p class="error-state" *ngIf="apiError">{{ apiError }}</p>
+
+      <div class="stock-list" *ngIf="!isLoading; else loadingState">
+        <button
+          class="stock-row"
+          type="button"
+          *ngFor="let asset of filteredAssets"
+          [class.selected]="selectedAsset?.instrument?.instrumentId === asset.instrument.instrumentId"
+          (click)="selectAsset(asset)">
+          <span class="stock-badge">{{ asset.instrument.symbol.slice(0, 2) }}</span>
+          <span class="stock-copy">
+            <strong>{{ asset.instrument.name }}</strong>
+            <small>
+              {{ asset.instrument.symbol }} ·
+              <ng-container *ngIf="getQuote(asset) as quote; else noPrice">{{ quote.price | currency:'USD':'symbol':'1.2-4' }}</ng-container>
+              <ng-template #noPrice>--</ng-template>
+              · {{ asset.articleCount }} article{{ asset.articleCount === 1 ? '' : 's' }}
+            </small>
+          </span>
+          <span class="stock-change" *ngIf="getQuote(asset) as quote; else noChange" [class.negative]="quote.changePercent < 0">
+            {{ quote.changePercent >= 0 ? '+' : '' }}{{ quote.changePercent | number:'1.2-2' }}%
+          </span>
+          <ng-template #noChange><span class="stock-change muted">--</span></ng-template>
+          <span
+            class="trade-button"
+            [class.disabled]="!getQuote(asset)"
+            (click)="$event.stopPropagation(); openTrade(asset)">Trade</span>
+        </button>
+        <p class="empty-state" *ngIf="filteredAssets.length === 0 && !apiError">No assets match “{{ searchTerm }}”.</p>
+      </div>
+      <ng-template #loadingState><div class="loading-state">Loading market assets...</div></ng-template>
+    </section>
+
+    <aside class="panel news-panel" aria-labelledby="news-heading">
+      <div class="panel-title">
+        <h2 id="news-heading">Market News &amp; Live Asset Tickers</h2>
+        <span class="live-label">News updates hourly</span>
+      </div>
+
+      <article class="news-card secondary" *ngIf="selectedAsset as asset">
+        <div class="news-card-heading">
+          <span>SELECTED ASSET · {{ asset.instrument.assetClass }}</span>
+          <span class="pulse" *ngIf="getQuote(asset)">● LIVE</span>
+        </div>
+        <h3>{{ asset.instrument.name }} ({{ asset.instrument.symbol }})</h3>
+        <ng-container *ngIf="getQuote(asset) as quote; else quoteLoading">
+          <dl class="quote-grid">
+            <div><dt>Price</dt><dd>{{ quote.price | currency:'USD':'symbol':'1.2-4' }}</dd></div>
+            <div>
+              <dt>Day change</dt>
+              <dd [class.positive]="quote.changePercent >= 0" [class.negative]="quote.changePercent < 0">
+                {{ quote.change >= 0 ? '+' : '' }}{{ quote.change | number:'1.2-4' }} ({{ quote.changePercent >= 0 ? '+' : '' }}{{ quote.changePercent | number:'1.2-2' }}%)
+              </dd>
+            </div>
+            <div><dt>Bid</dt><dd>{{ quote.bid | currency:'USD':'symbol':'1.2-4' }}</dd></div>
+            <div><dt>Ask</dt><dd>{{ quote.ask | currency:'USD':'symbol':'1.2-4' }}</dd></div>
+          </dl>
+          <small>Quote as of {{ quote.asOf | date:'medium' }}</small>
+          <button class="open-trade-button" type="button" (click)="openTrade(asset)">Trade {{ asset.instrument.symbol }}</button>
+        </ng-container>
+        <ng-template #quoteLoading><p>Loading live quote...</p></ng-template>
+      </article>
+
+      <h3 class="news-list-heading" *ngIf="selectedAsset">
+        {{ showingMarketNews ? 'No recent ' + selectedAsset.instrument.symbol + ' news · latest market news' : 'Latest ' + selectedAsset.instrument.symbol + ' news' }}
+      </h3>
+      <app-news-notice [articles]="selectedArticles" [loading]="isLoadingNews"></app-news-notice>
+      <div class="news-list">
+        <app-news-card *ngFor="let article of selectedArticles" [article]="article" (open)="openNewsDetail($event)"></app-news-card>
+      </div>
+    </aside>
+  </div>
+
+  <app-news-detail-modal [article]="selectedNewsArticle" (close)="closeNewsDetail()"></app-news-detail-modal>
+
+  <app-trading-modal
+    [isOpen]="isTradeModalOpen"
+    [selectedAsset]="tradeAsset"
+    [accountId]="accountId"
+    [accountBalance]="accountBalance"
+    [candleData]="tradingChartData"
+    [instrumentId]="selectedInstrumentId"
+    (orderCompleted)="refreshAccount()"
+    (close)="closeTrade()">
+  </app-trading-modal>
+</div>

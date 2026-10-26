@@ -1,0 +1,18 @@
+<p class="news-loading" *ngIf="loading && articles.length === 0">Loading news...</p>
+
+<div class="news-empty error" *ngIf="error" role="alert">
+  <span class="news-empty-icon" aria-hidden="true">!</span>
+  <strong>Couldn't load news</strong>
+  <p>{{ error }}</p>
+</div>
+
+<div class="news-empty" *ngIf="isEmpty" role="status">
+  <span class="news-empty-icon" aria-hidden="true">📰</span>
+  <strong>{{ emptyTitle }}</strong>
+  <p>No articles have been published yet. Headlines refresh every hour, so check back soon.</p>
+</div>
+
+<div class="news-stale" *ngIf="isStale" role="status">
+  <span aria-hidden="true">ⓘ</span>
+  No new articles in the last 24 hours. Showing the most recent headlines from {{ latestPublishedAt | date:'mediumDate' }}.
+</div>

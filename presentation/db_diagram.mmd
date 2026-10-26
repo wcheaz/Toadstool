@@ -1,0 +1,100 @@
+erDiagram
+    CLIENTS ||--o{ ACCOUNTS : owns
+    CLIENTS ||--o{ ORDERS : "places (via account)"
+    CLIENTS ||--o{ TRADE_EVENTS : triggers
+    CLIENTS ||--o{ LOGIN_EVENTS : "attempts login"
+    ACCOUNTS ||--o{ ORDERS : contains
+    INSTRUMENTS ||--o{ ORDERS : "traded via"
+    INSTRUMENTS ||--o{ FACT_DAILY_INSTRUMENT_ACTIVITY : "tracks activity"
+    ORDERS ||--o{ FILLS : "may have"
+    ORDERS ||--o{ TRADE_EVENTS : "triggers (as ORDER)"
+    FILLS ||--o{ TRADE_EVENTS : "triggers (as FILL)"
+
+    CLIENTS {
+        uuid client_id PK
+        varchar email
+        varchar display_name
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ACCOUNTS {
+        uuid account_id PK
+        uuid client_id FK
+        varchar status
+        timestamptz opened_at
+    }
+
+    INSTRUMENTS {
+        uuid instrument_id PK
+        varchar symbol
+        varchar name
+        varchar asset_class
+        varchar status
+    }
+
+    ORDERS {
+        uuid order_id PK
+        uuid account_id FK
+        uuid instrument_id FK
+        varchar side
+        numeric quantity
+        varchar idempotency_key
+        timestamptz submitted_at
+    }
+
+    ADMIN_USERS {
+        uuid admin_user_id PK
+        varchar email
+        varchar display_name
+        varchar role
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    FILLS {
+        uuid fill_id PK
+        uuid order_id FK
+        numeric price
+        numeric quantity
+        varchar status
+        timestamptz executed_at
+    }
+
+    TRADE_EVENTS {
+        uuid trade_event_id PK
+        uuid client_id FK
+        varchar entity_type
+        uuid entity_id
+        varchar action
+        timestamptz occurred_at
+        jsonb details
+    }
+
+    LOGIN_EVENTS {
+        uuid login_event_id PK
+        uuid client_id FK
+        varchar email_attempted
+        varchar outcome
+        timestamptz occurred_at
+        jsonb details
+    }
+
+    FACT_DAILY_INSTRUMENT_ACTIVITY {
+        date activity_date PK
+        uuid instrument_id FK
+        integer order_count
+        numeric filled_quantity
+        numeric gross_amount
+        timestamptz updated_at
+    }
+
+    FACT_DAILY_PLATFORM_ACTIVITY {
+        date activity_date PK
+        integer order_count
+        numeric filled_quantity
+        numeric gross_amount
+        timestamptz updated_at
+    }

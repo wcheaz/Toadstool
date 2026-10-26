@@ -1,0 +1,65 @@
+<div class="dashboard-module market-module">
+  <div class="module-header">
+    <h3>Market Assets <span class="held-summary" *ngIf="heldCount > 0">{{ heldCount }} held</span></h3>
+    <div class="header-actions">
+      <ng-content select="[cardControls]"></ng-content>
+    </div>
+  </div>
+  <div class="market-assets-table">
+    <div class="table-header">
+      <div>Asset</div>
+      <div>Value</div>
+      <div title="Today's profit/loss on this position">Today P/L</div>
+      <div title="Profit/loss since you started trading this asset, fees included">All-time P/L</div>
+      <div>Holdings</div>
+      <div>Action</div>
+    </div>
+
+    <!-- Live instruments from Fauxnance API -->
+    <div
+      *ngFor="let instrument of ownedInstruments"
+      class="table-row"
+      [class.linked]="isLinked(instrument)"
+      tabindex="0"
+      [attr.aria-current]="isLinked(instrument) ? 'true' : null"
+      [attr.aria-label]="'Show ' + instrument.symbol + ' in linked cards'"
+      (click)="selectInstrument(instrument)"
+      (keydown.enter)="selectInstrument(instrument)">
+      <div class="table-cell">
+        <span class="asset-name">{{ instrument.symbol }}</span>
+        <span class="asset-full">{{ instrument.name }}</span>
+      </div>
+      <div class="table-cell">
+        {{ (getHoldingValue(instrument) || 0) | currency }}
+      </div>
+      <div class="table-cell pl-cell">
+        <ng-container *ngIf="getQuote(instrument.instrumentId) as quote; else plLoading">
+          <span class="pl-amount" [ngClass]="getPriceChangeClass(getDailyPnl(instrument))">{{ getDailyPnl(instrument) >= 0 ? '+' : '-' }}{{ (getDailyPnl(instrument) < 0 ? -getDailyPnl(instrument) : getDailyPnl(instrument)) | currency }}</span>
+          <span class="pl-percent" [ngClass]="getPriceChangeClass(quote.changePercent)">{{ quote.changePercent >= 0 ? '+' : '' }}{{ quote.changePercent | number:'1.2-2' }}%</span>
+        </ng-container>
+        <ng-template #plLoading><span class="no-holding">Loading...</span></ng-template>
+      </div>
+      <div class="table-cell pl-cell" *ngIf="getAllTimePnl(instrument) as pnl; else noAllTime">
+        <span class="pl-amount" [ngClass]="getPriceChangeClass(pnl.amount)">{{ pnl.amount >= 0 ? '+' : '-' }}{{ (pnl.amount < 0 ? -pnl.amount : pnl.amount) | currency }}</span>
+        <span class="pl-percent" [ngClass]="getPriceChangeClass(pnl.percent)">{{ pnl.percent >= 0 ? '+' : '' }}{{ pnl.percent | number:'1.2-2' }}%</span>
+      </div>
+      <ng-template #noAllTime>
+        <div class="table-cell pl-cell" title="Purchase history for this position isn't complete">
+          <span class="no-holding">--</span>
+        </div>
+      </ng-template>
+      <div class="table-cell holding-cell">
+        <ng-container *ngIf="getHolding(instrument.instrumentId) > 0; else noHolding">
+          <span class="holding-units">{{ getHolding(instrument.instrumentId) | number:'1.0-6' }} Units</span>
+          <span class="holding-value">{{ (getQuote(instrument.instrumentId)?.price || 0) | currency }} each</span>
+        </ng-container>
+        <ng-template #noHolding><span class="no-holding">--</span></ng-template>
+      </div>
+      <div class="table-cell"><button class="trade-btn" (click)="$event.stopPropagation(); onTradeClick(instrument, getQuote(instrument.instrumentId))" (keydown.enter)="$event.stopPropagation()">Trade</button></div>
+    </div>
+
+    <div *ngIf="ownedInstruments.length === 0 && !loading" class="empty-state">
+      Start trading using the Trading tab!
+    </div>
+  </div>
+</div>

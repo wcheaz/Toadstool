@@ -1,0 +1,491 @@
+/* Toadstool Trader Dashboard - layout and tab styles.
+   Section-specific styles live in the extracted module components. */
+
+/* Homepage Content */
+.homepage-content {
+  padding: 24px var(--content-gutter) 40px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  min-width: 0;
+}
+
+/* Dashboard Content */
+.dashboard-content {
+  margin-top: 20px;
+  flex: 1;
+  padding: 0;
+  min-height: 0;
+}
+
+/* Content Tabs */
+.content-tabs {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #374151;
+}
+
+.tab-button {
+  padding: 12px 0;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+  color: #d1d5db;
+}
+
+.tab-button.active {
+  color: #f3f4f6;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary-soft);
+}
+
+.tab-content {
+  display: block;
+}
+
+/* Dashboard Grid Layout */
+/*
+ * Cards sit on a 12-column grid of 20px rows (GRID_COLUMNS in dashboard-layout.service.ts).
+ * Each card spans --card-cols x --card-rows tracks; dense packing lets later cards fill gaps
+ * left by resizing, so the rest of the dashboard reflows automatically.
+ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 20px;
+  grid-auto-flow: row dense;
+  column-gap: 24px;
+  row-gap: 16px;
+  min-width: 0;
+}
+
+.dashboard-card {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  grid-column: span var(--card-cols, 6);
+  grid-row: span var(--card-rows, 13);
+}
+
+/* Bottom-right corner grip; drag (or arrow keys) to resize */
+.resize-handle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border-radius: 0 0 8px 0;
+  cursor: nwse-resize;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  background:
+    linear-gradient(135deg, transparent 0 50%, var(--color-text-subtle) 50% 56%, transparent 56% 68%,
+      var(--color-text-subtle) 68% 74%, transparent 74%);
+}
+
+.dashboard-card:hover .resize-handle,
+.resize-handle:focus-visible,
+.resize-handle:active {
+  opacity: 1;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background:
+    linear-gradient(135deg, transparent 0 50%, var(--color-primary) 50% 56%, transparent 56% 68%,
+      var(--color-primary) 68% 74%, transparent 74%);
+}
+
+.resize-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Touch screens have no hover: always show a larger handle */
+@media (pointer: coarse) {
+  .resize-handle {
+    width: 32px;
+    height: 32px;
+    opacity: 1;
+  }
+}
+
+/* Drag and drop (Angular CDK) */
+.dashboard-card.cdk-drag-preview {
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  opacity: 0.95;
+}
+
+.dashboard-card.cdk-drag-placeholder {
+  border: 2px dashed var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+}
+
+.dashboard-card.cdk-drag-placeholder > * {
+  visibility: hidden;
+}
+
+.dashboard-card.cdk-drag-animating,
+.dashboard-grid.cdk-drop-list-dragging .dashboard-card:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.layout-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.reset-layout {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.reset-layout:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Dashboard Module */
+.dashboard-module {
+  background: rgba(45, 49, 53, 0.78);
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  cursor: default;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-module:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 15px 40px var(--color-primary-soft);
+}
+
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(135deg, rgba(45, 49, 53, 0.68), rgba(30, 33, 36, 0.68));
+}
+
+.module-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.module-handle {
+  font-size: 12px;
+  color: #64748b;
+  cursor: grab;
+  font-weight: bold;
+  letter-spacing: -2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.module-handle:hover {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.module-handle:active {
+  cursor: grabbing;
+}
+
+/* News Module */
+.news-module {
+  grid-row: 1 / 3;
+  min-height: 600px;
+}
+
+.news-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.news-section::-webkit-scrollbar {
+  width: 4px;
+}
+
+.news-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.news-section::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 2px;
+}
+
+.news-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+.news-item {
+  background: rgba(45, 49, 53, 0.5);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: all 0.2s ease;
+}
+
+.news-item:hover {
+  background: rgba(45, 49, 53, 0.72);
+  border-color: var(--color-primary);
+}
+
+.news-date {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.news-title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f4f6;
+  line-height: 1.4;
+}
+
+.news-description {
+  margin: 0;
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+/* Market Assets Module */
+.market-module {
+  min-height: auto;
+  flex: 1;
+}
+
+.view-exchange {
+  font-size: 12px;
+  color: #00744A;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.view-exchange:hover {
+  color: #005c3a;
+}
+
+.market-assets-table {
+  background-color: transparent;
+  border-radius: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none;
+  border: none;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 0.8fr;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, rgba(45, 49, 53, 0.65), rgba(30, 33, 36, 0.65));
+  flex-shrink: 0;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 0.8fr;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  align-items: center;
+  transition: background-color 0.2s ease;
+  font-size: 12px;
+}
+
+.table-row:hover {
+  background-color: var(--color-primary-soft);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  font-size: 12px;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.asset-name {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.asset-full {
+  font-size: 10px;
+  color: #94a3af;
+  display: block;
+}
+
+.change-positive {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.change-negative {
+  color: #f87171;
+  font-weight: 500;
+}
+
+.change-neutral {
+  color: #9ca3af;
+}
+
+.trade-btn {
+  padding: 4px 10px;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trade-btn:hover {
+  background-color: var(--color-primary-strong);
+}
+
+/* Placeholder */
+.placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+}
+
+.placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Scrollbar */
+.main-content::-webkit-scrollbar,
+.dashboard-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-content::-webkit-scrollbar-track,
+.dashboard-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-content::-webkit-scrollbar-thumb,
+.dashboard-content::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover,
+.dashboard-content::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-content {
+    margin: 0 0 24px;
+  }
+
+  /* One column: every card is full width; only height is resizable */
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-card { grid-column: 1 / -1; }
+  .layout-toolbar > span { display: none; }
+  .news-module { min-height: 420px; }
+
+  .content-tabs {
+    gap: 24px;
+  }
+
+  .tab-button {
+    padding: 14px 0;
+    font-size: 16px;
+  }
+
+  .news-date {
+    font-size: 13px;
+  }
+
+  .news-title {
+    font-size: 15px;
+  }
+
+  .news-description {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .homepage-content { padding: 16px 12px 28px; }
+  .dashboard-grid { gap: 16px; }
+}

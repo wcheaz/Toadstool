@@ -1,0 +1,27 @@
+<div class="manage-page">
+  <header class="manage-heading"><div><span class="eyebrow">ACCOUNT SETTINGS</span><h1>Manage accounts</h1><p>Update, move, or close your trading accounts.</p></div></header>
+
+  <div class="notice" *ngIf="notice" [class.success]="noticeType === 'success'" [class.error]="noticeType === 'error'">{{ notice }}</div>
+
+  <section class="account-strip panel"><div><span class="field-label">Selected account</span><select [ngModel]="selectedAccount?.accountId" (ngModelChange)="selectAccount(accounts.find(account => account.accountId === $event) || null)"><option *ngFor="let account of accounts" [value]="account.accountId">{{ account.accountName }} · {{ account.balance | currency:'USD':'symbol':'1.2-2' }}</option></select></div><div class="account-summary" *ngIf="selectedAccount"><span class="account-avatar">{{ selectedAccount.accountName.charAt(0).toUpperCase() }}</span><div><strong>{{ selectedAccount.accountName }}</strong><small>{{ selectedAccount.status }} · Opened {{ selectedAccount.openedAt | date:'mediumDate' }}</small></div></div></section>
+
+  <main class="settings-grid" *ngIf="selectedAccount; else noAccounts">
+    <section class="panel setting-card"><div class="card-heading"><div><span class="step">01</span><div><h2>Account name</h2><p>Give this account a name that is easy to recognize.</p></div></div></div><label>Account name<input [(ngModel)]="accountName" maxlength="80" aria-label="Account name"></label><button class="primary-button" type="button" (click)="saveAccountName()" [disabled]="isBusy || !accountName.trim()">Save name</button></section>
+
+    <section class="panel setting-card"><div class="card-heading"><div><span class="step">02</span><div><h2>Transfer between accounts</h2><p>Move settled cash to another account you own.</p></div></div></div><label>Destination account<select [(ngModel)]="transferDestination"><option value="">Choose an account</option><option *ngFor="let account of otherAccounts" [value]="account.accountId">{{ account.accountName }}</option></select></label><label>Amount<input type="number" min="0" [max]="selectedAccount.balance" [(ngModel)]="transferAmount" placeholder="0.00"></label><button class="primary-button" type="button" (click)="transferFunds()" [disabled]="isBusy || !transferDestination || !transferAmount">Transfer funds</button></section>
+
+    <section class="panel setting-card"><div class="card-heading"><div><span class="step">03</span><div><h2>Withdraw funds</h2><p>Withdraw available cash from this trading account.</p></div></div></div><div class="available-balance"><span>Available balance</span><strong>{{ selectedAccount.balance | currency:'USD':'symbol':'1.2-2' }}</strong></div><button class="withdraw-button" type="button" (click)="withdrawFunds()" [disabled]="isBusy || selectedAccount.balance <= 0">Withdraw</button></section>
+
+    <section class="panel setting-card danger-card"><div class="card-heading"><div><span class="step danger-step">04</span><div><h2>Delete account</h2><p>Deleting removes this account from your account list. Its balance must be zero.</p></div></div></div><div class="balance-check"><span>Current balance</span><strong>{{ selectedAccount.balance | currency:'USD':'symbol':'1.2-2' }}</strong></div><button class="danger-button" type="button" (click)="closeAccount()" [disabled]="isBusy || !canClose">{{ canClose ? 'Delete account' : 'Move remaining funds first' }}</button><button class="text-button" type="button" (click)="showLiquidation()">Need to liquidate holdings?</button></section>
+  </main>
+  <ng-template #noAccounts><section class="panel empty-state"><h2>No trading accounts yet</h2><p>Create an account from the account menu in the sidebar to start managing it.</p></section></ng-template>
+
+  <app-withdrawal-modal
+    [isOpen]="isWithdrawalOpen"
+    [availableBalance]="selectedAccount?.balance || 0"
+    (close)="closeWithdrawal()"
+    (submit)="submitWithdrawal($event)">
+  </app-withdrawal-modal>
+
+  <div class="dialog-backdrop" *ngIf="isLiquidationOpen" (click)="closeLiquidation()"><section class="support-dialog" role="dialog" aria-modal="true" aria-labelledby="liquidation-title" (click)="$event.stopPropagation()"><button class="dialog-close" type="button" (click)="closeLiquidation()" aria-label="Close">×</button><span class="support-icon">!</span><h2 id="liquidation-title">Liquidation requires assistance</h2><p>To liquidate positions and close this account safely, please call our account team at:</p><strong class="phone-number">1-800-TOAD-TRD</strong><small>Monday to Friday, 8:00 AM to 6:00 PM ET</small><button class="primary-button" type="button" (click)="closeLiquidation()">Got it</button></section></div>
+</div>
