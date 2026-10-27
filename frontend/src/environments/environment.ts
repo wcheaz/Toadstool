@@ -1,4 +1,4 @@
-// Production build (ng build). Set this to the deployed Spring Boot API before uploading to S3.
+// Production build (ng build). CloudFront routes /api/* to the Spring Boot API on EC2.
 export const environment = {
-  apiUrl: 'https://YOUR_API_ADDRESS/api'
+  apiUrl: 'https://d5okymhrnlu0v.cloudfront.net/api'
 };
