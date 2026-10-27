@@ -1,5 +1,6 @@
 package com.neueda.leap.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -37,12 +39,15 @@ public class SecurityConfig {
     private final SessionKeyService sessionKeyService;
     private final boolean jwtEnabled;
     private final boolean requireHttps;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtTokenValidator jwtTokenValidator, SessionKeyService sessionKeyService, JwtProperties jwtProperties) {
+    public SecurityConfig(JwtTokenValidator jwtTokenValidator, SessionKeyService sessionKeyService, JwtProperties jwtProperties,
+                          @Value("${app.cors.allowed-origins:http://localhost:*,http://127.0.0.1:*}") String[] allowedOrigins) {
         this.jwtTokenValidator = jwtTokenValidator;
         this.sessionKeyService = sessionKeyService;
         this.jwtEnabled = jwtProperties.isEnabled();
         this.requireHttps = jwtProperties.isRequireHttps();
+        this.allowedOrigins = Arrays.stream(allowedOrigins).map(String::trim).filter(s -> !s.isEmpty()).toList();
     }
 
     @Bean
@@ -97,7 +102,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+        configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setExposedHeaders(List.of("Authorization"));
