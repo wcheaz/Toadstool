@@ -8,7 +8,6 @@ import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.FauxnanceService;
-import com.neueda.leap.service.HoldingsService;
 import com.neueda.leap.service.OrderExecutionService;
 import com.neueda.leap.dto.PlaceOrderRequest;
 import com.neueda.leap.dto.OrderResponse;
@@ -39,17 +38,15 @@ public class OrderController {
     private final AccountService accountService;
     private final InstrumentService instrumentService;
     private final FauxnanceService fauxnanceService;
-    private final HoldingsService holdingsService;
     private final OrderExecutionService orderExecutionService;
 
-    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService, HoldingsService holdingsService,
+    public OrderController(OrderService orderService, AccountService accountService, InstrumentService instrumentService, FauxnanceService fauxnanceService,
                            OrderExecutionService orderExecutionService) {
         this.orderExecutionService = orderExecutionService;
         this.orderService = orderService;
         this.accountService = accountService;
         this.instrumentService = instrumentService;
         this.fauxnanceService = fauxnanceService;
-        this.holdingsService = holdingsService;
     }
 
     /**

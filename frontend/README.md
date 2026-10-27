@@ -12,6 +12,23 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+API requests use relative `/api` URLs. The development server forwards these to
+`http://localhost:8081` using [proxy.conf.json](./proxy.conf.json). Start the local
+backend separately and restart `ng serve` after changing proxy settings.
+
+## Docker deployment
+
+The [Dockerfile](./Dockerfile) builds the production application with Node 24 and
+serves `dist/frontend/browser` using unprivileged Nginx on container port 8080.
+The [Nginx configuration](./nginx.conf) supports Angular deep links and proxies
+`/api` requests to `api:8080` on the Compose network, preserving paths, query
+strings, and authorization headers. Docker DNS is re-resolved periodically so
+backend container replacement does not require a frontend image rebuild.
+
+No backend credentials or API keys are included in the browser image. See the
+[deployment instructions](../README.md#frontend-container-on-the-existing-vm)
+for VM commands and port configuration.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:

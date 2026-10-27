@@ -1,4 +1,4 @@
-// Local development (ng serve).
+// Local development (ng serve). Requests go through proxy.conf.json to http://localhost:8081.
 export const environment = {
-  apiUrl: 'http://localhost:8081/api'
+  apiUrl: '/api'
 };

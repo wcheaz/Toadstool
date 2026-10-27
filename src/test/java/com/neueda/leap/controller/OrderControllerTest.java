@@ -11,7 +11,6 @@ import com.neueda.leap.service.AccountService;
 import com.neueda.leap.service.InstrumentService;
 import com.neueda.leap.service.OrderService;
 import com.neueda.leap.service.FauxnanceService;
-import com.neueda.leap.service.HoldingsService;
 import com.neueda.leap.service.OrderExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -55,9 +54,6 @@ class OrderControllerTest {
     private FauxnanceService fauxnanceService;
 
     @Mock
-    private HoldingsService holdingsService;
-
-    @Mock
     private OrderExecutionService orderExecutionService;
 
     private MockMvc mockMvc;
@@ -65,7 +61,7 @@ class OrderControllerTest {
     @BeforeEach
     void setUp() {
         ControllerTestSupport.clearAuthentication();
-        mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService, fauxnanceService, holdingsService, orderExecutionService));
+                mockMvc = ControllerTestSupport.buildMockMvc(new OrderController(orderService, accountService, instrumentService, fauxnanceService, orderExecutionService));
     }
 
     @Test
