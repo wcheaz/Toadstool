@@ -1,0 +1,7 @@
+spring:
+  config:
+    import: aws-parameterstore:/toadstool/prod/
+  cloud:
+    aws:
+      parameterstore:
+        enabled: true

@@ -80,7 +80,7 @@ Before running the application or tests, you need to configure environment varia
 - Spring Boot automatically loads environment variables from the `.env` file via `spring.config.import` in `application.yml`
 - All `application.yml` files are now committed to git (they contain no secrets, only variable references)
 - Credentials come from environment variables or your local `.env`, not from checked-in configuration.
-  EC2 deployments can retrieve them from Parameter Store at container creation time,
+  EC2 deployments can retrieve them directly from Parameter Store at application startup,
   as described below.
 
 ### Application Configuration Files
@@ -164,14 +164,19 @@ configuration, or logs containing credentials.
 
 The application has separate trading and reporting data sources. Neither needs
 IAM database authentication. Parameter Store access uses the EC2 instance role;
-PostgreSQL connections use the database username and password. The application
-does not retrieve Parameter Store values itself.
+PostgreSQL connections use the database username and password. With the `aws`
+Spring profile enabled, the application inside the container retrieves parameters
+directly through Spring Cloud AWS. No AWS CLI, host env file, or credentials
+loader is required. Without this profile, local `.env` and environment-variable
+configuration continue to work without Parameter Store access.
 
 ### Store the configuration
 
 In AWS Systems Manager -> Parameter Store, select region `us-east-1` and create
 one parameter per environment variable under `/toadstool/prod/`. For example,
-the parameter `/toadstool/prod/DB_HOST` becomes environment variable `DB_HOST`.
+the parameter `/toadstool/prod/DB_HOST` becomes Spring property `DB_HOST`.
+Do not append a slash to the variable name. These properties are not exported
+as operating-system environment variables.
 Enter raw values, without `.env` quotes or an `export` prefix.
 
 Use `SecureString` for passwords, API keys, and private JWT keys. `String` is
@@ -200,16 +205,18 @@ the container, not the EC2 host.
 
 Also migrate the existing values for `FAUXNANCE_BASE_URL`, `FAUXNANCE_API_KEY`,
 `FAUXNANCE_TIMEOUT_SECONDS`, `FINNHUB_API_KEY`, and any configured
-`APP_CORS_ALLOWED_ORIGINS`, `SPRING_PROFILES_ACTIVE`, and authentication settings.
+`APP_CORS_ALLOWED_ORIGINS` and authentication settings. Set active profiles on
+the Docker command, not in Parameter Store: `aws` must be active before import.
+If previously using the `prod` profile, enable both with `aws,prod`.
 Preserve both `AUTH_JWT_PUBLIC_KEY` and `AUTH_JWT_PRIVATE_KEY` if configured so a
 restart does not unexpectedly rotate signing keys. These must be single-line,
 Base64-encoded DER values, as in `.env.example`. Preserve the existing
 `AUTH_JWT_REQUIRE_HTTPS` setting.
 
 Do not upload the `.env` file or paste decrypted parameter values into logs or
-chat. The loader rejects nested names, missing required values, and multiline
-values. Explicitly enter each value; Parameter Store does not expand references
-such as `${DB_PASSWORD}`.
+chat. Enter each value explicitly rather than references such as `${DB_PASSWORD}`.
+The import is required, not optional: an inaccessible or missing parameter path
+fails startup. Supply all required database and API settings before starting.
 
 ### Allow the EC2 role to read this path
 
@@ -235,23 +242,24 @@ Keep unrelated secrets outside this dedicated path.
 
 ### Recreate the API container
 
-Install AWS CLI, `jq`, and Docker on EC2 if absent. Transfer the
-[startup helper](./scripts/run-api-from-ssm.sh) to the EC2 checkout. It fetches all
-pages of parameters, decrypts them, and passes a private temporary env file to
-Docker. By default the temporary files are in Linux `/dev/shm` (memory-backed)
-and are removed when `docker run` returns or fails. It never sources parameter
-values as shell commands or prints their values. Do not run with shell tracing.
+Commit/push the application changes, pull them in the separate EC2 clone, and
+build a new image there with `docker build -t toadstool-api:ssm .`. Local edits
+do not update EC2 automatically. The image includes the Java integration, not
+AWS credentials or parameter values.
 
-The helper's isolated tests use mocked AWS and Docker commands and no credentials:
-
-```bash
-bash scripts/tests/run-api-from-ssm.test.sh
-```
+The AWS SDK uses the default credentials chain, including the EC2 instance role.
+Do not pass AWS access keys or mount your AWS credentials directory. The container
+must reach EC2 instance metadata to obtain role credentials. Keep IMDSv2 required;
+Docker bridge networking may require the instance's metadata response hop limit
+to be 2 rather than 1. Review that instance-level change before applying it.
+Also allow outbound HTTPS to the regional SSM endpoint (via internet/NAT or an
+SSM interface VPC endpoint with private DNS). RDS still needs inbound 5432 from
+the EC2 security group.
 
 Before cutover, stop source writes and refresh the restored data if the source
 has changed since the dumps. Snapshot the new RDS database before starting the
 backend: Flyway automatically applies pending migrations at application startup.
-Retain the same application image version for this database-only cutover.
+Avoid unrelated application upgrades during cutover.
 
 Record the current image, ports, network names, aliases, volumes, restart policy,
 and command overrides without dumping container environment variables. For
@@ -262,17 +270,20 @@ docker inspect --format 'Image={{.Config.Image}} Ports={{json .HostConfig.PortBi
 ```
 
 Use a spare, loopback-only port and a temporary name to test the replacement
-before stopping the existing API. Substitute the current image and actual Docker
+before stopping the existing API. Substitute the actual Docker
 network; this is an example, not a replacement for existing deployment options:
 
 ```bash
-bash scripts/run-api-from-ssm.sh /toadstool/prod -- \
+docker run \
   --detach \
   --name toadstool-api-rds-check \
   --network YOUR_EXISTING_DOCKER_NETWORK \
   --publish 127.0.0.1:18081:8080 \
+  --env SPRING_PROFILES_ACTIVE=aws \
+  --env AWS_REGION=us-east-1 \
+  --env SERVER_PORT=8080 \
   --mount type=bind,src=/home/ubuntu/rds-migration/global-bundle.pem,dst=/app/rds-global-bundle.pem,readonly \
-  YOUR_EXISTING_API_IMAGE
+  toadstool-api:ssm
 
 docker logs --tail 100 toadstool-api-rds-check
 curl --fail --show-error http://127.0.0.1:18081/api/health
@@ -285,26 +296,27 @@ database connectivity. Check startup/Flyway logs, login, a trading-data request,
 and an admin reporting request. Compare against expected restored data.
 
 After testing, stop/remove only the temporary container, then stop and retain the
-old API container under a different name. Recreate the production API using the
-helper with its original name, network aliases, host ports, restart policy, and
+old API container under a different name. Recreate the production API using
+`docker run` with its original name, network aliases, host ports, restart policy, and
 other required options. Preserve the frontend's upstream hostname and container
-port. A plain `docker restart` does not reload parameters or change a container's
-environment. If the frontend uses Nginx, reload/restart it after the backend swap
+port. Do not retain `--env-file ../toadstool.env` or old database environment
+overrides: environment variables take precedence over Parameter Store properties.
+If the frontend uses Nginx, reload/restart it after the backend swap
 so it resolves the replacement container.
 
-For parameter updates, rerun the helper to recreate the container. Docker's own
-restart policy restarts with the existing environment; it does not fetch new
-values. Docker administrators can inspect container environment variables, so
-Parameter Store removes the permanent host credentials file, not all runtime
-exposure. Never bake `.env` into the image or mount the old file into the new
-container.
+After deploying the new integration, `docker restart` restarts Java and fetches
+current Parameter Store values. There is no live refresh. Initial migration still
+requires recreating the container to remove its old environment and use the new
+image. Secrets remain in application memory; host/container administrators can
+still access them. Never log resolved configuration, bake `.env` into the image,
+or mount the old file into the new container.
 
 ### Update other database consumers and finish cutover
 
 If running the reporting sync or admin outbox processor, update their launch
 environment as well: `SOURCE_DB_*` must reference `toadstool_db` on the new RDS
-endpoint and `TARGET_DB_*` must reference `toadstool_reporting` there. The Docker
-helper only configures the API container, not host cron jobs or services. Also
+endpoint and `TARGET_DB_*` must reference `toadstool_reporting` there. This Spring
+integration only configures the API, not Python workers, cron jobs, or services. Also
 update separately deployed Superset database connections if present.
 
 Once login, trading, reporting, and workers are verified, remove the old host

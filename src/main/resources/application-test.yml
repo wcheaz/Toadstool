@@ -1,5 +1,11 @@
 # Test configuration for JWT authentication testing
 spring:
+  cloud:
+    aws:
+      parameterstore:
+        enabled: false
+      region:
+        static: us-east-1
   application:
     name: trading-platform-test
 
