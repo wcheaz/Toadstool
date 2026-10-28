@@ -15,11 +15,14 @@ from typing import Any
 
 try:
     import psycopg2
-    from psycopg2.extras import Json
+    from psycopg2.extras import Json, register_uuid
 except ImportError as exc:  # pragma: no cover - runtime dependency check
     raise SystemExit(
         "Missing dependency: psycopg2. Install with `pip install psycopg2-binary`."
     ) from exc
+
+# Let psycopg2 pass uuid.UUID values as Postgres uuid.
+register_uuid()
 
 
 EVENT_TYPE = "AdminAccessEventCreated"

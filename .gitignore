@@ -21,6 +21,11 @@ htmlcov/
 !.env.example
 !.env.*.example
 
+# Keys and database dumps
+*.pem
+*.b64
+*.dump
+
 # Spring Boot application properties with credentials
 src/test/resources/application.yml
 
